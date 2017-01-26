@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<layout stylesheet="stylesheets/Global.seyegui">
+<layout>
     <grid>
         <row size="100%">
             <column size="9.375%">

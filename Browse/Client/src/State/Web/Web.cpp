@@ -620,13 +620,17 @@ void Web::UpdateTabOverview()
         // Set style
         if (tabId == _currentTabId)
         {
+			/* TODO ADAPT TO NEW STYLING 
             eyegui::setStyleOfElement(_pTabOverviewLayout, brickId, "current_tab_preview");
             eyegui::setStyleOfElement(_pTabOverviewLayout, textblockId, "current_tab_preview");
+			*/
         }
         else
         {
+			/* TODO ADAPT TO NEW STYLING
             eyegui::setStyleOfElement(_pTabOverviewLayout, brickId, "tab_preview");
             eyegui::setStyleOfElement(_pTabOverviewLayout, textblockId, "tab_preview");
+			*/
         }
     }
 
@@ -736,7 +740,7 @@ void Web::UpdateTabOverview()
         eyegui::setContentOfTextBlock(_pTabOverviewLayout, "url", " ");
 
         // Show placeholder in preview
-        eyegui::replaceElementWithPicture(_pTabOverviewLayout, "preview", "icons/Nothing.png", eyegui::ImageAlignment::ZOOMED, true);
+		eyegui::replaceElementWithBrick(_pTabOverviewLayout, "preview", "bricks/Nothing.beyegui", true);
 
 		// Reset icon of bookmark tab button
 		eyegui::setIconOfIconElement(_pTabOverviewLayout, "bookmark_tab", "icons/BookmarkTab_false.png");

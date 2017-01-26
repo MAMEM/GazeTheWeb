@@ -610,6 +610,8 @@ void Tab::UpdateAccentColor(float tpf)
 		}
 	}
 
+	/* TODO ADAPT TO NEW STYLING
+
 	// Create background color
 	float backgroundMultiplier = 0.5f;
 	float panelBackgroundMultiplier = 0.4f;
@@ -706,6 +708,8 @@ void Tab::UpdateAccentColor(float tpf)
 		"tab_overlay_scroll_progress",
 		"background-color",
 		RGBAToHexString(transparentBackgroundColorAccent));
+
+	*/
 }
 
 void Tab::DrawDebuggingOverlay() const

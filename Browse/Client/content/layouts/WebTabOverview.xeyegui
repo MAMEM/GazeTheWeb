@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<layout stylesheet="stylesheets/Global.seyegui">
+<layout>
     <grid consumeinput="true">
 			<row size="80%">
 				<column size="15%">

@@ -1,7 +1,0 @@
-gaze-visualization-color = 0xFF820080
-animation-duration = 0.2
-sensor-penetration-increase-duration = 2
-sensor-penetration-decrease-duration = 0.5
-button-threshold-increase-duration = 1
-button-threshold-decrease-duration = 2
-button-pressing-duration = 0.3

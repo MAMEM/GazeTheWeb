@@ -1,93 +1,100 @@
 default
 {
-	font-color = 0xFFFFFFFF
-	color = 0x607d8bFF
-	dim-color = 0xFFFFFF77
-	separator-color = 0x393E40FF
-	background-color = 0x505659FF
-	threshold-color = 0x00FFFFFF
-	mark-color = 0xFFFFFF33
+	FontColor = 0xFFFFFFFF
+	Color = 0x607d8bFF
+	DimColor = 0xFFFFFF77
+	SeparatorColor = 0x393E40FF
+	BackgroundColor = 0x505659FF
+	ThresholdColor = 0x00FFFFFF
+	MarkColor = 0xFFFFFF33
+	GazeVisualizationColor = 0xFF820080
+	AnimationDuration = 0.5
+	SensorPenetrationIncreaseDuration = 2
+	SensorPenetrationDecreaseDuration = 0.5
+	ButtonThresholdIncreaseDuration = 1
+	ButtonThresholdDecreaseDuration = 2
+	ButtonPressingDuration = 0.3
 }
 
 default_noback : default
 {
-	background-color = 0x00000000
+	BackgroundColor = 0x00000000
 }
 
 panel : default
 {
-	background-color = 0x1e2021FF
+	BackgroundColor = 0x1e2021FF
 }
 
 dark_panel : default
 {
-	background-color = 0x0D0E0EFF
+	BackgroundColor = 0x0D0E0EFF
 }
 
 bright_panel : default
 {
-	background-color = 0x50BAA6FF
+	BackgroundColor = 0x50BAA6FF
 }
 
 tab_preview : default
 {
-	background-color = 0x607d8bFF
+	BackgroundColor = 0x607d8bFF
 }
 
 current_tab_preview : tab_preview
 {
-	background-color = 0x50BAA6FF
+	BackgroundColor = 0x50BAA6FF
 }
 
 tab_panel : default
 {
-	color = 0x607d8bFF
+	Color = 0x607d8bFF
 }
 
 tab_overlay : default
 {
-	color = 0x607d8bFF
+	Color = 0x607d8bFF
 }
 
 tab_overlay_scroll_progress : tab_overlay
 {
-	color = 0x607d8b80
-	background-color = 0x50565980
+	Color = 0x607d8b80
+	BackgroundColor = 0x50565980
 }
 
 tab_overlay_noback : default
 {
-	background-color = 0x00000000
+	BackgroundColor = 0x00000000
 }
 
 tab_overlay_panel : panel
 {
-	background-color = 0x1e2021FF
+	BackgroundColor = 0x1e2021FF
 }
 
 tab_debug : default
 {
-	background-color = 0x000000FF
-	font-color = 0x00FF00FF
+	BackgroundColor = 0x000000FF
+	FontColor = 0x00FF00FF
 }
 
-pause
+pause : default
 {
-	color = 0x505659FF
+	Color = 0x505659FF
 }
 
 pause_background
 {
-	background-color = 0x00000000
+	BackgroundColor = 0x00000000
 }
 
 invisible_but_icon : default
 {
-	color = 0x00000000
-	background-color = 0x00000000
+	Color = 0x00000000
+	BackgroundColor = 0x00000000
 }
 
 notification : default
 {
-	background-color = 0xFF6000FF
+	BackgroundColor = 0xFF6000FF
 }

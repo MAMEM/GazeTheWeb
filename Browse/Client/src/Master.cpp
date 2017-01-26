@@ -226,6 +226,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 
 	// Create splash screen GUI, render it one time and throw it away
 	eyegui::GUI* pSplashGUI = guiBuilder.construct();
+	eyegui::loadStyleSheet(pSplashGUI, "stylesheets/Global.seyegui"); // load styling
 	eyegui::addLayout(pSplashGUI, "layouts/Splash.xeyegui"); // TODO: fill version string
 	eyegui::updateGUI(pSplashGUI, 1.f, eyegui::Input()); // update GUI one time for resizing
 	eyegui::drawGUI(pSplashGUI);
@@ -238,9 +239,9 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     _pSuperGUI = guiBuilder.construct(); // GUI which is rendered on top of everything else
     LogInfo("..done.");
 
-    // Load configuration
-    eyegui::loadConfig(_pGUI, "configuration/Global.ceyegui");
-    eyegui::loadConfig(_pSuperGUI, "configuration/Global.ceyegui");
+    // Load styling
+    eyegui::loadStyleSheet(_pGUI, "stylesheets/Global.seyegui");
+	eyegui::loadStyleSheet(_pSuperGUI, "stylesheets/Global.seyegui");
 
     // Set resize callback of GUI
     std::function<void(int, int)> resizeGUICallback = [&](int width, int height) { this->GUIResizeCallback(width, height); };
@@ -558,10 +559,10 @@ void Master::Loop()
 
         // Pause visualization
         _pausedDimming.update(tpf, !_paused);
-        eyegui::setValueOfStyleAttribute(
-            _pSuperLayout,
+        eyegui::setStylePropertyValue(
+			_pSuperGUI,
             "pause_background",
-            "background-color",
+			eyegui::StylePropertyVec4::BackgroundColor,
             RGBAToHexString(glm::vec4(0, 0, 0, MASTER_PAUSE_ALPHA * _pausedDimming.getValue())));
 
         // Input struct for eyeGUI
