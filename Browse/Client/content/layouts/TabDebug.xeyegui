@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<layout>
+<layout style="default">
     <grid style="tab_debug">
     	<row size="100%">
     		<column size="9.375%">

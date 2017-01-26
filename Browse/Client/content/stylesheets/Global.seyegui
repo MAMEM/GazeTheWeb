@@ -7,8 +7,8 @@ default
 	BackgroundColor = 0x505659FF
 	ThresholdColor = 0x00FFFFFF
 	MarkColor = 0xFFFFFF33
-	GazeVisualizationColor = 0xFF820080
-	AnimationDuration = 0.5
+	// GazeVisualizationColor = 0xFF820080
+	AnimationDuration = 0.125
 	SensorPenetrationIncreaseDuration = 2
 	SensorPenetrationDecreaseDuration = 0.5
 	ButtonThresholdIncreaseDuration = 1
