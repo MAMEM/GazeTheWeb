@@ -36,14 +36,21 @@ bright_panel : default
 	BackgroundColor = 0x50BAA6FF
 }
 
-tab_preview : default
+// Placeholders for tab overview
+tab_preview_0 : default
 {
-	BackgroundColor = 0x607d8bFF
 }
-
-current_tab_preview : tab_preview
+tab_preview_1 : default
 {
-	BackgroundColor = 0x50BAA6FF
+}
+tab_preview_2 : default
+{
+}
+tab_preview_3 : default
+{
+}
+tab_preview_4 : default
+{
 }
 
 tab_panel : default

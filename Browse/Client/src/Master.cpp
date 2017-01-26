@@ -461,6 +461,16 @@ std::u16string Master::FetchLocalization(std::string key) const
 	return eyegui::fetchLocalization(_pGUI, key);
 }
 
+void Master::SetStylePropertyValue(std::string styleClass, eyegui::StylePropertyFloat type, std::string value)
+{
+	eyegui::setStylePropertyValue(_pGUI, styleClass, type, value);
+}
+
+void Master::SetStylePropertyValue(std::string styleClass, eyegui::StylePropertyVec4 type, std::string value)
+{
+	eyegui::setStylePropertyValue(_pGUI, styleClass, type, value);
+}
+
 void Master::Loop()
 {
 	while (!_exit)

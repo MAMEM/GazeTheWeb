@@ -52,11 +52,21 @@
 				<column size="100%">
 					<stack style="default" showbackground="true">
 						<circlebutton relativescale="75%" icon="icons/Back.png" desckey="tab_overview:back" id="back" border="10%"/>
-						<block id="tab_0"/>
-						<block id="tab_1"/>
-						<block id="tab_2"/>
-						<block id="tab_3"/>
-						<block id="tab_4"/>
+						<stack style="tab_preview_0">
+							<block  id="tab_0"/>
+						</stack>
+						<stack style="tab_preview_1">
+							<block  id="tab_1"/>
+						</stack>
+						<stack style="tab_preview_2">
+							<block  id="tab_2"/>
+						</stack>
+						<stack style="tab_preview_3">
+							<block  id="tab_3"/>
+						</stack>
+						<stack style="tab_preview_4">
+							<block  id="tab_4"/>
+						</stack>
 						<circlebutton relativescale="75%" icon="icons/Forward.png" desckey="tab_overview:forward" id="forward" border="10%"/>
 					</stack>
 				</column>

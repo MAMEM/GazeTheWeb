@@ -617,20 +617,14 @@ void Web::UpdateTabOverview()
             }
         }
 
-        // Set style
+		// Styling
         if (tabId == _currentTabId)
         {
-			/* TODO ADAPT TO NEW STYLING 
-            eyegui::setStyleOfElement(_pTabOverviewLayout, brickId, "current_tab_preview");
-            eyegui::setStyleOfElement(_pTabOverviewLayout, textblockId, "current_tab_preview");
-			*/
+			_pMaster->SetStylePropertyValue("tab_preview_" + std::to_string(i), eyegui::StylePropertyVec4::BackgroundColor, "0x50BAA6FF");
         }
         else
         {
-			/* TODO ADAPT TO NEW STYLING
-            eyegui::setStyleOfElement(_pTabOverviewLayout, brickId, "tab_preview");
-            eyegui::setStyleOfElement(_pTabOverviewLayout, textblockId, "tab_preview");
-			*/
+			_pMaster->SetStylePropertyValue("tab_preview_" + std::to_string(i), eyegui::StylePropertyVec4::BackgroundColor, "0x607d8bFF");
         }
     }
 
