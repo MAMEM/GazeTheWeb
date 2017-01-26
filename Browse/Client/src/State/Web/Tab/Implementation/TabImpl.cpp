@@ -389,7 +389,7 @@ void Tab::Update(float tpf, Input& rInput)
 										 // yOffset = (glm::max(0.f, yOffset - 0.05f) / 0.95f); // In the center of view no movement
 			yOffset = negative ? -yOffset : yOffset; // [-1..1]
 
-													 // Update the auto scrolling value (TODO: not frame rate independend)
+			// Update the auto scrolling value (TODO: not frame rate independend)
 			_autoScrollingValue += tpf * (yOffset - _autoScrollingValue);
 		}
 		else if (_autoScrollingValue != 0)
@@ -610,8 +610,6 @@ void Tab::UpdateAccentColor(float tpf)
 		}
 	}
 
-	/* TODO ADAPT TO NEW STYLING
-
 	// Create background color
 	float backgroundMultiplier = 0.5f;
 	float panelBackgroundMultiplier = 0.4f;
@@ -640,76 +638,55 @@ void Tab::UpdateAccentColor(float tpf)
 		backgroundAccentColor.b,
 		backgroundAccentColor.a * backgroundAlpha);
 
-	// Set color of tab_panel style in pipeline abort overlay
-	eyegui::setValueOfStyleAttribute(
-		_pPipelineAbortLayout,
+	// Set color of tab_panel style
+	_pMaster->SetStylePropertyValue(
 		"tab_panel",
-		"color",
-		RGBAToHexString(colorAccent));
+		eyegui::StylePropertyVec4::Color,
+		RGBAToHexString(colorAccent)
+	);
 
-	// Set color of tab_panel style in layout
-	eyegui::setValueOfStyleAttribute(
-		_pPanelLayout,
-		"tab_panel",
-		"color",
-		RGBAToHexString(colorAccent));
-
-	// Set color of tab_overlay style in overlay layout
-	eyegui::setValueOfStyleAttribute(
-		_pOverlayLayout,
+	// Set color of tab_overlay style
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay",
-		"color",
-		RGBAToHexString(colorAccent));
-	eyegui::setValueOfStyleAttribute(
-		_pOverlayLayout,
+		eyegui::StylePropertyVec4::Color,
+		RGBAToHexString(colorAccent)
+	);
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay",
-		"background-color",
-		RGBAToHexString(backgroundAccentColor));
+		eyegui::StylePropertyVec4::BackgroundColor,
+		RGBAToHexString(backgroundAccentColor)
+	);
 
-	// Set color of tab_overlay_noback style in overlay layout
-	eyegui::setValueOfStyleAttribute(
-		_pOverlayLayout,
+	// Set color of tab_overlay_noback style
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay_noback",
-		"color",
-		RGBAToHexString(colorAccent));
-	eyegui::setValueOfStyleAttribute(
-		_pOverlayLayout,
-		"tab_overlay_noback",
-		"color",
-		RGBAToHexString(colorAccent));
+		eyegui::StylePropertyVec4::Color,
+		RGBAToHexString(colorAccent)
+	);
 
-	// Set color of tab_overlay_panel style in overlay layout
-	eyegui::setValueOfStyleAttribute(
-		_pOverlayLayout,
+	// Set color of tab_overlay_panel style
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay_panel",
-		"color",
-		RGBAToHexString(backgroundAccentColor));
-	eyegui::setValueOfStyleAttribute(
-		_pOverlayLayout,
+		eyegui::StylePropertyVec4::Color,
+		RGBAToHexString(backgroundAccentColor)
+	);
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay_panel",
-		"background-color",
-		RGBAToHexString(panelBackgroundAccentColor));
+		eyegui::StylePropertyVec4::BackgroundColor,
+		RGBAToHexString(panelBackgroundAccentColor)
+	);
 
-	// Set color of tab_overlay style in scrolling overlay layout
-	eyegui::setValueOfStyleAttribute(
-		_pScrollingOverlayLayout,
-		"tab_overlay",
-		"color",
-		RGBAToHexString(colorAccent));
-
-	// Set color and background of tab_overlay_scroll_progress style in scrolling overlay layout
-	eyegui::setValueOfStyleAttribute(
-		_pScrollingOverlayLayout,
+	// Set color and background of tab_overlay_scroll_progress
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay_scroll_progress",
-		"color",
-		RGBAToHexString(transparentColorAccent));
-	eyegui::setValueOfStyleAttribute(
-		_pScrollingOverlayLayout,
+		eyegui::StylePropertyVec4::Color,
+		RGBAToHexString(transparentColorAccent)
+	);
+	_pMaster->SetStylePropertyValue(
 		"tab_overlay_scroll_progress",
-		"background-color",
-		RGBAToHexString(transparentBackgroundColorAccent));
-
-	*/
+		eyegui::StylePropertyVec4::BackgroundColor,
+		RGBAToHexString(transparentBackgroundColorAccent)
+	);
 }
 
 void Tab::DrawDebuggingOverlay() const
