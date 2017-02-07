@@ -6,6 +6,7 @@
 window.domLinks = [];
 window.domTextInputs = [];
 window.overflowElements = [];
+window.domSelectFields = [];
 
 
 function PerformTextInput(inputId, text, submit)
@@ -183,7 +184,7 @@ function DOMObject(node, nodeType)
             var equal = CompareClientRectsData(updatedRectsData, this.rects);
 
             // Rect updates occured and new Rect data is accessible
-            if(!equal && updatedRectsData !== undefined)
+            if(updatedRectsData !== null && updatedRectsData !== undefined && !equal)
             {
                 this.rects = updatedRectsData;
                 InformCEF(this, ['update', 'rects']); 
@@ -387,6 +388,23 @@ function DOMObject(node, nodeType)
             }
         };
 
+        /** <select> fields */
+        function GetOptions()
+        {
+            var tupels = {};
+            this.node.childNodes.forEach(function(option){
+                if(option.tagName === "SELECT")
+                {
+                    tupels.push(option.textContent);
+                }
+            });
+            return tupels;
+        }
+        function SetOption(id)
+        {
+            this.node.selectedIndex = id;
+        }
+
 /* -------------- Code, executed on object construction -------------- */
         
         // Push to list and determined by DOMObjects position in type specific list
@@ -463,7 +481,7 @@ function CreateDOMObject(node, nodeType)
     if(!node.hasAttribute('nodeID'))
     {
         // Create DOMObject, which encapsulates the given DOM node
-        var domObj = new DOMObject(node, nodeType);
+        new DOMObject(node, nodeType);
     }
     else
     {
@@ -473,6 +491,12 @@ function CreateDOMObject(node, nodeType)
 
 function CreateDOMTextInput(node) { CreateDOMObject(node, 0); }
 function CreateDOMLink(node) { CreateDOMObject(node, 1); }
+function CreateDOMSelectField(node){ 
+    // DEBUG
+    ConsolePrint("Calling CreateDOMObject with nodeType="+3); 
+
+    CreateDOMObject(node, 3);
+};
 
 
 
@@ -723,11 +747,13 @@ function GetDOMObjectList(nodeType)
         case '1': { return window.domLinks; };
         case 2:
         case '2': { return window.overflowElements; }
+        case 3:
+        case '3': { return window.domSelectFields; }
         // NOTE: Add more cases if new nodeTypes are added
         default:
         {
             ConsolePrint('ERROR: No DOMObjectList for nodeType='+nodeType+' exists!');
-            return null;
+            return undefined;
         }
     }
 }
@@ -744,7 +770,7 @@ function GetDOMObject(nodeType, nodeID)
     var targetList = GetDOMObjectList(nodeType);
 
     // Catch error case
-    if(nodeID >= targetList.length || targetList == undefined || nodeID === undefined || nodeID === null)
+    if(targetList === undefined || nodeID === undefined || nodeID === null || nodeID >= targetList.length)
     {
         ConsolePrint('ERROR: Node with id='+nodeID+' does not exist for type='+nodeType+'!');
         return null;

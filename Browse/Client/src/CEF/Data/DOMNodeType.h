@@ -11,7 +11,8 @@
 enum DOMNodeType
 {
 	TextInput = 0,
-	TextLink = 1
+	TextLink = 1,
+	SelectField = 2
 };
 
 #endif // DOMNODETYPE_H_

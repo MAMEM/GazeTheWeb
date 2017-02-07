@@ -765,7 +765,7 @@ void Tab::DrawDebuggingOverlay() const
 		// Render rects
 		for (const auto rRect : rDOMTrigger->GetDOMRects())
 		{
-			if (rDOMTrigger->GetDOMVisibility())
+			if (true)//rDOMTrigger->GetDOMVisibility())
 			{
 				if (!rDOMTrigger->GetDOMIsPasswordField())
 				{
@@ -813,6 +813,20 @@ void Tab::DrawDebuggingOverlay() const
 		if(rDOMTextLink->GetRects().size() == 2 && rDOMTextLink->GetVisibility())
 			renderRect(rDOMTextLink->GetRects()[1], rDOMTextLink->GetFixed());
 	}
+
+	// ### SELECT FIELDS ###
+	// Set rendering up for DOMSelectFields
+	_upDebugRenderItem->GetShader()->UpdateValue("color", DOM_SELECT_FIELD_DEBUG_COLOR);
+	for (const auto& rDOMSelectField : _DOMSelectFields)
+	{
+		// Render rects
+		for (const auto rRect : rDOMSelectField->GetRects())
+		{
+			if (rDOMSelectField->GetVisibility())
+				renderRect(rRect, rDOMSelectField->GetFixed());
+		}
+	}
+
 
 	// ### FIXED ELEMENTS ###
 

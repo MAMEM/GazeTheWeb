@@ -641,6 +641,12 @@ function AnalyzeNode(node)
 		}
 
 
+		if(node.tagName === "SELECT")
+		{
+
+			CreateDOMSelectField(node);
+		}
+
 
 		// Find text links
 		if(node.tagName == 'A' )
@@ -794,6 +800,62 @@ function MutationObserverInit()
 								{
 									// Checks if node corresponds to fixedObj and removes it, when true
 									RemoveFixedElement(node);
+								}
+
+
+								// TWITTER FIX FOR SENDING TWEETS TO PEOPLE
+								if(node.tagName === "DIV" && node.id == "global-tweet-dialog" && node.className == "modal-container")
+								{
+									ConsolePrint(node.id+": Checking for changes in 'display' ...");
+									if(mutation.oldValue === null)
+									{
+										ConsolePrint("was: not visible");
+										if(node.style !== null && node.style.cssText.includes("display: none"))
+										{
+											ConsolePrint("now: visible\n");
+											UpdateChildrensDOMRects(node);
+										}
+										else
+										{
+											ConsolePrint("now: not visible\n");
+										}
+									}
+									else
+									{
+										// previously visible
+										if(!mutation.oldValue.includes("display: none"))
+										{
+											ConsolePrint("was: visible");
+											// now not visible
+											if(node.style !== null && node.style.cssText.includes("display: none"))
+											{
+												ConsolePrint("now: not visible\n");
+												UpdateChildrensDOMRects(node);
+											}
+											else
+											{
+												ConsolePrint("now: visible\n");
+											}
+										}
+										else // previously not visible
+										{
+											ConsolePrint("was: not visible");
+											if(node.style === null)
+											{
+												ConsolePrint("now: visible\n");
+												UpdateChildrensDOMRects(node);
+											}
+											else if(node.style.cssText.includes("display:") && !node.style.cssText.includes("display: none"))
+											{
+												ConsolePrint("now: visible\n");
+												UpdateChildrensDOMRects(node);
+											}
+											else
+											{
+												ConsolePrint("now: not visible\n");
+											}
+										}
+									}
 								}
 								
 		  					} // END attr == 'style'

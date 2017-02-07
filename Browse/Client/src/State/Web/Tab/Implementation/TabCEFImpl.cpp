@@ -136,6 +136,17 @@ void Tab::AddDOMNode(std::shared_ptr<DOMNode> spNode)
 		break;
 	}
 
+	case DOMNodeType::SelectField:
+	{
+		// Just add it to vector
+		_DOMSelectFields.push_back(spNode);
+
+		// Add node to ID->node map
+		_SelectFieldMap.emplace(spNode->GetNodeID(), spNode);
+
+		break;
+	}
+
 	}
 }
 
@@ -207,6 +218,12 @@ std::weak_ptr<DOMNode> Tab::GetDOMNode(DOMNodeType type, int nodeID)
 		case DOMNodeType::TextLink: {
 			return (_TextLinkMap.find(nodeID) != _TextLinkMap.end()) ? _TextLinkMap.at(nodeID) : std::weak_ptr<DOMNode>();
 		}
+		case DOMNodeType::SelectField: {
+			return (_TextLinkMap.find(nodeID) != _TextLinkMap.end()) ? _TextLinkMap.at(nodeID) : std::weak_ptr<DOMNode>();
+		}
+		default: {
+			LogDebug("Tab: Unknown DOMNodeType in Tab::GetDOMNode!");
+		};
 	}
 	return std::weak_ptr<DOMNode>();
 }

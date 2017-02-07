@@ -140,6 +140,9 @@ public:
 
 	void RegisterJavascriptCallback(std::string prefix, std::function<void(std::string)> callbackFunction);
 
+	// DEBUG/TEST
+	void LoadLocalPage() { _handler->LoadLocalPage(); }
+
 	// ### MOUSE INTERACTION ###
 
 	// Can be used as start and end of text selection

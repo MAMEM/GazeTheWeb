@@ -440,9 +440,14 @@ private:
 	// Vector with DOMTextLinks
 	std::vector<std::shared_ptr<DOMNode> >_DOMTextLinks;
 
+
+	// Vector with DOMSelectFields
+	std::vector<std::shared_ptr<DOMNode> > _DOMSelectFields;
+
 	// Map nodeID to node itself, in order to access it when it has to be updated
 	std::map<int, std::shared_ptr<DOMNode> > _TextLinkMap;
 	std::map<int, std::shared_ptr<DOMNode> > _TextInputMap;
+	std::map<int, std::shared_ptr<DOMNode> > _SelectFieldMap;
 
     // Web view in which website is rendered and displayed
     std::unique_ptr<WebView> _upWebView;

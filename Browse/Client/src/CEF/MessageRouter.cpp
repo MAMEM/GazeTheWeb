@@ -265,6 +265,7 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 			{
 				case(0) : {type = DOMNodeType::TextInput; break;  };
 				case(1) : {type = DOMNodeType::TextLink; break;  };
+				case(2) : {type = DOMNodeType::SelectField; break;  };
 			}
 
 			if (op.compare("add") == 0) // adding of DOM node
