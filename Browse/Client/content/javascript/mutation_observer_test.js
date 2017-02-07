@@ -333,6 +333,7 @@ document.onclick = function(){
 document.addEventListener("click", function(e){
 	ConsolePrint("JS Debug: Realized that click event was fired! Target is listed in DevTools Console.");
 	console.log("Clicked target: "+e.target);
+	UpdateDOMRects();
 });
 
 // Trigger DOM data update on changing document loading status
@@ -813,7 +814,7 @@ function MutationObserverInit()
 										if(node.style !== null && node.style.cssText.includes("display: none"))
 										{
 											ConsolePrint("now: visible\n");
-											UpdateChildrensDOMRects(node);
+											UpdateDOMRects();
 										}
 										else
 										{
@@ -830,7 +831,7 @@ function MutationObserverInit()
 											if(node.style !== null && node.style.cssText.includes("display: none"))
 											{
 												ConsolePrint("now: not visible\n");
-												UpdateChildrensDOMRects(node);
+												UpdateDOMRects();
 											}
 											else
 											{
@@ -843,12 +844,12 @@ function MutationObserverInit()
 											if(node.style === null)
 											{
 												ConsolePrint("now: visible\n");
-												UpdateChildrensDOMRects(node);
+												UpdateDOMRects();
 											}
 											else if(node.style.cssText.includes("display:") && !node.style.cssText.includes("display: none"))
 											{
 												ConsolePrint("now: visible\n");
-												UpdateChildrensDOMRects(node);
+												UpdateDOMRects();
 											}
 											else
 											{
