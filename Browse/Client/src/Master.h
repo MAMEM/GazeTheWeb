@@ -47,6 +47,9 @@ public:
     // Get time provided by GLFW
     double GetTime() const;
 
+	// Get whether paused
+	bool IsPaused() const { return _paused; }
+
     // Exit
     void Exit();
 

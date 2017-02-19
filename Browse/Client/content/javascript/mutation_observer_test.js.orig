@@ -330,12 +330,20 @@ document.onclick = function(){
 	// UpdateDOMRects();
 	
 }
+<<<<<<< HEAD
 // TESTING TWITTER, no updates through clicking right now
 // document.addEventListener("click", function(e){
 // 	ConsolePrint("JS Debug: Realized that click event was fired! Target is listed in DevTools Console.");
 // 	console.log("Clicked target: "+e.target);
 // 	UpdateDOMRects();
 // });
+=======
+document.addEventListener("click", function(e){
+	ConsolePrint("JS Debug: Realized that click event was fired! Target is listed in DevTools Console.");
+	console.log("Clicked target: "+e.target);
+	UpdateDOMRects();
+});
+>>>>>>> 2a81715f8d5f11259aea9be78a03ccb7dcba4b2c
 
 // Trigger DOM data update on changing document loading status
 document.onreadystatechange = function()

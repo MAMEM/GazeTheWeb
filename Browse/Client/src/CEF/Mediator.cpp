@@ -423,7 +423,8 @@ void Mediator::ReceivePageResolution(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
     if (TabCEFInterface* pTab = GetTab(browser))
     {
         CefRefPtr<CefListValue> args = msg->GetArgumentList();
-        double pageWidth = args->GetDouble(0), pageHeight = args->GetDouble(1);
+		double pageWidth = args->GetDouble(0);
+		double pageHeight = args->GetDouble(1);
         pTab->SetPageResolution(pageWidth, pageHeight);
     }
 }

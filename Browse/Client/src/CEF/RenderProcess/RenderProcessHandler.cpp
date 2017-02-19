@@ -77,13 +77,29 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			CefRefPtr<CefV8Value> input_function = window->GetValue("PerformTextInput");
 			if (input_function->IsFunction())
 			{
-				CefRefPtr<CefV8Value> return_value = 
+				CefRefPtr<CefV8Value> return_value = // TODO: Is Null at the moment?
 					input_function->ExecuteFunction(
 						input_function,				// function to be called
 						{ inputId, text, submit}	// input for called function
 					);
+				// TODO: 'submit' not used anymore in use in Javascript!
 
-				IPCLogDebug(browser, "Did execution of text input succeed? " + std::to_string(return_value->GetBoolValue()));
+				msg = CefProcessMessage::Create("SubmitInput");
+				msg->GetArgumentList()->SetBool(0, submit->GetBoolValue());
+				double x = 0, y = 0;
+				if (!return_value->IsNull() && !return_value->IsUndefined() && !return_value->IsBool())
+				{
+					x = return_value->GetValue("x")->GetDoubleValue();
+					y = return_value->GetValue("y")->GetDoubleValue();
+					IPCLogDebug(browser, "Found center coordinates for click emulation: " + std::to_string(x) + ", " + std::to_string(y));
+				}
+				else
+				{
+					IPCLogDebug(browser, "Return value was null! Couldn't find rect's center...");
+				}
+				msg->GetArgumentList()->SetInt(1, x);
+				msg->GetArgumentList()->SetInt(2, y);
+				browser->SendProcessMessage(PID_BROWSER, msg);
 			}
 
 
@@ -269,11 +285,15 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			{
 				IPCLogDebug(browser, "No Rect coordinates available for fixedId="+std::to_string(fixedId));
 			}
-      
-			// Send response
-			browser->SendProcessMessage(PID_BROWSER, msg);
+			else
+			{
+				// Send response
+				browser->SendProcessMessage(PID_BROWSER, msg);
+			}
+		
 
         	context->Exit();
+			return true;
         }
     }
 

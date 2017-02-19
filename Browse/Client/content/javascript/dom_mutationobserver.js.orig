@@ -403,6 +403,23 @@ function DOMObject(node, nodeType)
             }
         };
 
+<<<<<<< HEAD
+        /** <select> fields */
+        function GetOptions()
+        {
+            var tupels = {};
+            this.node.childNodes.forEach(function(option){
+                if(option.tagName === "SELECT")
+                {
+                    tupels.push(option.textContent);
+                }
+            });
+            return tupels;
+        }
+        function SetOption(id)
+        {
+            this.node.selectedIndex = id;
+=======
         this.updateText = function()
         {
                 var old_text = this.text;
@@ -422,23 +439,7 @@ function DOMObject(node, nodeType)
                     InformCEF(this, ["update", "text"]);
                 }
 
-        }
-
-        /** <select> fields */
-        function GetOptions()
-        {
-            var tupels = {};
-            this.node.childNodes.forEach(function(option){
-                if(option.tagName === "SELECT")
-                {
-                    tupels.push(option.textContent);
-                }
-            });
-            return tupels;
-        }
-        function SetOption(id)
-        {
-            this.node.selectedIndex = id;
+>>>>>>> 2a81715f8d5f11259aea9be78a03ccb7dcba4b2c
         }
 
 /* -------------- Code, executed on object construction -------------- */

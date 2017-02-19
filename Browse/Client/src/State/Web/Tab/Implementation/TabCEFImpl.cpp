@@ -9,6 +9,7 @@
 #include "src/Setup.h"
 #include "src/State/Web/Managers/HistoryManager.h"
 #include "src/State/Web/Tab/Pipelines/JSDialogPipeline.h"
+#include "src/Singletons/LabStreamMailer.h"
 #include <algorithm>
 
 void Tab::GetWebRenderResolution(int& rWidth, int& rHeight) const
@@ -19,6 +20,12 @@ void Tab::GetWebRenderResolution(int& rWidth, int& rHeight) const
 	auto webViewInGUI = eyegui::getAbsolutePositionAndSizeOfElement(_pPanelLayout, "web_view");
 	rWidth = webViewInGUI.width * setup::WEB_VIEW_RESOLUTION_SCALE;
 	rHeight = webViewInGUI.height * setup::WEB_VIEW_RESOLUTION_SCALE;
+}
+
+void Tab::SetURL(std::string URL)
+{
+	_url = URL;
+	LabStreamMailer::instance().Send("Loading URL: " + _url);
 }
 
 void Tab::ReceiveFaviconBytes(std::unique_ptr< std::vector<unsigned char> > upData, int width, int height)

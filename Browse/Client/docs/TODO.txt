@@ -30,3 +30,8 @@ Furthermore:
 	- (Javascript Popup Handling)
 - z-Layering of (fixed, text input) DOM elements (like Google.com)
 - DOM Nodes of image have incorrect rectangle
+
+Additional ideas:
+- Emulate each keyboard key pressed on keyboard and show text, already filled in input field, and show temporary search results etc. as they appear
+- Button for form submit? Emulating 'Enter' doesn't always submit a form
+	-> Advanced form handling? e.g. check if all required fields are filled

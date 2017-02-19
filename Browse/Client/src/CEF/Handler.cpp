@@ -225,6 +225,43 @@ bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 {
     const std::string& msgName = msg->GetName().ToString();
 
+	if (msgName == "SubmitInput")
+	{
+		LogDebug("Handler: Emulating a centered click and 'Enter' being pressed, in order to submit input.");
+
+		// Emulate left mouse click on input fields center
+		bool submit = msg->GetArgumentList()->GetBool(0);
+		double x = msg->GetArgumentList()->GetDouble(1);
+		double y = msg->GetArgumentList()->GetDouble(2);
+		EmulateLeftMouseButtonClick(browser, x, y);
+
+		if (submit) 
+		{
+			// Emulate pressing 'Enter' down, pressed and up
+			CefKeyEvent event;
+			event.is_system_key = false;
+			event.modifiers = 0;
+
+			// Enter key. Everywhere
+			event.windows_key_code = 13;
+			event.native_key_code = 13;
+			event.character = event.unmodified_character = 13;
+
+			// Down
+			event.type = KEYEVENT_RAWKEYDOWN;
+			browser->GetHost()->SendKeyEvent(event);
+
+			// Character
+			event.type = KEYEVENT_CHAR;
+			browser->GetHost()->SendKeyEvent(event);
+
+			// Up
+			event.type = KEYEVENT_KEYUP;
+			browser->GetHost()->SendKeyEvent(event);
+		}
+
+	}
+
     if (msgName == "ReceiveDOMElements")
     {
         LogDebug("Handler: OLD APPROACH! DELETE! ... ReceiveDOMElements msg received -> redirect to CefMediator.");
@@ -397,27 +434,11 @@ bool Handler::InputTextData(CefRefPtr<CefBrowser> browser, int64 frameID, int no
 	args->SetInt(0, nodeID);
 	args->SetString(1, text);
 	args->SetBool(2, submit);
+
 	browser->SendProcessMessage(PID_RENDERER, msg);
 
 	return true;
-
-  //  CefRefPtr<CefFrame> frame = browser->GetFrame(frameID);
-  //  if (frame->IsValid())
-  //  {
-		//std::string text_input_JS_code = jsInputTextData(nodeID, text, submit);
-		//text_input_JS_code = ""
-
-  //      frame->ExecuteJavaScript(text_input_JS_code, frame->GetURL(), 0);
-
-  //      return true;
-  //  }
-  //  else
-  //  {
-  //      LogDebug("Handler: Tried to input text data, frame is not valid anymore.");
-  //      return false;
-  //  }
 }
-
 void Handler::Reload(CefRefPtr<CefBrowser> browser)
 {
     LogDebug("Handler: Reloading browser (id = ", browser->GetIdentifier(), ") on page ", browser->GetMainFrame()->GetURL().ToString());
@@ -474,8 +495,8 @@ void Handler::UpdatePageResolution(CefRefPtr<CefBrowser> browser)
 	const std::string getPageResolution = "\
             if(document.documentElement)\
 			{\
-			window._pageWidth = document.documentElement.scrollWidth;\
-            window._pageHeight = document.documentElement.scrollHeight;\
+			window._pageWidth = document.body.scrollWidth;\
+            window._pageHeight = document.body.scrollHeight;\
 			}\
 			else\
 				console.log('Handler::UpdatePageResolution: Could not access document.documentElement!');\

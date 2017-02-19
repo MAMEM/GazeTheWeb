@@ -258,7 +258,7 @@ public:
     virtual void SetFavIconURL(std::string url) { _favIconUrl = url; }
 
     // Setter of URL. Does not load it. Should be called by CefMediator only
-	virtual void SetURL(std::string URL) { _url = URL; }
+	virtual void SetURL(std::string URL);
 
     // Setter for can go back / go forward
     virtual void SetCanGoBack(bool canGoBack) { _canGoBack = canGoBack;	}

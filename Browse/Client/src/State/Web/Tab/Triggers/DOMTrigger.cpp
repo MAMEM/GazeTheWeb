@@ -5,6 +5,7 @@
 
 #include "DOMTrigger.h"
 #include "src/State/Web/Tab/Pipelines/TextInputPipeline.h"
+#include "src/Singletons/LabStreamMailer.h"
 #include <map>
 
 DOMTrigger::DOMTrigger(TabInteractionInterface* pTab, std::shared_ptr<DOMNode> spNode) : Trigger(pTab)
@@ -68,6 +69,7 @@ bool DOMTrigger::Update(float tpf, TabInput& rTabInput)
     if(_triggered)
     {
         _triggered = false;
+		LabStreamMailer::instance().Send("Text input started");
 		_pTab->PushBackPipeline(
 			std::move(
 				std::unique_ptr<TextInputPipeline>(
