@@ -631,6 +631,24 @@ function UpdateDOMRects()
 
 }
 
+// TODO: Use this function in UpdateChildrensDOMRects?
+function UpdateNodesRect(node)
+{
+    var type = node.getAttribute("nodeType");
+    var id = node.getAttribute("nodeID");
+
+    if(type !== undefined && type !== null && id !== undefined && id !== null)
+    {
+        var obj = GetDOMObject(type, id);
+        if(obj !== undefined && obj !== null)
+        {
+            obj.updateRects();
+            DrawObject(obj);
+        }
+    }
+
+}
+
 function UpdateChildrensDOMRects(parent)
 {
     ForEveryChild(parent, function(child){

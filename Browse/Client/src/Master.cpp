@@ -700,7 +700,6 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
             case GLFW_KEY_ENTER: { _enterKeyPressed = true; break; }
 			case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
 			case GLFW_KEY_0: { _pCefMediator->ShowDevTools(); break; }
-			case GLFW_KEY_1: { _pCefMediator->LoadLocalPage(); break; }
         }
     }
 }

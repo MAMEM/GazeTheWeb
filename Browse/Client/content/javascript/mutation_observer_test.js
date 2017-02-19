@@ -330,11 +330,12 @@ document.onclick = function(){
 	// UpdateDOMRects();
 	
 }
-document.addEventListener("click", function(e){
-	ConsolePrint("JS Debug: Realized that click event was fired! Target is listed in DevTools Console.");
-	console.log("Clicked target: "+e.target);
-	UpdateDOMRects();
-});
+// TESTING TWITTER, no updates through clicking right now
+// document.addEventListener("click", function(e){
+// 	ConsolePrint("JS Debug: Realized that click event was fired! Target is listed in DevTools Console.");
+// 	console.log("Clicked target: "+e.target);
+// 	UpdateDOMRects();
+// });
 
 // Trigger DOM data update on changing document loading status
 document.onreadystatechange = function()
@@ -802,62 +803,78 @@ function MutationObserverInit()
 									// Checks if node corresponds to fixedObj and removes it, when true
 									RemoveFixedElement(node);
 								}
+							}
 
 
-								// TWITTER FIX FOR SENDING TWEETS TO PEOPLE
-								if(node.tagName === "DIV" && node.id == "global-tweet-dialog" && node.className == "modal-container")
-								{
-									ConsolePrint(node.id+": Checking for changes in 'display' ...");
-									if(mutation.oldValue === null)
-									{
-										ConsolePrint("was: not visible");
-										if(node.style !== null && node.style.cssText.includes("display: none"))
-										{
-											ConsolePrint("now: visible\n");
-											UpdateDOMRects();
-										}
-										else
-										{
-											ConsolePrint("now: not visible\n");
-										}
-									}
-									else
-									{
-										// previously visible
-										if(!mutation.oldValue.includes("display: none"))
-										{
-											ConsolePrint("was: visible");
-											// now not visible
-											if(node.style !== null && node.style.cssText.includes("display: none"))
-											{
-												ConsolePrint("now: not visible\n");
-												UpdateDOMRects();
-											}
-											else
-											{
-												ConsolePrint("now: visible\n");
-											}
-										}
-										else // previously not visible
-										{
-											ConsolePrint("was: not visible");
-											if(node.style === null)
-											{
-												ConsolePrint("now: visible\n");
-												UpdateDOMRects();
-											}
-											else if(node.style.cssText.includes("display:") && !node.style.cssText.includes("display: none"))
-											{
-												ConsolePrint("now: visible\n");
-												UpdateDOMRects();
-											}
-											else
-											{
-												ConsolePrint("now: not visible\n");
-											}
-										}
-									}
-								}
+							if(attr == "style")
+							{
+
+								// Goal: Recognise changes in style.display
+								// 'solution': Trigger rect update if changes in style took place. Direct change in style would be
+								// value assignment, which will be recognised in MutationObserver
+								UpdateNodesRect(node);
+								ForEveryChild(UpdateNodesRect);
+								// console.log("Updated Rects according to changes in 'style' attribute!");
+								ConsolePrint(node.tagName+","+node.className+": Updated Rects according to changes in 'style' attribute!");
+								
+
+
+
+
+								// // TWITTER FIX FOR SENDING TWEETS TO PEOPLE
+								// if(node.tagName === "DIV" && node.id == "global-tweet-dialog" && node.className == "modal-container")
+								// {
+								// 	ConsolePrint(node.id+": Checking for changes in 'display' ...");
+								// 	if(mutation.oldValue === null)
+								// 	{
+								// 		ConsolePrint("was: not visible");
+								// 		if(node.style !== null && node.style.cssText.includes("display: none"))
+								// 		{
+								// 			ConsolePrint("now: visible\n");
+								// 			UpdateDOMRects();
+								// 		}
+								// 		else
+								// 		{
+								// 			ConsolePrint("now: not visible\n");
+								// 		}
+								// 	}
+								// 	else
+								// 	{
+								// 		// previously visible
+								// 		if(!mutation.oldValue.includes("display: none"))
+								// 		{
+								// 			ConsolePrint("was: visible");
+								// 			// now not visible
+								// 			if(node.style !== null && node.style.cssText.includes("display: none"))
+								// 			{
+								// 				ConsolePrint("now: not visible\n");
+								// 				UpdateDOMRects();
+								// 			}
+								// 			else
+								// 			{
+								// 				ConsolePrint("now: visible\n");
+								// 			}
+								// 		}
+								// 		else // previously not visible
+								// 		{
+								// 			ConsolePrint("was: not visible");
+								// 			if(node.style === null)
+								// 			{
+								// 				ConsolePrint("now: visible\n");
+								// 				UpdateDOMRects();
+								// 			}
+								// 			else if(node.style.cssText.includes("display:") && !node.style.cssText.includes("display: none"))
+								// 			{
+								// 				ConsolePrint("now: visible\n");
+								// 				UpdateDOMRects();
+								// 			}
+								// 			else
+								// 			{
+								// 				ConsolePrint("now: not visible\n");
+								// 			}
+								// 		}
+								// 	}
+								// }
 								
 		  					} // END attr == 'style'
 

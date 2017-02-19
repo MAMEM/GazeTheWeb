@@ -66,6 +66,10 @@ public:
     // Get pixel data from one mip map level. Returns whether successful
     bool GetPixelsFromMipMap(int layer, int& rWidth, int& rHeight, std::vector<unsigned char>& rData);
 
+	// TODO (Daniel): Experimenting with 'dirty rects' in CefRenderHandle's OnPaint method
+	void drawRectangle(int width, int height, int x, int y);
+
+
 private:
 
     // Members

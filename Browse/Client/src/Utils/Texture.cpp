@@ -217,3 +217,30 @@ bool Texture::GetPixelsFromMipMap(int layer, int& rWidth, int& rHeight, std::vec
 
 	return false;
 }
+
+// Experimenting with "dirty rects" when receiving the page's image from CEF in order to update certain regions
+void Texture::drawRectangle(int width, int height, int x, int y)
+{
+	// Bind texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, _handle);
+
+	unsigned char black = 'A';
+	std::vector<glm::vec4> img;
+	const int pixels = (width > height) ? width : height;
+
+	for (int i = 0; i < pixels * 4; i++)
+		img.push_back(glm::vec4(0,0,0,0));
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, 3, GL_BGRA, GL_UNSIGNED_BYTE, &img[0]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, 3, height, GL_BGRA, GL_UNSIGNED_BYTE, &img[0]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x+width, y, 3, height, GL_BGRA, GL_UNSIGNED_BYTE, &img[0]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y+height, width, 3, GL_BGRA, GL_UNSIGNED_BYTE, &img[0]);
+
+
+	// Unbind texture
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+}

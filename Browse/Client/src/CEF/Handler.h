@@ -153,15 +153,6 @@ public:
 	// Send log data to LoggingMediator instance in each browser context
 	void SendToJSLoggingMediator(std::string message);
 
-	// TEST: For new twitter page
-	void LoadLocalPage()
-	{
-		for (const auto browser : _browserList)
-		{
-			browser->GetMainFrame()->LoadURL("file:///D://TwitterTest//Twitter.html");
-		}
-	}
-
 private:
 
     /* METHODS */

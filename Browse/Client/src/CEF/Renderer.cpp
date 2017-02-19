@@ -39,7 +39,20 @@ void Renderer::OnPaint(
     if (auto spTexture = _mediator->GetTexture(browser).lock())
     {
         // Fill texture with rendered website
-        spTexture->Fill(width, height, GL_BGRA, (const unsigned char*)buffer);
+        spTexture->Fill(width, height, GL_BGRA, (const unsigned char*) buffer);
+
+
+		// TESTING
+		//if (dirtyRects.size() > 0)
+		//	LogDebug("*** Dirty rects: ***");
+
+		//for (const auto& rect : dirtyRects)
+		//{
+		//	LogDebug(rect.width, " x ", rect.height, " - ", rect.x, ", ", rect.y);
+
+		//	spTexture->drawRectangle(rect.width, rect.height, rect.x, rect.y);
+		//}
+
     }
     else
     {
