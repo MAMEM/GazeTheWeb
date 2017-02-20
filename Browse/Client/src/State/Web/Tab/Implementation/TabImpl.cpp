@@ -218,7 +218,8 @@ void Tab::Update(float tpf, Input& rInput)
 	std::vector<Rect> rects;
 	for (const auto& rDOMNode : _DOMTextLinks)
 	{
-		if (rDOMNode->GetVisibility()) // only proceed if currently visible
+		// TODO(Daniel): Getting rid of visibility attribute
+		if(true) // if (rDOMNode->GetVisibility()) // only proceed if currently visible
 		{
 			for (const auto& rRect : rDOMNode->GetRects())
 			{

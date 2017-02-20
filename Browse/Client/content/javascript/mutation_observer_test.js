@@ -584,35 +584,36 @@ Document.prototype.createDocumentFragment = function() {
 	return fragment;
 };
 
-// argument |applyFunction| has to take a node as only parameter
-function ForEveryChild(parentNode, applyFunction)
-{
-	var depth = '-';
-	ForEveryChild(parentNode, applyFunction, depth);
-}
 
-function ForEveryChild(parentNode, applyFunction, depth)
+function ForEveryChild(parentNode, applyFunction, cancelFunction)
 {
 	var childs = parentNode.childNodes;
+	
+	if(cancelFunction !== undefined)
+	{
+		if(cancelFunction(parentNode))
+		{
+			console.log("Abort active! "+parentNode.className);
+			return;
+		}
+		else
+		{
+			console.log("No abort: "+ parentNode.className);
+		}
+	}
+
+
 	if(childs && applyFunction)
 	{
-		// ConsolePrint(depth+"Executing ForEveryChild...");
-
 		var n = childs.length;
 		for(var i = 0; i < n; i++)
 		{
-			// ConsolePrint(depth+""+(i+1)+". child...");
 			applyFunction(childs[i]);
-			ForEveryChild(childs[i], applyFunction, (depth+'---'));
-			
-		
-			// ConsolePrint(depth+""+(i+1)+". ... finished");
-		}
 
-		// ConsolePrint(depth+"... finished ForEveryChild");
+			ForEveryChild(childs[i], applyFunction, cancelFunction);
+		}
 	}
-	// else
-		// ConsolePrint(depth+" No children / no function");
+
 }
 
 function AnalyzeNode(node)
@@ -630,8 +631,8 @@ function AnalyzeNode(node)
 		if(
 			// computedStyle.getPropertyValue('display') !==  "none" && // NOTE: if display == 'none' -> rect is zero
 			(
-				computedStyle.getPropertyValue('position') == 'fixed' ||
-				node.tagName == "DIV" && node.getAttribute("role") == "dialog"
+				computedStyle.getPropertyValue('position') == 'fixed'
+				//  ||	node.tagName == "DIV" && node.getAttribute("role") == "dialog"	// role == dialog isn't sufficient
 			)
 		) 
 		{

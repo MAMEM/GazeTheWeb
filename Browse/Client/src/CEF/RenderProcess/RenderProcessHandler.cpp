@@ -269,6 +269,12 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			// Get V8 list of floats, representing all Rect coordinates of the given fixedObj
 			CefRefPtr<CefV8Value> rectList = fixedObj->GetValue("getRects")->ExecuteFunction(fixedObj, {});
 
+			if (rectList->GetArrayLength() == 0)
+			{
+				// Abort
+				return true;
+			}
+
 			for (int i = 0; i < rectList->GetArrayLength(); i++)
 			{
 				// Assuming each rect consist of exactly 4 double values
@@ -280,16 +286,10 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 
 			}
 
-			// DEBUG
-			if (rectList->GetArrayLength() == 0)
-			{
-				IPCLogDebug(browser, "No Rect coordinates available for fixedId="+std::to_string(fixedId));
-			}
-			else
-			{
-				// Send response
-				browser->SendProcessMessage(PID_BROWSER, msg);
-			}
+			
+			// Send response
+			browser->SendProcessMessage(PID_BROWSER, msg);
+
 		
 
         	context->Exit();

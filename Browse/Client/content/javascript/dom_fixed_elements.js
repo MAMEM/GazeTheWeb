@@ -52,6 +52,7 @@ function FixedElement(node)
                     if(child.nodeType === 1)
                     {
                         var rects = child.getClientRects();
+                       
                         for(var i = 0, n = rects.length; i < n; i++)
                         {
                             var rect = rects[i];
@@ -76,7 +77,9 @@ function FixedElement(node)
 
                         } // for rects.length
                     } // if nodeType === 1
-                }
+                },
+                // Abort function
+                (node) => { if (node.nodeType === 1) return node.hasAttribute("overflowId"); else return true;}
             ); // ForEveryChild
 
             // Convert DOMRects to [t,l,b,r] float lists and adjust coordinates if zoomed
@@ -96,7 +99,10 @@ function FixedElement(node)
         var changed = (updatedRectsData.length !== n);
         for(var i = 0; i < n && !changed; i++)
         {
-            changed = (updatedRectsData[i] !== this.rects[i]);
+            for(var j = 0; j < 4 && !changed; j++)
+            {
+                 changed = (updatedRectsData[i][j] !== this.rects[i][j]);
+            }
         }
 
         // Save updated rect data in FixedElement objects attribute

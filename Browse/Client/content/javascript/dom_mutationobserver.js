@@ -135,7 +135,7 @@ function DOMObject(node, nodeType)
         this.node = node;
         this.nodeType = nodeType;
         this.rects = AdjustClientRects(this.node.getClientRects());
-        this.visible = true;    // default value, call DOMObj.checkVisibility() after object is created!
+        this.visible = true;   // DEPRECATED ATTRIBUTE
         this.fixed = (node.hasAttribute("childFixedId")) ? true : false;
         this.overflowParent = undefined;
         this.text = "";
@@ -144,7 +144,7 @@ function DOMObject(node, nodeType)
     /* Methods */ 
         // Update member variable for Rects and return true if an update has occured 
         this.updateRects = function(){
-            this.checkVisibility();
+            // this.checkVisibility();
 
             // Get new Rect data
             var updatedRectsData = AdjustClientRects(this.node.getClientRects());
@@ -245,75 +245,19 @@ function DOMObject(node, nodeType)
             }
         };
 
+        // DEPRECATED
         this.setVisibility = function(visible){
             if(this.visible != visible)
             {
-                this.visible = visible;
+                this.visible = true;
                 InformCEF(this, ['update', 'visible']);
-                if(visible) this.updateRects();
+                // if(visible) this.updateRects();
             }
         };
 
+        // DEPRECATED
         this.checkVisibility = function(){
-            var visibility = window.getComputedStyle(this.node, null).getPropertyValue('visibility');
-
-            // Set visibility to hidden if bounding box is of resolution is 0 in any direction
-            var bb = this.node.getBoundingClientRect();
-            if(bb.width == 0 || bb.height == 0) { visibility = 'hidden'; }
-
-
-            // Check if any parent node has opacity near zero, if yes, child (this node) might not be visible
-            var root = this.node;
-            while(root !== document.documentElement && root && root !== undefined)
-            {
-                if(window.getComputedStyle(root, null).getPropertyValue('opacity') < 0.0001)
-                {
-                    visibility = 'hidden';
-                    break;
-                }
-                root = root.parentNode;
-            }
-
-            switch(visibility)
-            {
-                case 'hidden': { this.setVisibility(false); return; }
-                case '':
-                case 'visible': { /*this.setVisibility(true);*/ break; }
-                default:
-                { 
-                    ConsolePrint("DOMObj.checkVisibility() - visibility="+visibility+" currently handled as 'visible'.");
-                    // this.setVisibility(true);
-                }
-            }
-
-            if(this.overflowParent)
-            {
-                var overflowRect = this.overflowParent.getBoundingClientRect();
-                var nodeRect = this.node.getBoundingClientRect();
-
-                // DEBUG
-                // ConsolePrint("Comparing node's bounding box with overflow parent's bounding box...");
-                // ConsolePrint("overflow box: "+overflowRect.top+","+overflowRect.left+","+overflowRect.bottom+","+overflowRect.right);
-                // ConsolePrint("node's   box: "+nodeRect.top+","+nodeRect.left+","+nodeRect.bottom+","+nodeRect.right);
-
-                // Test if overflow box is more than a thin line
-                if( (overflowRect.height > 0 && overflowRect.width > 0) &&
-                    // // Test if node's Rect lies completely inside of overflow Rect, then node is visible
-                    // !(overflowRect.left <= nodeRect.left && overflowRect.right >= nodeRect.right && 
-                    // overflowRect.top <= nodeRect.top && overflowRect.bottom >= nodeRect.bottom))
-                    (overflowRect.top >= nodeRect.bottom || overflowRect.bottom <= nodeRect.top 
-                        || overflowRect.left >= nodeRect.right || overflowRect.right <= nodeRect.left) )
-                    {
-                        this.setVisibility(false);
-                        // DEBUG
-                        // ConsolePrint("Node's box is outside, so it's not visible!");
-                        return;
-                    }
-                // ConsolePrint("Node's box is inside, so node is visible!");
-
-            }
             this.setVisibility(true);
-
         }
 
         this.searchOverflows = function(){
@@ -330,7 +274,6 @@ function DOMObject(node, nodeType)
             {
                 if(this.node.tagName == "TEXTAREA")
                 {
-
                     this.node.value = text;
                 }
                 else if (this.node.tagName == 'INPUT')
@@ -686,7 +629,7 @@ function UpdateChildrensDOMRects(parent)
                 if((domObj = GetDOMObject(nodeType, nodeID)) !== undefined)
                 {
                     domObj.searchOverflows(); 
-                    domObj.checkVisibility(); 
+                    // domObj.checkVisibility(); 
                     domObj.updateRects();
                 } 
             }
