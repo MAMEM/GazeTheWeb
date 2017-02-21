@@ -228,6 +228,8 @@ bool RenderProcessHandler::OnProcessMessageReceived(
     // EXPERIMENTAL: Handle request of fixed elements' coordinates
     if (msgName == "FetchFixedElements")
     {
+		
+
         CefRefPtr<CefV8Context> context = browser->GetMainFrame()->GetV8Context();
 
         if (context->Enter())
@@ -257,31 +259,36 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			}
 			else
 			{
-				IPCLogDebug(browser, "List of fixed elements does not seem to exist yet. Aborting fetching them.");
+				IPCLogDebug(browser, "List of fixed elements 'domFixedElements' does not seem to exist yet. Aborting fetching them.");
 				context->Exit();
 				return true;
 			}
-			
-			
+		
 			int index = 0;
 			args->SetInt(index++, fixedId);
 
 			// Get V8 list of floats, representing all Rect coordinates of the given fixedObj
 			CefRefPtr<CefV8Value> rectList = fixedObj->GetValue("getRects")->ExecuteFunction(fixedObj, {});
 
-			if (rectList->GetArrayLength() == 0)
+			if (rectList->IsUndefined() || rectList->IsNull() || rectList->GetArrayLength() == 0)
 			{
+				//IPCLogDebug(browser, "Fixed element's rects not available. Aborting...");
 				// Abort
+				context->Exit();
 				return true;
 			}
 
 			for (int i = 0; i < rectList->GetArrayLength(); i++)
 			{
+				CefRefPtr<CefV8Value> rect = rectList->GetValue(i);
+				if (rect->IsUndefined() || rect->IsNull())
+					break;
+
 				// Assuming each rect consist of exactly 4 double values
-				for (int j = 0; j < 4; j++)
+				for (int j = 0; j < rect->GetArrayLength(); j++)
 				{
 					// Access rect #i in rectList and j-th coordinate vale [t, l, b, r]
-					args->SetDouble(index++, rectList->GetValue(i)->GetValue(j)->GetDoubleValue());
+					args->SetDouble(index++, rect->GetValue(j)->GetDoubleValue());
 				}
 
 			}
@@ -289,8 +296,6 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			
 			// Send response
 			browser->SendProcessMessage(PID_BROWSER, msg);
-
-		
 
         	context->Exit();
 			return true;
@@ -388,6 +393,9 @@ void RenderProcessHandler::OnContextCreated(
 			// and automatically creates a MutationObserver instance
 			frame->ExecuteJavaScript(_js_dom_mutationobserver, "", 0);
 			frame->ExecuteJavaScript(_js_mutation_observer_test, "", 0);
+
+			IPCLog(browser, "LOADING FIXED ELEMENT JS FILE OVER AND OVER AGAIN");
+			_js_dom_fixed_elements = GetJSCode(DOM_FIXED_ELEMENTS);
 			frame->ExecuteJavaScript(_js_dom_fixed_elements, "", 0);
 
 

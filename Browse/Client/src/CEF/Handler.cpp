@@ -491,15 +491,17 @@ void Handler::SetZoomLevel(CefRefPtr<CefBrowser> browser, bool definitelyChanged
 
 void Handler::UpdatePageResolution(CefRefPtr<CefBrowser> browser)
 {
+	// TODO: Return these values by calling a function (in Renderer Process), get rid of these window variables
+
     // Javascript code for receiving the current page width & height
 	const std::string getPageResolution = "\
-            if(document.documentElement)\
+            if(document.documentElement && document.body !== null && document.body !== undefined)\
 			{\
 			window._pageWidth = document.body.scrollWidth;\
             window._pageHeight = document.body.scrollHeight;\
 			}\
 			else\
-				console.log('Handler::UpdatePageResolution: Could not access document.documentElement!');\
+				console.log('Handler::UpdatePageResolution: Could not access document.documentElement or document.body!');\
             ";
 
     browser->GetMainFrame()->ExecuteJavaScript(getPageResolution, browser->GetMainFrame()->GetURL(), 0);

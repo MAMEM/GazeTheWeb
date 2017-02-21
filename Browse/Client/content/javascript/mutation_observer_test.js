@@ -143,26 +143,9 @@ function AdjustRectCoordinatesToWindow(rect)
 }
 
 
-
-function SaveBoundingRectCoordinates(node)
-{
-	ConsolePrint("WARNING: SaveBoundingRectCoordinates called. DEPRECATED!");
-}
-
-
 // parent & child are 1D arrays of length 4
 function ComputeBoundingRect(parent, child)
 {
-	// OLD APPROACH: Minimum Bounding Box for all children and parent
-	// // if(parent.height == 0 || parent.width == 0)
-	// if(parent[2]-parent[0] == 0 || parent[3]-parent[1] == 0)
-	// 	return child;
-
-	// return [Math.min(parent[0], child[0]),
-	// 		Math.min(parent[1], child[1]),
-	// 		Math.max(parent[2], child[2]),
-	// 		Math.max(parent[3], child[3])];
-
 	// top, left, bottom, right
 
 	var bbs = [];
@@ -181,132 +164,6 @@ function ComputeBoundingRect(parent, child)
 	return bbs;
 }
 
-function ComputeBoundingRectOfAllChilds(node, depth, fixedId)
-{
-	ConsolePrint("WARNING: ComputeBoundingRectOfAllChilds called. DEPRECATED!")
-
-	// Check if node's bounding rectangle is outside of the current union of rectangles in |window.fixed_coordinates[id]|
-	if(node.nodeType == 1) // 1 == ELEMENT_NODE
-	{
-
-		// Add attribute 'fixedId' in order to indicate being a child of a fixed node
-		if(!node.hasAttribute('fixedId'))
-		{
-			node.setAttribute('fixedId', fixedId);
-		}
-
-		// Inform CEF that DOM node is child of a fixed element
-		if(node.hasAttribute('nodeType') || node.hasAttribute("overflowId"))
-		{
-			SetFixationStatus(node, true);
-		}
-
-		var rect = node.getBoundingClientRect();
-
-		// Compare nodes to current bounding rectangle of all child nodes
-		var rect_coords = AdjustRectToZoom(rect);
-
-		// Traverse all child nodes
-		if(node.children && node.children.length > 0)
-		{
-			var n = node.children.length;
-
-			for(var i=0; i < n ; i++)
-			{		
-				// Compare previously computed bounding rectangle with the one computed by traversing the child node
-				rect_coords = 
-					ComputeBoundingRect(
-						rect_coords,
-						ComputeBoundingRectOfAllChilds(node.children.item(i), depth+1, fixedId)
-					);
-			}
-		}
-
-
-		return rect_coords;
-	}
-
-	// Error case
-	return [-1,-1,-1,-1]; // TODO: nodeType != 1 possible? May ruin the whole computation
-}
-
-0// For fixed elements: Traverse subtree starting with given childNode as root
-function UpdateSubtreesBoundingRect(childNode)
-{
-	ConsolePrint("WARNING: UpdateSubtreesBoundingRect called. DEPRECATED!");
-
-	var id = childNode.getAttribute('fixedId');
-
-	// ConsolePrint('Checking #'+id+' for updates...');
-
-	// Read out old rectangle coordinates
-	var old_coords = window.fixed_coordinates[id];
-	// Update bounding rectangles (only for subtree, starting with node where changes happend)
-	var child_coords = ComputeBoundingRectOfAllChilds(childNode, 0, id);
-
-	// ConsolePrint('child: '+child_coords);
-	// ConsolePrint('old  : '+old_coords);
-	var inform_about_changes = false;
-	var parent_rect = old_coords.slice(0, 4);
-
-	// Parent rect hasn't been containing all child rects
-	if(old_coords.length > 4)
-	{
-		var old_child_rect = old_coords.slice(4);
-
-		// Check if new child rect is contained in parent rect
-		child_coords = ComputeBoundingRect(parent_rect, child_coords);
-
-		// Inform CEF that coordinates have to be updated
-		if(!CompareArrays(child_coords, parent_rect) && !CompareArrays(child_coords, old_child_rect))
-		{
-
-			// Update childrens' combined bounding rect 
-			window.fixed_coordinates[id] = parent_rect.concat(child_coords);
-			// alert('new: '+new_coords+'; old: '+old_coords);
-			// ConsolePrint("Updated subtree's bounding rect: "+window.fixed_coordinates[id]);
-
-			inform_about_changes = true;
-		}
-	}
-	else // Parent rect has been containing all child rects
-	{
-		// Check if new child rect is contained in parent rect
-		child_coords = ComputeBoundingRect(parent_rect, child_coords);
-
-		if(!CompareArrays(parent_rect, child_coords))
-		{
-			window.fixed_coordinates[id] = parent_rect.concat(child_coords);
-
-			inform_about_changes = true;
-		}
-		// else: Parent rect still contains updated child rect
-
-
-		// TODO: Rewrite code here.. confusing af. Also, it seems to inform_about_changes, although none have taken place!
-	}
-
-
-	if(inform_about_changes)
-	{
-		var zero = '';
-		if(id < 10) zero = '0';
-		// Tell CEF that fixed node's coordinates were updated
-		ConsolePrint('#fixElem#add#'+zero+id);
-
-		// //DEBUG
-		// ConsolePrint('Updated a fixed element');
-		// for(var i = 0, n = window.fixed_coordinates.length; i < n ; i++)
-		// {
-		// 	var str = (i == id) ? '<---' : '';
-		// 	ConsolePrint(i+': '+window.fixed_coordinates[i]+str);
-		// }
-
-		// DEBUG
-		// ConsolePrint("UpdateSubtreesBoundingRect()");
-	}
-
-}
 
 function CompareArrays(array1, array2)
 {
@@ -390,7 +247,7 @@ document.addEventListener('transitionend', function(event){
 
 	// If first node is fixed element, only call fixed objects update rects method
 	// it triggers rect updates for all its children
-	if((fixedObj = GetFixedElement(tree)) !== undefined && fixedObj !== null)
+	if((fixedObj = GetFixedElementByNode(tree)) !== undefined && fixedObj !== null)
 	{
 		fixedObj.updateRects();
 	}
@@ -425,8 +282,8 @@ document.addEventListener('transitionend', function(event){
 
 				if(child.hasAttribute("fixedId") !== undefined)
 				{
-					var fixedObj = GetFixedElement(child);
-					if(fixedObj !== undefined)
+					var fixedObj = GetFixedElementByNode(child);
+					if(fixedObj !== undefined && fixedObj !== null)
 					{
 						fixedObj.updateRects();
 					}
@@ -585,21 +442,14 @@ Document.prototype.createDocumentFragment = function() {
 };
 
 
-function ForEveryChild(parentNode, applyFunction, cancelFunction)
+function ForEveryChild(parentNode, applyFunction, abortFunction)
 {
 	var childs = parentNode.childNodes;
-	
-	if(cancelFunction !== undefined)
+
+	// Abort further processing of child nodes if abort conditions are met
+	if(abortFunction !== undefined && abortFunction(parentNode))
 	{
-		if(cancelFunction(parentNode))
-		{
-			console.log("Abort active! "+parentNode.className);
-			return;
-		}
-		else
-		{
-			console.log("No abort: "+ parentNode.className);
-		}
+		return;
 	}
 
 
@@ -610,7 +460,7 @@ function ForEveryChild(parentNode, applyFunction, cancelFunction)
 		{
 			applyFunction(childs[i]);
 
-			ForEveryChild(childs[i], applyFunction, cancelFunction);
+			ForEveryChild(childs[i], applyFunction, abortFunction);
 		}
 	}
 
@@ -762,6 +612,8 @@ function AnalyzeNode(node)
 	}
 }
 
+window.debug = false;
+
 // Instantiate and initialize the MutationObserver
 function MutationObserverInit()
 { 
@@ -772,6 +624,9 @@ function MutationObserverInit()
 		  	mutations.forEach(
 		  		function(mutation)
 		  		{
+					if(debug)
+					console.log(mutation.type, "\t", mutation.attributeName, "\t", mutation.oldValue, "\t", mutation.target);
+					
 					var working_time_start = Date.now();
 
 			  		var node;
@@ -780,12 +635,45 @@ function MutationObserverInit()
 		  			{
 		  				node = mutation.target;
 
+						//   if(node.tagName === "SCRIPT")
+						//   	return;
+
 			  			var attr; // attribute name of attribute which has changed
 
 
 		  				if(node.nodeType == 1) // 1 == ELEMENT_NODE
 		  				{
 		  					attr = mutation.attributeName;
+
+							// Automatically fix or unfix children, if given attribute changed
+							if(attr === "fixedid" || attr === "childfixedid")
+							{
+								
+								var id = node.getAttribute(attr);
+								var id_set = (id !== null && id !== undefined);
+
+								// console.log(attr, "\t", id, "\t", id_set);
+								
+								var i = 0, n = node.childNodes.length;
+								for(; i < n; i++)
+								{
+									var child = node.childNodes[i];
+									if(child.nodeType === 1)
+									{
+										if(id_set)
+										{
+											child.setAttribute("childFixedId", id);
+										}
+										else
+										{
+											child.removeAttribute("childFixedId");
+										}
+										
+										SetFixationStatus(child, id_set);
+									}
+								}
+							}
+							
 
 		  					if(attr == 'style' ||  (document.readyState != 'loading' && attr == 'class') )
 		  					{
@@ -815,136 +703,69 @@ function MutationObserverInit()
 								// value assignment, which will be recognised in MutationObserver
 								UpdateNodesRect(node);
 								ForEveryChild(UpdateNodesRect);
-								// console.log("Updated Rects according to changes in 'style' attribute!");
-								ConsolePrint(node.tagName+","+node.className+": Updated Rects according to changes in 'style' attribute!");
-								
 
-
-
-
-								// // TWITTER FIX FOR SENDING TWEETS TO PEOPLE
-								// if(node.tagName === "DIV" && node.id == "global-tweet-dialog" && node.className == "modal-container")
-								// {
-								// 	ConsolePrint(node.id+": Checking for changes in 'display' ...");
-								// 	if(mutation.oldValue === null)
-								// 	{
-								// 		ConsolePrint("was: not visible");
-								// 		if(node.style !== null && node.style.cssText.includes("display: none"))
-								// 		{
-								// 			ConsolePrint("now: visible\n");
-								// 			UpdateDOMRects();
-								// 		}
-								// 		else
-								// 		{
-								// 			ConsolePrint("now: not visible\n");
-								// 		}
-								// 	}
-								// 	else
-								// 	{
-								// 		// previously visible
-								// 		if(!mutation.oldValue.includes("display: none"))
-								// 		{
-								// 			ConsolePrint("was: visible");
-								// 			// now not visible
-								// 			if(node.style !== null && node.style.cssText.includes("display: none"))
-								// 			{
-								// 				ConsolePrint("now: not visible\n");
-								// 				UpdateDOMRects();
-								// 			}
-								// 			else
-								// 			{
-								// 				ConsolePrint("now: visible\n");
-								// 			}
-								// 		}
-								// 		else // previously not visible
-								// 		{
-								// 			ConsolePrint("was: not visible");
-								// 			if(node.style === null)
-								// 			{
-								// 				ConsolePrint("now: visible\n");
-								// 				UpdateDOMRects();
-								// 			}
-								// 			else if(node.style.cssText.includes("display:") && !node.style.cssText.includes("display: none"))
-								// 			{
-								// 				ConsolePrint("now: visible\n");
-								// 				UpdateDOMRects();
-								// 			}
-								// 			else
-								// 			{
-								// 				ConsolePrint("now: not visible\n");
-								// 			}
-								// 		}
-								// 	}
-								// }
+								// TODO: Changes in style may occure when scrolling some elements ... might be a lot of Rect Update calls!
 								
 		  					} // END attr == 'style'
+
 
 							// Changes in attribute 'class' may indicate that bounding rect update is needed, if node is child node of a fixed element
 							if(attr == 'class')
 							{
-								if((fixedObj = GetFixedElement(node)) !== null && fixedObj !== undefined)
+								var parent_updated = false;
+								var childFixedId = node.getAttribute("childFixedId");
+								if(childFixedId !== null && childFixedId !== null)
 								{
-									if(fixedObj.updateRects())
+									var fixedObj = GetFixedElementById(childFixedId);
+									if(fixedObj !== null && fixedObj !== undefined)
+									{
+										fixedObj.updateRects();
+										UpdateChildrensDOMRects(fixedObj.node);
+										parent_updated = true;
+									}
+								}
+
+								if(!parent_updated)
+								{
+									var update_needed = false;
+
+									if((fixedObj = GetFixedElementByNode(node)) !== null && fixedObj !== undefined)
+									{
+										update_needed |= fixedObj.updateRects()
+									}
+
+						
+									// Update DOMObj / OverflowElement Rect, if node is linked to one
+									// TODO: Simple UpdateRects for one DOMObj & OverflowElement?
+									var nodeType = node.getAttribute('nodeType');
+									if(nodeType !== null)
+									{
+										var nodeID = node.getAttribute('nodeID');
+										var domObj = GetDOMObject(nodeType, nodeID);
+										if(domObj !== null && domObj !== undefined)
+										{
+											// domObj.checkVisibility(); // included in updateRects()
+											update_needed |= domObj.updateRects();
+
+										}
+									}
+
+									var overflowId = node.getAttribute("overflowId");
+									if(overflowId !== null)
+									{
+										var overflowObj = GetOverflowElement(overflowId);
+										if(overflowObj !== null && overflowObj !== undefined)
+										{
+											update_needed |= overflowObj.updateRects();
+										}
+									}
+
+									if(update_needed)
 									{
 										UpdateChildrensDOMRects(node);
 									}
-								}
 
-								// Update DOMObj / OverflowElement Rect, if node is linked to one
-								// TODO: Simple UpdateRects for one DOMObj & OverflowElement?
-								var nodeType = node.getAttribute('nodeType');
-								if(nodeType !== null)
-								{
-									var nodeID = node.getAttribute('nodeID');
-									var domObj = GetDOMObject(nodeType, nodeID);
-									if(domObj !== null && domObj !== undefined)
-									{
-										// domObj.checkVisibility(); // included in updateRects()
-										domObj.updateRects();
-
-									}
-								}
-
-								var overflowId = node.getAttribute("overflowId");
-								if(overflowId !== null)
-								{
-									var overflowObj = GetOverflowElement(overflowId);
-									if(overflowObj !== null && overflowObj !== undefined)
-									{
-										overflowObj.updateRects();
-									}
-								}
-
-								// Update Rects and visibility for all children if they are linked to DOMObjects or OverflowElements
-								ForEveryChild(node, 
-									function(child){
-										if(child.nodeType == 1)
-										{	
-											var nodeType = child.getAttribute('nodeType');
-											if(nodeType !== null)
-											{
-												var nodeID = child.getAttribute('nodeID');
-												var domObj = GetDOMObject(nodeType, nodeID);
-												if(domObj !== null && domObj !== undefined)
-												{
-													domObj.updateRects();
-												}
-											}
-											else
-											{
-												var overflowId = child.getAttribute("overflowId");
-												if(overflowId !== null)
-												{
-													var overflowObj = GetOverflowElement(overflowId);
-													if(overflowObj !== null && overflowObj !== undefined)
-													{
-														overflowObj.updateRects();
-													}
-												}
-											}
-										}
-									}
-								); // end of ForEveryChild
+								} // !parent_updated
 							}
 
 		  				} // END node.nodeType == 1
@@ -960,7 +781,8 @@ function MutationObserverInit()
 		  			if(mutation.type == 'childList') // TODO: Called upon each appending of a child node??
 		  			{
 		  				// Check if fixed nodes have been added as child nodes
-			  			var nodes = mutation.addedNodes; // concat(mutation.target.childNodes);
+			  			var nodes = mutation.addedNodes;
+						var parent = mutation.target;
 						
 			  			for(var i=0, n=nodes.length; i < n; i++)
 			  			{
@@ -981,6 +803,19 @@ function MutationObserverInit()
 							
 			  				AnalyzeNode(node);
 
+							if(parent.nodeType === 1 && node.nodeType === 1)
+							{
+								var id = parent.getAttribute("childfixedid");
+								if(id === null || id === undefined)
+								{
+									id = parent.getAttribute("fixedid");
+								}
+								if(id !== null && id !== undefined)
+								{
+									node.setAttribute("childfixedid", id);
+									SetFixationStatus(node, true);
+								}
+							}
 	
 					
 			  			}
@@ -1053,11 +888,6 @@ function MutationObserverInit()
 		
 	// Konfiguration des Observers: alles melden - Änderungen an Daten, Kindelementen und Attributen
 	var config = { attributes: true, childList: true, characterData: true, subtree: true, characterDataOldValue: false, attributeOldValue: true};
-	
-	// DEBUG
-	window.used_document = window.document;
-
-
 
 	// eigentliche Observierung starten und Zielnode und Konfiguration übergeben
 	window.observer.observe(window.document, config);

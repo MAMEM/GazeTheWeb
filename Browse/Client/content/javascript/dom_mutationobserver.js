@@ -570,22 +570,23 @@ function UpdateDOMRects()
 
     // Trigger update of Rects for every domObject
     window.domTextInputs.forEach(
-        function (domObj) { domObj.updateRects(); }
+        function (domObj) { if(domObj !== null && domObj !== undefined) domObj.updateRects(); }
     );
     window.domLinks.forEach(
-        function (domObj) { domObj.updateRects(); }
+        function (domObj) { if(domObj !== null && domObj !== undefined) domObj.updateRects(); }
     );
 
     // ... and all OverflowElements
     window.overflowElements.forEach(
         function (overflowObj) {
-            overflowObj.updateRects(); 
+            if(overflowObj !== null && overflowObj !== undefined)
+                overflowObj.updateRects(); 
         }
     );
 
     // ... and all FixedElements
     window.domFixedElements.forEach(
-        function(fixedObj){ if(fixedObj !== undefined){fixedObj.updateRects();} }
+        function(fixedObj){ if(fixedObj !== undefined && fixedObj !== null){fixedObj.updateRects();} }
     );
 
    
@@ -626,7 +627,8 @@ function UpdateChildrensDOMRects(parent)
             if((nodeType = child.getAttribute("nodeType")) !== undefined && nodeType !== null)
             {
                 var nodeID = child.getAttribute("nodeID");
-                if((domObj = GetDOMObject(nodeType, nodeID)) !== undefined)
+                var domObj = GetDOMObject(nodeType, nodeID);
+                if(domObj !== undefined && domObj !== null)
                 {
                     domObj.searchOverflows(); 
                     // domObj.checkVisibility(); 
@@ -636,7 +638,8 @@ function UpdateChildrensDOMRects(parent)
 
             if((overflowId = child.getAttribute("overflowId")) !== undefined && overflowId !== null)
             {
-                if((overflowObj = GetOverflowElement(overflowId)) !== undefined)
+                var overflowObj = GetOverflowElement(overflowId);
+                if(overflowObj !== undefined && overflowObj !== null)
                 {
                     overflowObj.updateRects();
                 }
@@ -973,7 +976,7 @@ function OverflowElement(node)
                         if((nodeType = child.getAttribute("nodeType")) !== undefined && nodeType !== null)
                         {
                             var nodeID = child.getAttribute("nodeID");
-                            if((domObj = GetDOMObject(nodeType, nodeID)) !== undefined)
+                        if(((domObj = GetDOMObject(nodeType, nodeID)) !== undefined) && domObj !== null)
                             {
                                 domObj.updateRects();
                             } 
@@ -981,7 +984,7 @@ function OverflowElement(node)
 
                         if((overflowId = child.getAttribute("overflowId")) !== undefined && overflowId !== null)
                         {
-                            if((overflowObj = GetOverflowElement(overflowId)) !== undefined)
+                            if(((overflowObj = GetOverflowElement(overflowId)) !== undefined) && overflowObj !== null)
                             {
                                 overflowObj.updateRects();
                             }
