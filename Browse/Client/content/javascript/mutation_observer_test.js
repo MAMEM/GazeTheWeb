@@ -704,7 +704,7 @@ function MutationObserverInit()
 								// 'solution': Trigger rect update if changes in style took place. Direct change in style would be
 								// value assignment, which will be recognised in MutationObserver
 								UpdateNodesRect(node);
-								ForEveryChild(UpdateNodesRect);
+								UpdateChildrensDOMRects(node);
 
 								// TODO: Changes in style may occure when scrolling some elements ... might be a lot of Rect Update calls!
 								
