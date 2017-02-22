@@ -410,6 +410,8 @@ Element.prototype.appendChild = function(child){
 	// DocumentFragment as parent: children disappear when fragment is appended to DOM tree
 	if(child.nodeType === 11)
 	{
+		// console.log("Document Fragment was appended to ", this);
+
 		// ConsolePrint("DocumentFragment as child (appendChild)");
 		for(var i = 0, n = child.childNodes.length; i < n; i++)
 		{
@@ -631,7 +633,7 @@ function MutationObserverInit()
 
 			  		var node;
 					
-		  			if(mutation.type == 'attributes')
+		  			if(mutation.type === 'attributes')
 		  			{
 		  				node = mutation.target;
 
@@ -698,7 +700,7 @@ function MutationObserverInit()
 							if(attr == "style")
 							{
 
-								// Goal: Recognise changes in style.display
+								// Goal: Recognise changes in e.g. style.display
 								// 'solution': Trigger rect update if changes in style took place. Direct change in style would be
 								// value assignment, which will be recognised in MutationObserver
 								UpdateNodesRect(node);
@@ -778,25 +780,32 @@ function MutationObserverInit()
 
 
 
-		  			if(mutation.type == 'childList') // TODO: Called upon each appending of a child node??
+		  			if(mutation.type === 'childList') // TODO: Called upon each appending of a child node??
 		  			{
+						// console.log("type: ", mutation.type,"\ttarget: ", mutation.target, "\tnodeType: ", mutation.target.nodeType);
+
 		  				// Check if fixed nodes have been added as child nodes
 			  			var nodes = mutation.addedNodes;
 						var parent = mutation.target;
 						
 			  			for(var i=0, n=nodes.length; i < n; i++)
 			  			{
-			  				node = nodes[i]; // TODO: lots of data copying here??
 
-							// if(node.nodeType == 1 && node.getAttribute('class') == 'tag-home__wrapper')//'tag-home  tag-home--slide  no-js__hide  js-tag-home')
-							// {
-							// 	ConsolePrint("Observer found shifting root DIV on its appending to DOM");
-							// 	ConsolePrint("Observer: node has "+node.childNodes.length+" already");
-							// }
+			  				node = nodes[i]; // TODO: lots of data copying here??
+							// console.log("-- ", node);
+
+
+							// if(node.nodeType === 11)
+			  					// console.log("Document Fragment got appended to: ", parent);
+
+							// if(mutation.target === "#document-fragment")
+							// 	console.log("### WOW! ###");	  
 						
 							// Mark child nodes of DocumentFragment, in order to analyze their subtrees
 							if(mutation.target.nodeType === 11)
 							{
+								// console.log("Node was appended to a Document Fragment! ", node);
+
 								window.appendedSubtreeRoots.add(node);
 								ForEveryChild(node, function(child){ window.appendedSubtreeRoots.delete(child); });
 							}
@@ -826,10 +835,20 @@ function MutationObserverInit()
 						// 	UpdateChildrensDOMRects(mutation.target);
 							
 						// }
+						if(parent.nodeType === 1)
+						{
+							var fix_id = parent.getAttribute("childFixedId");
+							if(fix_id !== null && fix_id !== undefined)
+							{
+								var fixObj = GetFixedElementById(fix_id);
+								if(fixObj !== null && fixObj !== undefined)
+								{
+									fixObj.updateRects();
+								}
+							}
+						}
 
-
-
-
+						
 
 			  			// Check if fixed nodes have been removed as child nodes and if yes, delete them from list of fixed elements
 			  			var removed_nodes = mutation.removedNodes;
@@ -847,18 +866,14 @@ function MutationObserverInit()
 									RemoveOverflowElement(overflowId);
 								}
 
-								// TODO: Removal of relevant DOM node types??
+								// TODO: How to trigger update/remove used DOM Objects?
 			  				}
-			  			}
 
-						// At least one node was removed from DOM tree
-						if(removed_nodes.length > 0)
-						{
-							// update_starting_time = Date.now();
+							UpdateNodesRect(node);
 							// Trigger Rect Updates after removal of (several) node(s)
-							UpdateChildrensDOMRects(mutation.target);
-							// console.log("UpdateChildrensDOMRects(): "+(Date.now() - update_starting_time)+"ms");
-						}
+							UpdateChildrensDOMRects(node);
+						
+			  			}
 
 
 		  			} // END mutation.type == 'childList'

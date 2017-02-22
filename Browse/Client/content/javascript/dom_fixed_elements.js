@@ -250,35 +250,14 @@ function RemoveFixedElement(node)
         // Delete object in its list slot, slot will be left empty (undefined) at the moment
         if(id >= 0 && id < window.domFixedElements.length)
         {
-
-
             delete window.domFixedElements[id];
 
             ConsolePrint("#fixElem#rem#"+id);
             // console.log("Removed fixedObj with id="+id);
         }
-        // console.log("Removed fixedId, seems like fixedObj might not have be found! id="+id);
-        // console.log("node's fixedId="+node.getAttribute("fixedId"));
+
         node.removeAttribute("fixedId");
         
-        //// INFO: MutationObserver does this now automatically for every child
-        // // Also remove fixed ID from every child
-        // ForEveryChild(node, 
-        //     function(child)
-        //     {
-        //         if(child.nodeType === 1)
-        //         {
-        //             // NOTE: What if there are multiple fixed elements in that hierarchy
-        //             // and only one gets removed? Child might still be fixed?
-        //             // --> Added childFixedId instead
-
-        //             child.removeAttribute("childFixedId");
-
-        //             SetFixationStatus(child, false);
-        //         }
-        //     }
-        // ) // ForEveryChild
-
         // Just in case
         UpdateDOMRects();
 

@@ -155,8 +155,14 @@ function DOMObject(node, nodeType)
             }
 
 
-            // NOTE: GMail fix
-            if(this.nodeType !== 0)
+            // NOTE: GMail fix - cutting out fixed rects, which might cover this rect 
+
+            // TODO: It's not safe to assume another fixed element is *on top*, if this node is part of another
+            // fixed element's children!
+
+            // TODO: Should this cut of rects be applied on C++ side? Why? (e.g. by adding a z-index to each DOM Rect)
+            // Easy to handle 'collisions' on each overlay's rendering frame, annoying in JS when scrolling
+            if(this.nodeType !== 0 && !this.node.hasAttribute("childFixedId"))
             {
                 for(var i = 0; i < domFixedElements.length; i++)
                 {
@@ -202,12 +208,15 @@ function DOMObject(node, nodeType)
 
         // Returns float[4] for each Rect with adjusted coordinates
         this.getRects = function(){
-            if(this.visible && this.overflowParent !== null && this.overflowParent !== undefined && 
-                (id = this.overflowParent.getAttribute("overflowId")) ) 
+            if(this.overflowParent !== null && this.overflowParent !== undefined) 
             {
+                var id = this.overflowParent.getAttribute("overflowId");
                 // TODO: Work on OverflowElemen Objects and their getRects method instead!
                 // var bb_overflow = this.overflowParent.getBoundingClientRect();
                 var obj = GetOverflowElement(id);
+
+                // TODO: Register every Overflow as object (even though not scrollable?)
+
                 if(obj !== null && obj !== undefined )
                 {
                     var oRect = obj.getRects()[0];
@@ -447,7 +456,7 @@ function DOMObject(node, nodeType)
 function CreateDOMObject(node, nodeType)
 {
     // Only add DOMObject for node if there doesn't exist one yet
-    if(!node.hasAttribute('nodeID'))
+    if(!node.hasAttribute('nodeID') && nodeType !== null && nodeType !== "null")
     {
         // Create DOMObject, which encapsulates the given DOM node
         new DOMObject(node, nodeType);
@@ -604,19 +613,31 @@ function UpdateDOMRects()
 // TODO: Use this function in UpdateChildrensDOMRects?
 function UpdateNodesRect(node)
 {
-    var type = node.getAttribute("nodeType");
-    var id = node.getAttribute("nodeID");
-
-    if(type !== undefined && type !== null && id !== undefined && id !== null)
+    if(node.nodeType === 1)
     {
-        var obj = GetDOMObject(type, id);
-        if(obj !== undefined && obj !== null)
-        {
-            obj.updateRects();
-            DrawObject(obj);
-        }
-    }
+        var type = node.getAttribute("nodeType");
+        var id = node.getAttribute("nodeID");
 
+        if(type !== undefined && type !== null && id !== undefined && id !== null)
+        {
+            var obj = GetDOMObject(type, id);
+            if(obj !== undefined && obj !== null)
+            {
+                obj.updateRects();
+            }
+        }
+
+        var overflowId = node.getAttribute("overflowId");
+        if(overflowId !== undefined && overflowId !== null)
+        {
+            var overflowObj = GetOverflowElement(overflowId);
+            if(overflowObj !== undefined && overflowObj !== null)
+            {
+                overflowObj.updateRects();
+            }
+        }
+
+    }
 }
 
 function UpdateChildrensDOMRects(parent)
@@ -667,7 +688,7 @@ function InformCEF(domObj, operation)
         // Encoding uses only first 3 chars of natural language operation
         var op = operation[0].substring(0,3);
 
-        var encodedCommand = 'DOM#'+op+'#'+type+'#'+id+'#';
+        var encodedCommand = 'DOM#'+op+'#'+type+'#'+id+'#'; 
 
         if(op == 'upd')
         {
@@ -716,7 +737,7 @@ function InformCEF(domObj, operation)
     }
     else
     {
-        ConsolePrint("ERROR: No DOMObject given to perform informing of CEF! id: "+id+", type: "+type);
+        // ConsolePrint("ERROR: No DOMObject given to perform informing of CEF! id: "+id+", type: "+type);
     }
 }
 
@@ -742,7 +763,7 @@ function GetDOMObjectList(nodeType)
         // NOTE: Add more cases if new nodeTypes are added
         default:
         {
-            ConsolePrint('ERROR: No DOMObjectList for nodeType='+nodeType+' exists!');
+            // ConsolePrint('ERROR: No DOMObjectList for nodeType='+nodeType+' exists!');
             return undefined;
         }
     }
@@ -762,11 +783,41 @@ function GetDOMObject(nodeType, nodeID)
     // Catch error case
     if(targetList === undefined || nodeID === undefined || nodeID === null || nodeID >= targetList.length)
     {
-        ConsolePrint('ERROR: Node with id='+nodeID+' does not exist for type='+nodeType+'!');
+        // ConsolePrint('ERROR: Node with id='+nodeID+' does not exist for type='+nodeType+'!');
         return null;
     }
 
-    return targetList[nodeID];
+    var obj = targetList[nodeID];
+    if(obj === undefined)
+        return null
+    else
+        return obj;
+}
+
+function RemoveDOMObject(node)
+{
+    if(node.nodeType === 1)
+    {
+        var type = node.getAttribute("nodeType");
+        var id = node.getAttribute("nodeID");
+
+        var obj = GetDOMObject(type, id);
+        if(obj !== null && obj !== undefined)
+        {
+            obj.updateRects();
+            // console.log("Updated rects in ordner to let rect vanish, due to removal of object!");
+        }
+
+
+        // var targetList = GetDOMObjectList(type, id);
+        // if(id !== null && id !== undefined && targetList !== undefined && id > 0 && id < targetList.length)
+        // {
+        //     delete targetList[id];
+        //     ConsolePrint('DOM#rem#'+type+'#'+id+'#'); 
+        //     console.log("Successfully removed DOMObject with tpye ", type, " and id ",id);
+        // }
+        
+    }
 }
 
 // ATTENTION: V8 doesn't seem to work with polymorphism of functions!
@@ -1051,11 +1102,11 @@ function CreateOverflowElement(node)
 // Called from CEF Handler
 function GetOverflowElement(id)
 {
-    if(id < window.overflowElements.length && id >= 0)
+    if(id !== null && id !== undefined && id < window.overflowElements.length && id >= 0)
         return window.overflowElements[id];     // This may return undefined
     else
     {
-        ConsolePrint("ERROR in GetOverflowElement: id="+id+", valid id should be in [0, "+(window.overflowElements.length-1)+"]!");
+        // ConsolePrint("ERROR in GetOverflowElement: id="+id+", valid id should be in [0, "+(window.overflowElements.length-1)+"]!");
         return null;
     }
         

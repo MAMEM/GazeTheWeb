@@ -313,6 +313,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 
 		// Generic fetching of node data of 'nodeID' for a specific node type 'type'
 		CefRefPtr<CefListValue> args = msg->GetArgumentList();
+
 		int type = args->GetInt(0);
 		int nodeID = args->GetInt(1);
 
@@ -480,7 +481,7 @@ CefRefPtr<CefProcessMessage> RenderProcessHandler::UnwrapDOMTextInput(
 	CefRefPtr<CefProcessMessage> result = CefProcessMessage::Create("CreateDOMTextInput");
 	CefRefPtr<CefListValue> args = result->GetArgumentList();
 
-	if (domObj && !domObj->IsNull() && !domObj->IsUndefined())
+	if (!domObj->IsNull() && !domObj->IsUndefined())
 	{
 		if (context->Enter())
 		{
@@ -518,7 +519,7 @@ CefRefPtr<CefProcessMessage> RenderProcessHandler::UnwrapDOMLink(
 	CefRefPtr<CefProcessMessage> result = CefProcessMessage::Create("CreateDOMLink");
 	CefRefPtr<CefListValue> args = result->GetArgumentList();
 
-	if (domObj && !domObj->IsNull() && !domObj->IsUndefined())
+	if (!domObj->IsNull() && !domObj->IsUndefined())
 	{
 		if (context->Enter())
 		{
