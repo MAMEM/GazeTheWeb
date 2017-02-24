@@ -258,7 +258,7 @@ public:
     virtual void SetFavIconURL(std::string url) { _favIconUrl = url; }
 
     // Setter of URL. Does not load it. Should be called by CefMediator only
-	virtual void SetURL(std::string URL) { _url = URL; }
+	virtual void SetURL(std::string URL);
 
     // Setter for can go back / go forward
     virtual void SetCanGoBack(bool canGoBack) { _canGoBack = canGoBack;	}
@@ -440,9 +440,14 @@ private:
 	// Vector with DOMTextLinks
 	std::vector<std::shared_ptr<DOMNode> >_DOMTextLinks;
 
+
+	// Vector with DOMSelectFields
+	std::vector<std::shared_ptr<DOMNode> > _DOMSelectFields;
+
 	// Map nodeID to node itself, in order to access it when it has to be updated
 	std::map<int, std::shared_ptr<DOMNode> > _TextLinkMap;
 	std::map<int, std::shared_ptr<DOMNode> > _TextInputMap;
+	std::map<int, std::shared_ptr<DOMNode> > _SelectFieldMap;
 
     // Web view in which website is rendered and displayed
     std::unique_ptr<WebView> _upWebView;

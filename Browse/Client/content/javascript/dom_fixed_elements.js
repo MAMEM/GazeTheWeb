@@ -30,7 +30,8 @@ function FixedElement(node)
 
         // NOTE: Fix for GMail. There exist DIVs without any children, whose rects cover the whole page and they are fixed
         // although this does not seem to influence anything
-        if(this.node.tagName === "DIV" && this.node.children.length === 0)
+        if((this.node.tagName === "DIV" && this.node.children.length === 0)
+            || ( window.getComputedStyle(this.node, null).getPropertyValue("display") === "none")) // 9gag inactivity overlay
         {
             this.rects = [[0,0,0,0]];
         }
@@ -44,14 +45,17 @@ function FixedElement(node)
                 domRectList.push(rects[i]);
             }
             
-
+            
             // Check if child is already contained in one of the DOMRects
             ForEveryChild(this.node,
                 function(child)
                 {
-                    if(child.nodeType === 1)
+                    if(child.nodeType === 1 && 
+                        window.getComputedStyle(child, null).getPropertyValue("opacity") !== "0" &&
+                        window.getComputedStyle(child, null).getPropertyValue("visibility") !== "hidden")
                     {
                         var rects = child.getClientRects();
+                       
                         for(var i = 0, n = rects.length; i < n; i++)
                         {
                             var rect = rects[i];
@@ -76,6 +80,21 @@ function FixedElement(node)
 
                         } // for rects.length
                     } // if nodeType === 1
+                },
+                // Abort function
+                (node) => { 
+                    if (node.nodeType === 1)
+                    {
+                        // Skip children if invisible
+                        if(window.getComputedStyle(node, null).getPropertyValue("opacity") === 0)
+                            return true;
+                        // ... or overflow element, which would cover children anyway outside of rect
+                        var css_overflow = window.getComputedStyle(node, null).getPropertyValue("overflow");
+                         return (node.hasAttribute("overflowId") 
+                         || ( css_overflow !== null && css_overflow !== "visible")
+                         ); 
+                    } 
+                    else return true;
                 }
             ); // ForEveryChild
 
@@ -87,7 +106,7 @@ function FixedElement(node)
                 }
             );
         }
-
+        
 
 
 
@@ -96,7 +115,10 @@ function FixedElement(node)
         var changed = (updatedRectsData.length !== n);
         for(var i = 0; i < n && !changed; i++)
         {
-            changed = (updatedRectsData[i] !== this.rects[i]);
+            for(var j = 0; j < 4 && !changed; j++)
+            {
+                 changed = (updatedRectsData[i][j] !== this.rects[i][j]);
+            }
         }
 
         // Save updated rect data in FixedElement objects attribute
@@ -108,6 +130,7 @@ function FixedElement(node)
             // var debug = (window.domFixedElements[this.id] === undefined) ? "undefined" : "ok";
             ConsolePrint("#fixElem#add#"+this.id+"#");
             //   ConsolePrint("-----> #fixElem#add#"+this.id); // DEBUG
+
 
             // Give feedback if other rects might have to get updated too
             return true;
@@ -127,34 +150,37 @@ function FixedElement(node)
 
     this.node.setAttribute("fixedId", this.id);
     
-    // Note corresponding fixed element ID in an attribute
-    var scope_id = this.id;
-    ForEveryChild(this.node, function(child)
-    { 
-        if(child.nodeType === 1) 
-        {
-            child.setAttribute("childFixedId", scope_id);
+    //// INFO: MutationObserver now automatically sets all attributes for children!
+    // // Note corresponding fixed element ID in an attribute
+    // var scope_id = this.id;
+    // ForEveryChild(this.node, function(child)
+    // { 
+    //     if(child.nodeType === 1) 
+    //     {
+    //         child.setAttribute("childFixedId", scope_id);
 
-            // If child corresponds to DOMObject or OverflowElement, inform about its fixation
-            SetFixationStatus(child, true);
-        }
-    });
+    //         // If child corresponds to DOMObject or OverflowElement, inform about its fixation
+    //         SetFixationStatus(child, true);
+    //     }
+    // });
 
     // Update fixed Rects and inform CEF if changes happened
     this.updateRects();
 }
 
 // TODO: Other Getters for DOM objects work with numbers, not with nodes. Rename this one?
-function GetFixedElement(node)
+// INFO: Added another Getter working with ID instead, temporary solution?
+function GetFixedElementByNode(node)
 {
     if(node.nodeType === 1)
     {
         var fixedId = node.getAttribute("fixedId");
-        if(fixedId >= 0 && fixedId < window.domFixedElements.length)
+        if(fixedId !== null && fixedId !== undefined && 
+            fixedId >= 0 && fixedId < window.domFixedElements.length)
         {
             return window.domFixedElements[fixedId];
         }
-        else if(fixedId !== null)
+        else if(fixedId !== null && fixedId !== undefined)
         {
             console.log("Fetched fixedId, which doesn't seem to be supported: id="+fixedId);
            
@@ -163,9 +189,22 @@ function GetFixedElement(node)
     // default return value
     return undefined;
 }
+function GetFixedElementById(id)
+{
+    if(id !== null && id >= 0 && id < window.domFixedElements.length)
+    {
+        return window.domFixedElements[id];
+    }
+    else
+    {
+        console.log("Couldn't find FixedElement with id="+id);
+    }
+}
 
 function AddFixedElement(node)
 {
+    // return false; // DEBUG
+
     if(node.nodeType === 1)
     {
         if(node.hasAttribute("childFixedId"))
@@ -176,8 +215,9 @@ function AddFixedElement(node)
         if(node.hasAttribute("fixedId"))
         {
             var id = node.getAttribute("fixedId")
+            var fixedObj = window.domFixedElements[id];
             // Trigger rect updates of whole subtree, just in case
-            if((fixedObj = window.domFixedElements[id]) !== undefined)
+            if(fixedObj !== undefined && fixedObj !== null)
             {
                 fixedObj.updateRects();
             }
@@ -202,7 +242,7 @@ function AddFixedElement(node)
 
 function RemoveFixedElement(node)
 {
-    if((fixedObj = GetFixedElement(node)) !== null && fixedObj !== undefined)
+    if((fixedObj = GetFixedElementByNode(node)) !== null && fixedObj !== undefined)
     {
         // Needed for output at the end
         var id = fixedObj.id;
@@ -210,35 +250,14 @@ function RemoveFixedElement(node)
         // Delete object in its list slot, slot will be left empty (undefined) at the moment
         if(id >= 0 && id < window.domFixedElements.length)
         {
-
-
             delete window.domFixedElements[id];
 
             ConsolePrint("#fixElem#rem#"+id);
             // console.log("Removed fixedObj with id="+id);
         }
-        // console.log("Removed fixedId, seems like fixedObj might not have be found! id="+id);
-        // console.log("node's fixedId="+node.getAttribute("fixedId"));
+
         node.removeAttribute("fixedId");
         
-
-        // Also remove fixed ID from every child
-        ForEveryChild(node, 
-            function(child)
-            {
-                if(child.nodeType === 1)
-                {
-                    // NOTE: What if there are multiple fixed elements in that hierarchy
-                    // and only one gets removed? Child might still be fixed?
-                    // --> Added childFixedId instead
-
-                    child.removeAttribute("childFixedId");
-
-                    SetFixationStatus(child, false);
-                }
-            }
-        ) // ForEveryChild
-
         // Just in case
         UpdateDOMRects();
 

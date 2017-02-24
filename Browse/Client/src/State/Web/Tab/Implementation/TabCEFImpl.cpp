@@ -9,6 +9,7 @@
 #include "src/Setup.h"
 #include "src/State/Web/Managers/HistoryManager.h"
 #include "src/State/Web/Tab/Pipelines/JSDialogPipeline.h"
+#include "src/Singletons/LabStreamMailer.h"
 #include <algorithm>
 
 void Tab::GetWebRenderResolution(int& rWidth, int& rHeight) const
@@ -19,6 +20,12 @@ void Tab::GetWebRenderResolution(int& rWidth, int& rHeight) const
 	auto webViewInGUI = eyegui::getAbsolutePositionAndSizeOfElement(_pPanelLayout, "web_view");
 	rWidth = webViewInGUI.width * setup::WEB_VIEW_RESOLUTION_SCALE;
 	rHeight = webViewInGUI.height * setup::WEB_VIEW_RESOLUTION_SCALE;
+}
+
+void Tab::SetURL(std::string URL)
+{
+	_url = URL;
+	LabStreamMailer::instance().Send("Loading URL: " + _url);
 }
 
 void Tab::ReceiveFaviconBytes(std::unique_ptr< std::vector<unsigned char> > upData, int width, int height)
@@ -136,6 +143,17 @@ void Tab::AddDOMNode(std::shared_ptr<DOMNode> spNode)
 		break;
 	}
 
+	case DOMNodeType::SelectField:
+	{
+		// Just add it to vector
+		_DOMSelectFields.push_back(spNode);
+
+		// Add node to ID->node map
+		_SelectFieldMap.emplace(spNode->GetNodeID(), spNode);
+
+		break;
+	}
+
 	}
 }
 
@@ -207,6 +225,12 @@ std::weak_ptr<DOMNode> Tab::GetDOMNode(DOMNodeType type, int nodeID)
 		case DOMNodeType::TextLink: {
 			return (_TextLinkMap.find(nodeID) != _TextLinkMap.end()) ? _TextLinkMap.at(nodeID) : std::weak_ptr<DOMNode>();
 		}
+		case DOMNodeType::SelectField: {
+			return (_TextLinkMap.find(nodeID) != _TextLinkMap.end()) ? _TextLinkMap.at(nodeID) : std::weak_ptr<DOMNode>();
+		}
+		default: {
+			LogDebug("Tab: Unknown DOMNodeType in Tab::GetDOMNode!");
+		};
 	}
 	return std::weak_ptr<DOMNode>();
 }

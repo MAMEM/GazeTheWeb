@@ -7,6 +7,7 @@
 #include "src/State/Web/Tab/Tab.h"
 #include "src/CEF/Mediator.h"
 #include "src/Utils/Texture.h"
+#include "src/Singletons/LabStreamMailer.h"
 
 void Tab::PushBackPipeline(std::unique_ptr<Pipeline> upPipeline)
 {
@@ -41,6 +42,8 @@ void Tab::EmulateLeftMouseButtonClick(double x, double y, bool visualize, bool i
 	{
 		ConvertToCEFPixel(x, y);
 	}
+
+	LabStreamMailer::instance().Send("Click performed");
 
 	// Tell mediator about the click
 	_pCefMediator->EmulateLeftMouseButtonClick(this, x, y);
@@ -99,6 +102,14 @@ std::string Tab::GetClipboardText() const
 
 void Tab::InputTextData(int64 frameID, int nodeID, std::string text, bool submit)
 {
+	if (submit)
+	{
+		LabStreamMailer::instance().Send("Submitting Text: " + text);
+	}
+	else
+	{
+		LabStreamMailer::instance().Send("Inputting Text: " + text);
+	}
 	_pCefMediator->InputTextData(this, frameID, nodeID, text, submit);
 }
 

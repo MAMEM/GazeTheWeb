@@ -77,13 +77,29 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			CefRefPtr<CefV8Value> input_function = window->GetValue("PerformTextInput");
 			if (input_function->IsFunction())
 			{
-				CefRefPtr<CefV8Value> return_value = 
+				CefRefPtr<CefV8Value> return_value = // TODO: Is Null at the moment?
 					input_function->ExecuteFunction(
 						input_function,				// function to be called
 						{ inputId, text, submit}	// input for called function
 					);
+				// TODO: 'submit' not used anymore in use in Javascript!
 
-				IPCLogDebug(browser, "Did execution of text input succeed? " + std::to_string(return_value->GetBoolValue()));
+				msg = CefProcessMessage::Create("SubmitInput");
+				msg->GetArgumentList()->SetBool(0, submit->GetBoolValue());
+				double x = 0, y = 0;
+				if (!return_value->IsNull() && !return_value->IsUndefined() && !return_value->IsBool())
+				{
+					x = return_value->GetValue("x")->GetDoubleValue();
+					y = return_value->GetValue("y")->GetDoubleValue();
+					IPCLogDebug(browser, "Found center coordinates for click emulation: " + std::to_string(x) + ", " + std::to_string(y));
+				}
+				else
+				{
+					IPCLogDebug(browser, "Return value was null! Couldn't find rect's center...");
+				}
+				msg->GetArgumentList()->SetInt(1, x);
+				msg->GetArgumentList()->SetInt(2, y);
+				browser->SendProcessMessage(PID_BROWSER, msg);
 			}
 
 
@@ -212,6 +228,8 @@ bool RenderProcessHandler::OnProcessMessageReceived(
     // EXPERIMENTAL: Handle request of fixed elements' coordinates
     if (msgName == "FetchFixedElements")
     {
+		
+
         CefRefPtr<CefV8Context> context = browser->GetMainFrame()->GetV8Context();
 
         if (context->Enter())
@@ -241,39 +259,46 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			}
 			else
 			{
-				IPCLogDebug(browser, "List of fixed elements does not seem to exist yet. Aborting fetching them.");
+				IPCLogDebug(browser, "List of fixed elements 'domFixedElements' does not seem to exist yet. Aborting fetching them.");
 				context->Exit();
 				return true;
 			}
-			
-			
+		
 			int index = 0;
 			args->SetInt(index++, fixedId);
 
 			// Get V8 list of floats, representing all Rect coordinates of the given fixedObj
 			CefRefPtr<CefV8Value> rectList = fixedObj->GetValue("getRects")->ExecuteFunction(fixedObj, {});
 
+			if (rectList->IsUndefined() || rectList->IsNull() || rectList->GetArrayLength() == 0)
+			{
+				//IPCLogDebug(browser, "Fixed element's rects not available. Aborting...");
+				// Abort
+				context->Exit();
+				return true;
+			}
+
 			for (int i = 0; i < rectList->GetArrayLength(); i++)
 			{
+				CefRefPtr<CefV8Value> rect = rectList->GetValue(i);
+				if (rect->IsUndefined() || rect->IsNull())
+					break;
+
 				// Assuming each rect consist of exactly 4 double values
-				for (int j = 0; j < 4; j++)
+				for (int j = 0; j < rect->GetArrayLength(); j++)
 				{
 					// Access rect #i in rectList and j-th coordinate vale [t, l, b, r]
-					args->SetDouble(index++, rectList->GetValue(i)->GetValue(j)->GetDoubleValue());
+					args->SetDouble(index++, rect->GetValue(j)->GetDoubleValue());
 				}
 
 			}
 
-			// DEBUG
-			if (rectList->GetArrayLength() == 0)
-			{
-				IPCLogDebug(browser, "No Rect coordinates available for fixedId="+std::to_string(fixedId));
-			}
-      
+			
 			// Send response
 			browser->SendProcessMessage(PID_BROWSER, msg);
 
         	context->Exit();
+			return true;
         }
     }
 
@@ -288,6 +313,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 
 		// Generic fetching of node data of 'nodeID' for a specific node type 'type'
 		CefRefPtr<CefListValue> args = msg->GetArgumentList();
+
 		int type = args->GetInt(0);
 		int nodeID = args->GetInt(1);
 
@@ -368,6 +394,9 @@ void RenderProcessHandler::OnContextCreated(
 			// and automatically creates a MutationObserver instance
 			frame->ExecuteJavaScript(_js_dom_mutationobserver, "", 0);
 			frame->ExecuteJavaScript(_js_mutation_observer_test, "", 0);
+
+			IPCLog(browser, "LOADING FIXED ELEMENT JS FILE OVER AND OVER AGAIN");
+			_js_dom_fixed_elements = GetJSCode(DOM_FIXED_ELEMENTS);
 			frame->ExecuteJavaScript(_js_dom_fixed_elements, "", 0);
 
 
@@ -452,7 +481,7 @@ CefRefPtr<CefProcessMessage> RenderProcessHandler::UnwrapDOMTextInput(
 	CefRefPtr<CefProcessMessage> result = CefProcessMessage::Create("CreateDOMTextInput");
 	CefRefPtr<CefListValue> args = result->GetArgumentList();
 
-	if (domObj && !domObj->IsNull() && !domObj->IsUndefined())
+	if (!domObj->IsNull() && !domObj->IsUndefined())
 	{
 		if (context->Enter())
 		{
@@ -490,7 +519,7 @@ CefRefPtr<CefProcessMessage> RenderProcessHandler::UnwrapDOMLink(
 	CefRefPtr<CefProcessMessage> result = CefProcessMessage::Create("CreateDOMLink");
 	CefRefPtr<CefListValue> args = result->GetArgumentList();
 
-	if (domObj && !domObj->IsNull() && !domObj->IsUndefined())
+	if (!domObj->IsNull() && !domObj->IsUndefined())
 	{
 		if (context->Enter())
 		{

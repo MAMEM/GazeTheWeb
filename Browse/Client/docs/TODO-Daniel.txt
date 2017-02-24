@@ -2,6 +2,10 @@
 	?
 
 ### EXTRA ###
+
+%%% Find a way to observe changes in specific CSS style attributes, especially 'display' when set to none!
+%%% see Twitter, posting tweets to other people!
+
 Pause Tab Rendering / Script Execution
   - Useful during zooming at click emulation 
   	--> You can not really stop any script, but you might block the whole renderer thread :D (like JS dialogs do)

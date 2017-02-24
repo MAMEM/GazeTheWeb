@@ -218,7 +218,8 @@ void Tab::Update(float tpf, Input& rInput)
 	std::vector<Rect> rects;
 	for (const auto& rDOMNode : _DOMTextLinks)
 	{
-		if (rDOMNode->GetVisibility()) // only proceed if currently visible
+		// TODO(Daniel): Getting rid of visibility attribute
+		if(true) // if (rDOMNode->GetVisibility()) // only proceed if currently visible
 		{
 			for (const auto& rRect : rDOMNode->GetRects())
 			{
@@ -305,7 +306,7 @@ void Tab::Update(float tpf, Input& rInput)
         // STANDARD GUI IS VISIBLE
 
         // Gaze mouse
-        if(_gazeMouse)
+        if(_gazeMouse && !(_pMaster->IsPaused()))
         {
             EmulateMouseCursor(tabInput.webViewPixelGazeX, tabInput.webViewPixelGazeY);
         }
@@ -746,7 +747,7 @@ void Tab::DrawDebuggingOverlay() const
 		// Render rects
 		for (const auto rRect : rDOMTrigger->GetDOMRects())
 		{
-			if (rDOMTrigger->GetDOMVisibility())
+			if (true)//rDOMTrigger->GetDOMVisibility())
 			{
 				if (!rDOMTrigger->GetDOMIsPasswordField())
 				{
@@ -758,8 +759,6 @@ void Tab::DrawDebuggingOverlay() const
 					renderRect(rRect, rDOMTrigger->GetDOMFixed());
 					_upDebugRenderItem->GetShader()->UpdateValue("color", DOM_TRIGGER_DEBUG_COLOR);
 				}
-
-
 			}
 				
 		}
@@ -794,6 +793,20 @@ void Tab::DrawDebuggingOverlay() const
 		if(rDOMTextLink->GetRects().size() == 2 && rDOMTextLink->GetVisibility())
 			renderRect(rDOMTextLink->GetRects()[1], rDOMTextLink->GetFixed());
 	}
+
+	// ### SELECT FIELDS ###
+	// Set rendering up for DOMSelectFields
+	_upDebugRenderItem->GetShader()->UpdateValue("color", DOM_SELECT_FIELD_DEBUG_COLOR);
+	for (const auto& rDOMSelectField : _DOMSelectFields)
+	{
+		// Render rects
+		for (const auto rRect : rDOMSelectField->GetRects())
+		{
+			if (rDOMSelectField->GetVisibility())
+				renderRect(rRect, rDOMSelectField->GetFixed());
+		}
+	}
+
 
 	// ### FIXED ELEMENTS ###
 

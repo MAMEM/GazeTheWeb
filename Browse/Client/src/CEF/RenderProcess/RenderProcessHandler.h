@@ -64,7 +64,7 @@ private:
 	const std::string _js_favicon_copy_img_bytes_to_v8array = GetJSCode(FAVICON_COPY_IMG_BYTES_TO_V8ARRAY);
 	const std::string _js_mutation_observer_test = GetJSCode(MUTATION_OBSERVER_TEST);
 	const std::string _js_dom_mutationobserver = GetJSCode(DOM_MUTATIONOBSERVER);
-	const std::string _js_dom_fixed_elements = GetJSCode(DOM_FIXED_ELEMENTS);
+	std::string _js_dom_fixed_elements = GetJSCode(DOM_FIXED_ELEMENTS);
 
     // Include CEF'S default reference counting implementation
     IMPLEMENT_REFCOUNTING(RenderProcessHandler);

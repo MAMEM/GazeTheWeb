@@ -24,13 +24,13 @@ namespace setup
 	static const int TEXT_SELECTION_MARGIN = 4; // area which is selected before / after zoom coordinate in CEFPixels
 
     // Debugging
-    static const bool LOG_DEBUG_MESSAGES = false;
-    static const bool DRAW_DEBUG_OVERLAY = false;
+    static const bool LOG_DEBUG_MESSAGES = true;
+    static const bool DRAW_DEBUG_OVERLAY = true;
 
     // Experiments
     static const std::string LAB_STREAM_OUTPUT_NAME = "BrowserOutputStream";
     static const std::string LAB_STREAM_OUTPUT_SOURCE_ID = "myuniquesourceid23443";
-	static const std::string LAB_STREAM_INPUT_NAME = "MiddlewareStream"; // "MiddlewareStream"; // may be set to same value as LAB_STREAM_OUTPUT_NAME to receive own events for debugging purposes
+	static const std::string LAB_STREAM_INPUT_NAME = "MiddlewareStream"; // may be set to same value as LAB_STREAM_OUTPUT_NAME to receive own events for debugging purposes
 	static const bool LOG_INTERACTIONS = false;
 
     // Other

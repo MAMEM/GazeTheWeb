@@ -6,6 +6,7 @@
 window.domLinks = [];
 window.domTextInputs = [];
 window.overflowElements = [];
+window.domSelectFields = [];
 
 
 function PerformTextInput(inputId, text, submit)
@@ -16,8 +17,7 @@ function PerformTextInput(inputId, text, submit)
         // DEBUG
         console.log("Text to input: "+text);
 
-        domObj.setTextInput(text, submit);
-        return true;
+        return domObj.setTextInput(text, submit);
     }
     else return false;
 }
@@ -135,7 +135,7 @@ function DOMObject(node, nodeType)
         this.node = node;
         this.nodeType = nodeType;
         this.rects = AdjustClientRects(this.node.getClientRects());
-        this.visible = true;    // default value, call DOMObj.checkVisibility() after object is created!
+        this.visible = true;   // DEPRECATED ATTRIBUTE
         this.fixed = (node.hasAttribute("childFixedId")) ? true : false;
         this.overflowParent = undefined;
         this.text = "";
@@ -144,7 +144,7 @@ function DOMObject(node, nodeType)
     /* Methods */ 
         // Update member variable for Rects and return true if an update has occured 
         this.updateRects = function(){
-            this.checkVisibility();
+            // this.checkVisibility();
 
             // Get new Rect data
             var updatedRectsData = AdjustClientRects(this.node.getClientRects());
@@ -155,8 +155,14 @@ function DOMObject(node, nodeType)
             }
 
 
-            // NOTE: GMail fix
-            if(this.nodeType !== 0)
+            // NOTE: GMail fix - cutting out fixed rects, which might cover this rect 
+
+            // TODO: It's not safe to assume another fixed element is *on top*, if this node is part of another
+            // fixed element's children!
+
+            // TODO: Should this cut of rects be applied on C++ side? Why? (e.g. by adding a z-index to each DOM Rect)
+            // Easy to handle 'collisions' on each overlay's rendering frame, annoying in JS when scrolling
+            if(this.nodeType !== 0 && !this.node.hasAttribute("childFixedId"))
             {
                 for(var i = 0; i < domFixedElements.length; i++)
                 {
@@ -183,10 +189,16 @@ function DOMObject(node, nodeType)
             var equal = CompareClientRectsData(updatedRectsData, this.rects);
 
             // Rect updates occured and new Rect data is accessible
-            if(!equal && updatedRectsData !== undefined)
+            if(updatedRectsData !== null && updatedRectsData !== undefined && !equal)
             {
                 this.rects = updatedRectsData;
                 InformCEF(this, ['update', 'rects']); 
+            }
+
+            // Also, update text content if input field
+            if(this.nodeType == 0)   // Only needed for text inputs
+            {
+                this.updateText();
             }
             
             return !equal;
@@ -196,12 +208,15 @@ function DOMObject(node, nodeType)
 
         // Returns float[4] for each Rect with adjusted coordinates
         this.getRects = function(){
-            if(this.visible && this.overflowParent !== null && this.overflowParent !== undefined && 
-                (id = this.overflowParent.getAttribute("overflowId")) ) 
+            if(this.overflowParent !== null && this.overflowParent !== undefined) 
             {
+                var id = this.overflowParent.getAttribute("overflowId");
                 // TODO: Work on OverflowElemen Objects and their getRects method instead!
                 // var bb_overflow = this.overflowParent.getBoundingClientRect();
                 var obj = GetOverflowElement(id);
+
+                // TODO: Register every Overflow as object (even though not scrollable?)
+
                 if(obj !== null && obj !== undefined )
                 {
                     var oRect = obj.getRects()[0];
@@ -239,75 +254,19 @@ function DOMObject(node, nodeType)
             }
         };
 
+        // DEPRECATED
         this.setVisibility = function(visible){
             if(this.visible != visible)
             {
-                this.visible = visible;
+                this.visible = true;
                 InformCEF(this, ['update', 'visible']);
-                if(visible) this.updateRects();
+                // if(visible) this.updateRects();
             }
         };
 
+        // DEPRECATED
         this.checkVisibility = function(){
-            var visibility = window.getComputedStyle(this.node, null).getPropertyValue('visibility');
-
-            // Set visibility to hidden if bounding box is of resolution is 0 in any direction
-            var bb = this.node.getBoundingClientRect();
-            if(bb.width == 0 || bb.height == 0) { visibility = 'hidden'; }
-
-
-            // Check if any parent node has opacity near zero, if yes, child (this node) might not be visible
-            var root = this.node;
-            while(root !== document.documentElement && root && root !== undefined)
-            {
-                if(window.getComputedStyle(root, null).getPropertyValue('opacity') < 0.0001)
-                {
-                    visibility = 'hidden';
-                    break;
-                }
-                root = root.parentNode;
-            }
-
-            switch(visibility)
-            {
-                case 'hidden': { this.setVisibility(false); return; }
-                case '':
-                case 'visible': { /*this.setVisibility(true);*/ break; }
-                default:
-                { 
-                    ConsolePrint("DOMObj.checkVisibility() - visibility="+visibility+" currently handled as 'visible'.");
-                    // this.setVisibility(true);
-                }
-            }
-
-            if(this.overflowParent)
-            {
-                var overflowRect = this.overflowParent.getBoundingClientRect();
-                var nodeRect = this.node.getBoundingClientRect();
-
-                // DEBUG
-                // ConsolePrint("Comparing node's bounding box with overflow parent's bounding box...");
-                // ConsolePrint("overflow box: "+overflowRect.top+","+overflowRect.left+","+overflowRect.bottom+","+overflowRect.right);
-                // ConsolePrint("node's   box: "+nodeRect.top+","+nodeRect.left+","+nodeRect.bottom+","+nodeRect.right);
-
-                // Test if overflow box is more than a thin line
-                if( (overflowRect.height > 0 && overflowRect.width > 0) &&
-                    // // Test if node's Rect lies completely inside of overflow Rect, then node is visible
-                    // !(overflowRect.left <= nodeRect.left && overflowRect.right >= nodeRect.right && 
-                    // overflowRect.top <= nodeRect.top && overflowRect.bottom >= nodeRect.bottom))
-                    (overflowRect.top >= nodeRect.bottom || overflowRect.bottom <= nodeRect.top 
-                        || overflowRect.left >= nodeRect.right || overflowRect.right <= nodeRect.left) )
-                    {
-                        this.setVisibility(false);
-                        // DEBUG
-                        // ConsolePrint("Node's box is outside, so it's not visible!");
-                        return;
-                    }
-                // ConsolePrint("Node's box is inside, so node is visible!");
-
-            }
             this.setVisibility(true);
-
         }
 
         this.searchOverflows = function(){
@@ -324,7 +283,6 @@ function DOMObject(node, nodeType)
             {
                 if(this.node.tagName == "TEXTAREA")
                 {
-
                     this.node.value = text;
                 }
                 else if (this.node.tagName == 'INPUT')
@@ -360,32 +318,80 @@ function DOMObject(node, nodeType)
                 
                 // ConsolePrint("Input text was set!");
 
-                if(submit)
-                {
-                    // NOTE: Emulate pressing Enter in input field?
+                // if(submit)
+                // {
+                //     // NOTE: Emulate pressing Enter in input field?
 
-                    var parent = this.node.parentNode;
-                    var no_form_found = false;
-                    while(parent.nodeName != 'FORM')
-                    {
-                        parent = parent.parentNode;
-                        if(parent === document.documentElement)
-                        {
-                            ConsolePrint('Could not submit text input: No child of any form element.');
-                            no_form_found = true;
-                            break;
-                        }
-                    }
-                    if(!no_form_found)
-                    {
-                        parent.submit();
-                        ConsolePrint("Input text was submitted.");
-                    }
+                //     var parent = this.node.parentNode;
+                //     var no_form_found = false;
+                //     while(parent.nodeName != 'FORM')
+                //     {
+                //         parent = parent.parentNode;
+                //         if(parent === document.documentElement)
+                //         {
+                //             ConsolePrint('Could not submit text input: No child of any form element.');
+                //             no_form_found = true;
+                //             break;
+                //         }
+                //     }
+                //     if(!no_form_found)
+                //     {
+                //         parent.submit();
+                //         ConsolePrint("Input text was submitted.");
+                //     }
                 
-                }
+                // }
 
+                if(this.rects.length > 0)
+                {
+                    var rect = this.rects[0];
+                    var xy = {  'x': rect[1] + (rect[3]-rect[1])/2, 
+                                'y': rect[0] + (rect[2]-rect[0])/2};
+                    ConsolePrint("Returning rect's center: "+xy.x+", "+xy.y);
+                    return xy;
+                }
+                else
+                    return null;
             }
         };
+
+        this.updateText = function()
+        {
+                var old_text = this.text;
+
+                if(this.node.tagName == "INPUT") // this.node.tagName == "TEXTAREA" ||  // for tweets at people
+                {
+                    if(this.node.value !== undefined && this.node.value !== null)
+                        this.text = this.node.value;
+                }
+                else
+                {
+                    if(this.node.textContent !== undefined && this.node.textContent !== null)
+                    this.text = this.node.textContent;
+                }
+                if(old_text !== this.text)
+                {
+                    InformCEF(this, ["update", "text"]);
+                }
+
+        }
+
+        /** <select> fields */
+        function GetOptions()
+        {
+            var tupels = {};
+            this.node.childNodes.forEach(function(option){
+                if(option.tagName === "SELECT")
+                {
+                    tupels.push(option.textContent);
+                }
+            });
+            return tupels;
+        }
+        function SetOption(id)
+        {
+            this.node.selectedIndex = id;
+        }
 
 /* -------------- Code, executed on object construction -------------- */
         
@@ -419,17 +425,7 @@ function DOMObject(node, nodeType)
             // TODO/IDEA: (External) function returning node's text attribute, corresponding to node's tagName & type
             if(this.nodeType == 0)   // Only needed for text inputs
             {
-                if(this.node.tagName == "TEXTAREA" || this.node.tagName == "INPUT")
-                {
-                    if(this.node.value !== undefined && this.node.value !== null)
-                        this.text = this.node.value;
-                }
-                else
-                {
-                    if(this.node.textContent !== undefined && this.node.textContent !== null)
-                    this.text = this.node.textContent;
-                }
-                InformCEF(this, ["update", "text"]);
+                this.updateText();
             }
 
             if(this.node.tagName == "INPUT" && this.node.type == "password")
@@ -460,10 +456,10 @@ function DOMObject(node, nodeType)
 function CreateDOMObject(node, nodeType)
 {
     // Only add DOMObject for node if there doesn't exist one yet
-    if(!node.hasAttribute('nodeID'))
+    if(!node.hasAttribute('nodeID') && nodeType !== null && nodeType !== "null")
     {
         // Create DOMObject, which encapsulates the given DOM node
-        var domObj = new DOMObject(node, nodeType);
+        new DOMObject(node, nodeType);
     }
     else
     {
@@ -473,6 +469,12 @@ function CreateDOMObject(node, nodeType)
 
 function CreateDOMTextInput(node) { CreateDOMObject(node, 0); }
 function CreateDOMLink(node) { CreateDOMObject(node, 1); }
+function CreateDOMSelectField(node){ 
+    // DEBUG
+    ConsolePrint("Calling CreateDOMObject with nodeType="+3); 
+
+    CreateDOMObject(node, 3);
+};
 
 
 
@@ -577,22 +579,23 @@ function UpdateDOMRects()
 
     // Trigger update of Rects for every domObject
     window.domTextInputs.forEach(
-        function (domObj) { domObj.updateRects(); }
+        function (domObj) { if(domObj !== null && domObj !== undefined) domObj.updateRects(); }
     );
     window.domLinks.forEach(
-        function (domObj) { domObj.updateRects(); }
+        function (domObj) { if(domObj !== null && domObj !== undefined) domObj.updateRects(); }
     );
 
     // ... and all OverflowElements
     window.overflowElements.forEach(
         function (overflowObj) {
-            overflowObj.updateRects(); 
+            if(overflowObj !== null && overflowObj !== undefined)
+                overflowObj.updateRects(); 
         }
     );
 
     // ... and all FixedElements
     window.domFixedElements.forEach(
-        function(fixedObj){ if(fixedObj !== undefined){fixedObj.updateRects();} }
+        function(fixedObj){ if(fixedObj !== undefined && fixedObj !== null){fixedObj.updateRects();} }
     );
 
    
@@ -607,6 +610,36 @@ function UpdateDOMRects()
 
 }
 
+// TODO: Use this function in UpdateChildrensDOMRects?
+function UpdateNodesRect(node)
+{
+    if(node.nodeType === 1)
+    {
+        var type = node.getAttribute("nodeType");
+        var id = node.getAttribute("nodeID");
+
+        if(type !== undefined && type !== null && id !== undefined && id !== null)
+        {
+            var obj = GetDOMObject(type, id);
+            if(obj !== undefined && obj !== null)
+            {
+                obj.updateRects();
+            }
+        }
+
+        var overflowId = node.getAttribute("overflowId");
+        if(overflowId !== undefined && overflowId !== null)
+        {
+            var overflowObj = GetOverflowElement(overflowId);
+            if(overflowObj !== undefined && overflowObj !== null)
+            {
+                overflowObj.updateRects();
+            }
+        }
+
+    }
+}
+
 function UpdateChildrensDOMRects(parent)
 {
     ForEveryChild(parent, function(child){
@@ -615,17 +648,19 @@ function UpdateChildrensDOMRects(parent)
             if((nodeType = child.getAttribute("nodeType")) !== undefined && nodeType !== null)
             {
                 var nodeID = child.getAttribute("nodeID");
-                if((domObj = GetDOMObject(nodeType, nodeID)) !== undefined)
+                var domObj = GetDOMObject(nodeType, nodeID);
+                if(domObj !== undefined && domObj !== null)
                 {
                     domObj.searchOverflows(); 
-                    domObj.checkVisibility(); 
+                    // domObj.checkVisibility(); 
                     domObj.updateRects();
                 } 
             }
 
             if((overflowId = child.getAttribute("overflowId")) !== undefined && overflowId !== null)
             {
-                if((overflowObj = GetOverflowElement(overflowId)) !== undefined)
+                var overflowObj = GetOverflowElement(overflowId);
+                if(overflowObj !== undefined && overflowObj !== null)
                 {
                     overflowObj.updateRects();
                 }
@@ -653,7 +688,7 @@ function InformCEF(domObj, operation)
         // Encoding uses only first 3 chars of natural language operation
         var op = operation[0].substring(0,3);
 
-        var encodedCommand = 'DOM#'+op+'#'+type+'#'+id+'#';
+        var encodedCommand = 'DOM#'+op+'#'+type+'#'+id+'#'; 
 
         if(op == 'upd')
         {
@@ -702,7 +737,7 @@ function InformCEF(domObj, operation)
     }
     else
     {
-        ConsolePrint("ERROR: No DOMObject given to perform informing of CEF! id: "+id+", type: "+type);
+        // ConsolePrint("ERROR: No DOMObject given to perform informing of CEF! id: "+id+", type: "+type);
     }
 }
 
@@ -723,11 +758,13 @@ function GetDOMObjectList(nodeType)
         case '1': { return window.domLinks; };
         case 2:
         case '2': { return window.overflowElements; }
+        case 3:
+        case '3': { return window.domSelectFields; }
         // NOTE: Add more cases if new nodeTypes are added
         default:
         {
-            ConsolePrint('ERROR: No DOMObjectList for nodeType='+nodeType+' exists!');
-            return null;
+            // ConsolePrint('ERROR: No DOMObjectList for nodeType='+nodeType+' exists!');
+            return undefined;
         }
     }
 }
@@ -744,13 +781,43 @@ function GetDOMObject(nodeType, nodeID)
     var targetList = GetDOMObjectList(nodeType);
 
     // Catch error case
-    if(nodeID >= targetList.length || targetList == undefined || nodeID === undefined || nodeID === null)
+    if(targetList === undefined || nodeID === undefined || nodeID === null || nodeID >= targetList.length)
     {
-        ConsolePrint('ERROR: Node with id='+nodeID+' does not exist for type='+nodeType+'!');
+        // ConsolePrint('ERROR: Node with id='+nodeID+' does not exist for type='+nodeType+'!');
         return null;
     }
 
-    return targetList[nodeID];
+    var obj = targetList[nodeID];
+    if(obj === undefined)
+        return null
+    else
+        return obj;
+}
+
+function RemoveDOMObject(node)
+{
+    if(node.nodeType === 1)
+    {
+        var type = node.getAttribute("nodeType");
+        var id = node.getAttribute("nodeID");
+
+        var obj = GetDOMObject(type, id);
+        if(obj !== null && obj !== undefined)
+        {
+            obj.updateRects();
+            // console.log("Updated rects in ordner to let rect vanish, due to removal of object!");
+        }
+
+
+        // var targetList = GetDOMObjectList(type, id);
+        // if(id !== null && id !== undefined && targetList !== undefined && id > 0 && id < targetList.length)
+        // {
+        //     delete targetList[id];
+        //     ConsolePrint('DOM#rem#'+type+'#'+id+'#'); 
+        //     console.log("Successfully removed DOMObject with tpye ", type, " and id ",id);
+        // }
+        
+    }
 }
 
 // ATTENTION: V8 doesn't seem to work with polymorphism of functions!
@@ -960,7 +1027,7 @@ function OverflowElement(node)
                         if((nodeType = child.getAttribute("nodeType")) !== undefined && nodeType !== null)
                         {
                             var nodeID = child.getAttribute("nodeID");
-                            if((domObj = GetDOMObject(nodeType, nodeID)) !== undefined)
+                        if(((domObj = GetDOMObject(nodeType, nodeID)) !== undefined) && domObj !== null)
                             {
                                 domObj.updateRects();
                             } 
@@ -968,7 +1035,7 @@ function OverflowElement(node)
 
                         if((overflowId = child.getAttribute("overflowId")) !== undefined && overflowId !== null)
                         {
-                            if((overflowObj = GetOverflowElement(overflowId)) !== undefined)
+                            if(((overflowObj = GetOverflowElement(overflowId)) !== undefined) && overflowObj !== null)
                             {
                                 overflowObj.updateRects();
                             }
@@ -1035,11 +1102,11 @@ function CreateOverflowElement(node)
 // Called from CEF Handler
 function GetOverflowElement(id)
 {
-    if(id < window.overflowElements.length && id >= 0)
+    if(id !== null && id !== undefined && id < window.overflowElements.length && id >= 0)
         return window.overflowElements[id];     // This may return undefined
     else
     {
-        ConsolePrint("ERROR in GetOverflowElement: id="+id+", valid id should be in [0, "+(window.overflowElements.length-1)+"]!");
+        // ConsolePrint("ERROR in GetOverflowElement: id="+id+", valid id should be in [0, "+(window.overflowElements.length-1)+"]!");
         return null;
     }
         
