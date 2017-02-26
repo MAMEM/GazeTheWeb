@@ -94,9 +94,9 @@ public:
 	// Fetch localization string by key
 	std::u16string FetchLocalization(std::string key) const;
 
-	// Set value of style property
-	void SetStylePropertyValue(std::string styleClass, eyegui::StylePropertyFloat type, std::string value);
-	void SetStylePropertyValue(std::string styleClass, eyegui::StylePropertyVec4 type, std::string value);
+	// Set value of style property in style tree
+	void SetStyleTreePropertyValue(std::string styleClass, eyegui::StylePropertyFloat type, std::string value);
+	void SetStyleTreePropertyValue(std::string styleClass, eyegui::StylePropertyVec4 type, std::string value);
 
 	// ### SETTINGS ACCESS ###
 
