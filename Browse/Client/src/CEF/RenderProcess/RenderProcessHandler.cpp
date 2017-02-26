@@ -27,6 +27,29 @@ bool RenderProcessHandler::OnProcessMessageReceived(
     const std::string& msgName = msg->GetName().ToString();
     //IPCLogDebug(browser, "Received '" + msgName + "' IPC msg in RenderProcessHandler");
 
+	if (msgName == "SetSelectionIndex")
+	{
+		const auto& args = msg->GetArgumentList();
+
+		CefRefPtr<CefV8Context> context = browser->GetMainFrame()->GetV8Context();
+
+		if (context->Enter())
+		{
+			const auto& window = context->GetGlobal();
+			const auto& selectionFunc = window->GetValue("SetSelectionIndex");
+			const auto& id = CefV8Value::CreateInt(args->GetInt(0));
+			const auto& index = CefV8Value::CreateInt(args->GetInt(1));
+
+			if (!selectionFunc->IsNull() && !selectionFunc->IsUndefined() && selectionFunc->IsFunction())
+			{
+				selectionFunc->ExecuteFunction(selectionFunc, { id, index });
+			}
+			
+			context->Exit();
+		}
+
+	}
+
 
 	if (msgName == "ScrollOverflowElement")
 	{
@@ -326,8 +349,68 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 		{
 			case 0: { msg = UnwrapDOMTextInput(context, domObj, nodeID); break; };
 			case 1: { msg = UnwrapDOMLink(context, domObj, nodeID); break; };
+			case 2: { break; }
 			default: { msg = NULL; break; };
 		}
+
+
+		// TODO: More general object fetching for all kinds of DOMNodes! Maybe like the following
+		if (type == 2 && !domObj->IsUndefined() && !domObj->IsNull())
+		{
+			if (context->Enter())
+			{
+				msg = CefProcessMessage::Create("InitializeDOMSelectField");
+				auto& args = msg->GetArgumentList();
+				args->SetInt(0, type);
+				args->SetInt(1, nodeID);
+
+				CefRefPtr<CefV8Value> getRectsFunc = domObj->GetValue("getRects"),
+					getOptionsFunc = domObj->GetValue("getOptions");
+
+				// Read out Rect data
+				CefRefPtr<CefListValue> rectList = CefListValue::Create();
+				if (getRectsFunc->IsNull() || getRectsFunc->IsUndefined() || !getRectsFunc->IsFunction())
+				{
+					IPCLogDebug(browser, "Couldn't access 'getRects' function, when trying to initialize DOMNode data.");
+				}
+				else
+				{
+					CefRefPtr<CefV8Value> rects = getRectsFunc->ExecuteFunction(domObj, {});
+					for (int i = 0; i < rects->GetArrayLength(); i++)
+					{
+						CefRefPtr<CefListValue> rectEntry = CefListValue::Create();
+						CefRefPtr<CefV8Value> rect = rects->GetValue(i);
+						for (int j = 0; j < rect->GetArrayLength(); j++)
+						{
+							rectEntry->SetDouble(j, rect->GetValue(j)->GetDoubleValue());
+						}
+						rectList->SetList(i, rectEntry);
+					}
+				}
+				args->SetList(2, rectList);
+
+
+				// Read out options data
+				CefRefPtr<CefListValue> optionsList = CefListValue::Create();
+				if (getOptionsFunc->IsNull() || getOptionsFunc->IsUndefined() || !getOptionsFunc->IsFunction())
+				{
+					IPCLogDebug(browser, "Couldn't access 'getOptions' function, when trying to initialize DOMNode data.");
+				}
+				else
+				{
+					CefRefPtr<CefV8Value> options = getOptionsFunc->ExecuteFunction(domObj, {});
+					for (int i = 0; i < options->GetArrayLength(); i++)
+					{
+						optionsList->SetString(i, options->GetValue(i)->GetStringValue());
+					}
+				}
+				args->SetList(3, optionsList);
+
+				
+				context->Exit();
+				}
+		}
+
 
 		if (msg && msg->GetArgumentList()->GetSize() > 0)
 		{

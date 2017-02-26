@@ -16,14 +16,18 @@
 #include <string>
 #include <memory>
 
+// TODO(Daniel): Remove FrameID everywhere.
+
 // General DOM node
 class DOMNode
 {
 public:
 
-	DOMNodeType GetType() const { return _type; }
+	DOMNodeType GetType() const { return _type; } // TODO: Get rid of type, maybe virtual GetType method for every inheriting class 
+												  // with constant return value
+												  // BUT: type needed for GetDOMNode in Tab!
 	int64 GetFrameID() const { return _frameID; }
-	int GetNodeID() const { return _nodeID; };
+	int GetNodeID() const { return _nodeId; };
 	std::vector<Rect> GetRects() const { return _rects; };
 	glm::vec2 GetCenter() const; // unified center of all bounding rects
 	std::vector<glm::vec2> GetCenters() const;
@@ -38,12 +42,20 @@ public:
 	void SetText(std::string text) { _text = text; }
 	void SetAsPasswordField() { _isPasswordField = true; }
 
+	// TODO(Daniel): Make DOMNode class purely abstract, get rid of type attribute
+	// blank constructor
+	DOMNode(DOMNodeType type, int nodeId)
+	{
+		_nodeId = nodeId;
+		_type = type;
+	}
+
 	// Constructor for nodes with single bounding rect
 	DOMNode(DOMNodeType type, int64 frameID, int nodeID, Rect rect)
 	{
 		_type = type;
 		_frameID = frameID;
-		_nodeID = nodeID;
+		_nodeId = nodeID;
 		_rects = { rect };
 	}
 
@@ -52,7 +64,7 @@ public:
 	{
 		_type = type;
 		_frameID = frameID;
-		_nodeID = nodeID;
+		_nodeId = nodeID;
 		_rects = rects;
 	}
 
@@ -61,8 +73,8 @@ protected:
 	// Members
 	DOMNodeType _type;
 	int64 _frameID;
-	int _nodeID; // Node's position in JavaScript's list of nodes of the same type
-	std::vector<Rect> _rects;
+	int _nodeId; // Node's position in JavaScript's list of nodes of the same type
+	std::vector<Rect> _rects = { };
 	bool _fixed = false;
 	bool _visible = true;
 	std::string _text = "";
@@ -118,6 +130,26 @@ private:
 
 	// Members
 	std::string _url;
+};
+
+class DOMSelectField : public DOMNode
+{
+public:
+	DOMSelectField(		// TODO: This constructor won't be used?
+		int nodeId,
+		std::vector<Rect> rects,
+		std::vector<std::string> options) : DOMNode(DOMNodeType::SelectField, -1, nodeId, rects)
+	{
+		_options = options;
+	}
+
+	DOMSelectField(int id) : DOMNode(DOMNodeType::SelectField, id) {};
+
+	std::vector<std::string> GetOptions() const { return _options; }
+	void SetOptions(std::vector<std::string> options) { _options = options; }
+
+private:
+	std::vector<std::string> _options = {}; // Entries might be NULL, if weirdly indexed on JS side (but chances are really low)
 };
 
 // Overflow element

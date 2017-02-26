@@ -274,18 +274,22 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 
 			if (op.compare("add") == 0) // adding of DOM node
 			{
-				// Create blank DOM node of given node type with nodeID
-				_pMediator->AddDOMNode(
-					browser,
-					std::make_shared<DOMNode>(
-						type,
-						browser->GetMainFrame()->GetIdentifier(),
-						id,
-						Rect()
-						)
-					);
+				// TODO(Daniel): Create different AddDOMNode methods in Tab for different object types
+				if (type == DOMNodeType::SelectField)
+				{
+					// DEBUG
+					//LogDebug("MsgRouter: Added blank DOM SelectField node, sending IPC msg in order to fill it with data.");
 
-				// Send IPC msg to Renderer to fetch more data to fill in
+					// Create blank DOM node of given node type with nodeID
+					_pMediator->AddDOMNode(browser,	std::make_shared<DOMSelectField>(id));
+				}
+				else
+				{
+					// Create blank DOM node of given node type with nodeID
+					_pMediator->AddDOMNode(browser, std::make_shared<DOMNode>(type, id));
+				}
+
+				// Instruct Renderer Process to initialize empty DOM Nodes with data
 				CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("LoadDOMNodeData");
 				msg->GetArgumentList()->SetInt(0, type);
 				msg->GetArgumentList()->SetInt(1, id);
@@ -327,8 +331,15 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 								rects.push_back(rect);
 							}
 
+							if (type == DOMNodeType::SelectField)
+							{
+								if (auto targetNode = _pMediator->GetDOMSelectFieldNode(browser, id).lock())
+								{
+									targetNode->SetRects(std::make_shared<std::vector<Rect>>(rects));
+								}
+							}
 							// Get weak_ptr to target node and get shared_ptr targetNode out of weak_ptr
-							if (auto targetNode = _pMediator->GetDOMNode(browser, type, id).lock())
+							else if (auto targetNode = _pMediator->GetDOMNode(browser, type, id).lock())
 							{
 								targetNode->SetRects(std::make_shared<std::vector<Rect>>(rects));
 							}

@@ -273,7 +273,9 @@ public:
 
     // Add, remove and update Tab's current DOMNodes
     virtual void AddDOMNode(std::shared_ptr<DOMNode> spNode);
+	virtual void AddDOMNode(std::shared_ptr<DOMSelectField> spNode);
 	virtual std::weak_ptr<DOMNode> GetDOMNode(DOMNodeType type, int nodeID);
+	virtual std::weak_ptr<DOMSelectField> GetDOMSelectFieldNode(int nodeId);
     virtual void ClearDOMNodes();
 	virtual void RemoveDOMNode(DOMNodeType type, int nodeID);
 
@@ -442,12 +444,12 @@ private:
 
 
 	// Vector with DOMSelectFields
-	std::vector<std::shared_ptr<DOMNode> > _DOMSelectFields;
+	std::vector<std::shared_ptr<DOMSelectField> > _DOMSelectFields;
 
 	// Map nodeID to node itself, in order to access it when it has to be updated
 	std::map<int, std::shared_ptr<DOMNode> > _TextLinkMap;
 	std::map<int, std::shared_ptr<DOMNode> > _TextInputMap;
-	std::map<int, std::shared_ptr<DOMNode> > _SelectFieldMap;
+	std::map<int, std::shared_ptr<DOMSelectField> > _SelectFieldMap;
 
     // Web view in which website is rendered and displayed
     std::unique_ptr<WebView> _upWebView;

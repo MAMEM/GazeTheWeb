@@ -3,16 +3,6 @@
 // Author: Daniel Mueller (muellerd@uni-koblenz.de)
 //============================================================================
 
-// Global variables in which DOM relevant information is stored
-window.fixed_elements = new Set();
-window.fixed_IDlist = [];				// Position |i| contains boolean information if ID |i| is currently used
-window.fixed_coordinates = [[]];		// 2D list of bounding rectangle coordinates, fill with bounding rect coordinates of fixed node and its children (if position == 'relative')
-
-window.dom_links = [];
-window.dom_links_rect = [[]];
-
-window.dom_textinputs = [];
-window.dom_textinputs_rect = [[]];
 
 window.appendedSubtreeRoots = new Set();
 
@@ -646,6 +636,12 @@ function MutationObserverInit()
 		  				if(node.nodeType == 1) // 1 == ELEMENT_NODE
 		  				{
 		  					attr = mutation.attributeName;
+
+							if(node === document.body && (attr === "scrollWidth" || attr === "scrollHeight"))
+							{
+								// Does not work!
+								console.log("document.body: mutation in attribute ", attr, "=", node.getAttribute(attr));
+							}
 
 							// Automatically fix or unfix children, if given attribute changed
 							if(attr === "fixedid" || attr === "childfixedid")
