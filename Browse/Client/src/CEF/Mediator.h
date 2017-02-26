@@ -30,6 +30,7 @@ class TabCEFInterface;
 class Texture;
 class DOMNode;
 class OverflowElement;
+class DOMSelectField;
 
 typedef int BrowserID;
 
@@ -119,18 +120,20 @@ public:
 
 	// Used by BrowserMsgRouter to pass blank DOMNodes to Tab
 	void AddDOMNode(CefRefPtr<CefBrowser> browser, std::shared_ptr<DOMNode> spNode);
-
+	void AddDOMNode(CefRefPtr<CefBrowser> browser, std::shared_ptr<DOMSelectField> spNode);
 	void ClearDOMNodes(CefRefPtr<CefBrowser> browser);
-
 	void RemoveDOMNode(CefRefPtr<CefBrowser> browser, DOMNodeType type, int nodeID);
+	void FillDOMNodeWithData(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg);
+	void InitializeDOMNode(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg);
+	std::weak_ptr<DOMNode> GetDOMNode(CefRefPtr<CefBrowser> browser, DOMNodeType type, int nodeID); // Used by BrowserMsgRouter
+	std::weak_ptr<DOMSelectField> GetDOMSelectFieldNode(CefRefPtr<CefBrowser> browser, int nodeId);
 
-	// Used by BrowserMsgRouter
-	std::weak_ptr<DOMNode> GetDOMNode(CefRefPtr<CefBrowser> browser, DOMNodeType type, int nodeID);
+	/* Interaction with DOM nodes */
 
 	// TODO: Call Javascript function instead of injecting more JS code
 	bool InputTextData(TabCEFInterface* tab, int64 frameID, int nodeID, std::string text, bool submit = false);
+	void SetSelectionIndex(TabCEFInterface* tab, int nodeId, int index);	// NOTE: One could set the index by instead sending an option text
 
-	void FillDOMNodeWithData(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg);
 
 	// Activate rendering in given Tab and deactivate it for all other Tabs
 	void SetActiveTab(TabCEFInterface* pTab);	// TODO Raphael: Call this method when Tab is changed via GUI

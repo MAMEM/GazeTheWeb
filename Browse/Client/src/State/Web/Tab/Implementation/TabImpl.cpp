@@ -802,8 +802,7 @@ void Tab::DrawDebuggingOverlay() const
 		// Render rects
 		for (const auto rRect : rDOMSelectField->GetRects())
 		{
-			if (rDOMSelectField->GetVisibility())
-				renderRect(rRect, rDOMSelectField->GetFixed());
+			renderRect(rRect, rDOMSelectField->GetFixed());
 		}
 	}
 

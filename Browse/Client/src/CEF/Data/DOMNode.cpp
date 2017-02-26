@@ -42,26 +42,20 @@ void DOMNode::SetRects(std::shared_ptr<std::vector<Rect>> rects)
 
 DOMTextInput::DOMTextInput(DOMNodeType type,
 	int64 frameID,
-	int nodeID,
+	int nodeId,
 	Rect rect,
-	std::string value) : DOMNode(type, frameID, nodeID, rect)
+	std::string value) : DOMNode(type, frameID, nodeId, rect)
 {
 	_value = value;
-
-	LogDebug("DOMTextInput constructed", "\n",
-		"\tFrameID: ", _frameID, "\n",
-		"\tnodeID: ", _nodeID, "\n",
-		"\tcoordinates: ", _rects[0].ToString(), "\n",
-		"\tvalue: ", _value);
 }
 
 /* DOMLink methods */
 
 DOMLink::DOMLink(DOMNodeType type,
 	int64 frameID,
-	int nodeID,
+	int nodeId,
 	Rect rect,
-	std::string url) : DOMNode(type, frameID, nodeID, rect)
+	std::string url) : DOMNode(type, frameID, nodeId, rect)
 {
 	_url = url;
 }
@@ -69,9 +63,9 @@ DOMLink::DOMLink(DOMNodeType type,
 DOMLink::DOMLink(
 	DOMNodeType type,
 	int64 frameID,
-	int nodeID,
+	int nodeId,
 	std::vector<Rect> rects,
-	std::string url) : DOMNode(type, frameID, nodeID, rects)
+	std::string url) : DOMNode(type, frameID, nodeId, rects)
 {
 	_url = url;
 }

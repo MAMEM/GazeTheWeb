@@ -9,6 +9,20 @@ window.overflowElements = [];
 window.domSelectFields = [];
 
 
+function SetSelectionIndex(id, index)
+{
+    var obj = window.domSelectFields[id];
+    if(obj !== null && obj !== undefined)
+    {
+        obj.setOption(id);
+        ConsolePrint("Set SelectionField with id="+id+" to option with index"+index);
+    }
+    else
+    {
+        ConsolePrint("Couldn't find SelectionField with id="+id);
+    }
+}
+
 function PerformTextInput(inputId, text, submit)
 {
     var domObj = GetDOMObject(0, inputId);
@@ -204,18 +218,21 @@ function DOMObject(node, nodeType)
             return !equal;
         };
 
-        
+        // TODO: State explicit distinction between what is in this.rects and what gets returned by getRects
+        // this.rects: Bounding box as element exists somewhere, although, possibly covered by overflows but not by e.g. fixed elements
+        // getRects(): what you really (might) see of the elements bounding box, like already cut on the containing overflow
 
         // Returns float[4] for each Rect with adjusted coordinates
         this.getRects = function(){
             if(this.overflowParent !== null && this.overflowParent !== undefined) 
             {
                 var id = this.overflowParent.getAttribute("overflowId");
-                // TODO: Work on OverflowElemen Objects and their getRects method instead!
+                // TODO: Work on OverflowElement Objects and their getRects method instead!
                 // var bb_overflow = this.overflowParent.getBoundingClientRect();
                 var obj = GetOverflowElement(id);
 
-                // TODO: Register every Overflow as object (even though not scrollable?)
+                // TODO: unregistered, not scrollable overflows might also cover these rects
+                // --> Register every Overflow as object (even though not scrollable?)
 
                 if(obj !== null && obj !== undefined )
                 {
@@ -245,6 +262,7 @@ function DOMObject(node, nodeType)
             return this.rects;
         };
 
+        // TODO: Remove this function and rely on MutationObserver to inform CEF, when attributes like childFixedId are set?
         this.setFixed = function(fixed){
             if(this.fixed != fixed)
             {
@@ -377,18 +395,21 @@ function DOMObject(node, nodeType)
         }
 
         /** <select> fields */
-        function GetOptions()
+        this.getOptions = function()
         {
-            var tupels = {};
-            this.node.childNodes.forEach(function(option){
-                if(option.tagName === "SELECT")
+            var options = [];
+            var n = this.node.childNodes.length;
+            for(var i = 0; i < n; i++)
+            {
+                var child = this.node.childNodes[i];
+                if(child.tagName === "OPTION")
                 {
-                    tupels.push(option.textContent);
+                    options.push(child.textContent);
                 }
-            });
-            return tupels;
+            }
+            return options;
         }
-        function SetOption(id)
+        this.setOption = function(id)
         {
             this.node.selectedIndex = id;
         }
@@ -469,12 +490,7 @@ function CreateDOMObject(node, nodeType)
 
 function CreateDOMTextInput(node) { CreateDOMObject(node, 0); }
 function CreateDOMLink(node) { CreateDOMObject(node, 1); }
-function CreateDOMSelectField(node){ 
-    // DEBUG
-    ConsolePrint("Calling CreateDOMObject with nodeType="+3); 
-
-    CreateDOMObject(node, 3);
-};
+function CreateDOMSelectField(node){ CreateDOMObject(node, 2); }
 
 
 
@@ -585,6 +601,10 @@ function UpdateDOMRects()
         function (domObj) { if(domObj !== null && domObj !== undefined) domObj.updateRects(); }
     );
 
+    window.domSelectFields.forEach(
+        function (domObj) { if(domObj !== null && domObj !== undefined) domObj.updateRects(); }
+    );
+
     // ... and all OverflowElements
     window.overflowElements.forEach(
         function (overflowObj) {
@@ -599,6 +619,8 @@ function UpdateDOMRects()
     );
 
    
+
+   // TODO: Deprecated?
     // Update visibility of each DOM object
     window.domTextInputs.forEach(
         function (domObj) { domObj.searchOverflows(); domObj.checkVisibility(); }
@@ -757,9 +779,7 @@ function GetDOMObjectList(nodeType)
         case 1:
         case '1': { return window.domLinks; };
         case 2:
-        case '2': { return window.overflowElements; }
-        case 3:
-        case '3': { return window.domSelectFields; }
+        case '2': { return window.domSelectFields; }
         // NOTE: Add more cases if new nodeTypes are added
         default:
         {

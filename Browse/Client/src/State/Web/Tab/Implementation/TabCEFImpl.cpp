@@ -105,6 +105,16 @@ void Tab::ResetFaviconBytes()
     _faviconLoaded = false;
 }
 
+void Tab::AddDOMNode(std::shared_ptr<DOMSelectField> spNode)
+{
+	// Just add it to vector
+	_DOMSelectFields.push_back(spNode);
+
+	// Add node to ID->node map
+	_SelectFieldMap.emplace(spNode->GetNodeID(), spNode);
+
+}
+
 void Tab::AddDOMNode(std::shared_ptr<DOMNode> spNode)
 {
 	//LogDebug("Tab: Adding new DOM node with id=", spNode->GetNodeID(), " & type=", spNode->GetType());
@@ -139,17 +149,6 @@ void Tab::AddDOMNode(std::shared_ptr<DOMNode> spNode)
 
 		// Add node to ID->node map
 		_TextLinkMap.emplace(spNode->GetNodeID(), spNode);
-
-		break;
-	}
-
-	case DOMNodeType::SelectField:
-	{
-		// Just add it to vector
-		_DOMSelectFields.push_back(spNode);
-
-		// Add node to ID->node map
-		_SelectFieldMap.emplace(spNode->GetNodeID(), spNode);
 
 		break;
 	}
@@ -226,13 +225,18 @@ std::weak_ptr<DOMNode> Tab::GetDOMNode(DOMNodeType type, int nodeID)
 			return (_TextLinkMap.find(nodeID) != _TextLinkMap.end()) ? _TextLinkMap.at(nodeID) : std::weak_ptr<DOMNode>();
 		}
 		case DOMNodeType::SelectField: {
-			return (_TextLinkMap.find(nodeID) != _TextLinkMap.end()) ? _TextLinkMap.at(nodeID) : std::weak_ptr<DOMNode>();
+			return (_SelectFieldMap.find(nodeID) != _SelectFieldMap.end()) ? _SelectFieldMap.at(nodeID) : std::weak_ptr<DOMSelectField>();
 		}
 		default: {
 			LogDebug("Tab: Unknown DOMNodeType in Tab::GetDOMNode!");
 		};
 	}
 	return std::weak_ptr<DOMNode>();
+}
+
+std::weak_ptr<DOMSelectField> Tab::GetDOMSelectFieldNode(int nodeId)
+{
+	return (_SelectFieldMap.find(nodeId) != _SelectFieldMap.end()) ? _SelectFieldMap.at(nodeId) : std::weak_ptr<DOMSelectField>();
 }
 
 void Tab::SetScrollingOffset(double x, double y)
