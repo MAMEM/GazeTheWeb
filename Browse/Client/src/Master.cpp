@@ -665,7 +665,7 @@ void Master::Loop()
 
         // Draw eyeGUI on top
         eyegui::drawGUI(_pGUI);
-        eyegui::drawGUI(_pSuperGUI);
+        // eyegui::drawGUI(_pSuperGUI);
 
         // Bind standard framebuffer
         _upFramebuffer->Unbind();
