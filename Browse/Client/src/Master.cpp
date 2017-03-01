@@ -461,14 +461,14 @@ std::u16string Master::FetchLocalization(std::string key) const
 	return eyegui::fetchLocalization(_pGUI, key);
 }
 
-void Master::SetStylePropertyValue(std::string styleClass, eyegui::StylePropertyFloat type, std::string value)
+void Master::SetStyleTreePropertyValue(std::string styleClass, eyegui::StylePropertyFloat type, std::string value)
 {
-	eyegui::setStylePropertyValue(_pGUI, styleClass, type, value);
+	eyegui::setStyleTreePropertyValue(_pGUI, styleClass, type, value);
 }
 
-void Master::SetStylePropertyValue(std::string styleClass, eyegui::StylePropertyVec4 type, std::string value)
+void Master::SetStyleTreePropertyValue(std::string styleClass, eyegui::StylePropertyVec4 type, std::string value)
 {
-	eyegui::setStylePropertyValue(_pGUI, styleClass, type, value);
+	eyegui::setStyleTreePropertyValue(_pGUI, styleClass, type, value);
 }
 
 void Master::Loop()
@@ -569,7 +569,7 @@ void Master::Loop()
 
         // Pause visualization
         _pausedDimming.update(tpf, !_paused);
-        eyegui::setStylePropertyValue(
+        eyegui::setStyleTreePropertyValue(
 			_pSuperGUI,
             "pause_background",
 			eyegui::StylePropertyVec4::BackgroundColor,

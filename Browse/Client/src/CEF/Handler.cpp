@@ -262,46 +262,49 @@ bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 	}
 
-    if (msgName == "ReceiveDOMElements")
-    {
-        LogDebug("Handler: OLD APPROACH! DELETE! ... ReceiveDOMElements msg received -> redirect to CefMediator.");
-
-        //_pMediator->ClearDOMNodes(browser);
-
-        // Pipe IPC message to CefMediator in order to create DOM nodes
-       /* _pMediator->ReceiveIPCMessageforDOM(browser, msg);*/
-        return true;
-    }
     if (msgName == "ReceiveFavIconBytes")
     {
         _pMediator->ReceiveIPCMessageforFavIcon(browser, msg);
+		return true;
     }
     if (msgName == "ReceivePageResolution")
     {
         _pMediator->ReceivePageResolution(browser, msg);
+		return true;
     }
     if (msgName == "ReceiveFixedElements")
     {
         _pMediator->ReceiveFixedElements(browser, msg);
+		return true;
     }
     if (msgName == "IPCLog")
     {
         IPCLogRenderer(browser, msg);
+		return true;
     }
 
 	if (msgName == "OnContextCreated")
 	{
 		_pMediator->ClearDOMNodes(browser);
+		return true;
 	}
 	if (msgName == "SendDOMNodeData")
 	{
 		//_pMediator->HandleDOMNodeIPCMsg(browser, msg);
 		LogDebug("Handler: Received old IPC msg 'SendDOMNodeData'!");
+		return true;
 	}
 
 	if (msgName.substr(0, 9) == "CreateDOM")
 	{
 		_pMediator->FillDOMNodeWithData(browser, msg);
+		return true;
+	}
+
+	if (msgName == "InitializeDOMSelectField")
+	{
+		_pMediator->InitializeDOMNode(browser, msg);
+		return true;
 	}
 
     return _msgRouter->OnProcessMessageReceived(browser, source_process, msg);

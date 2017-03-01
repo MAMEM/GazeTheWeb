@@ -225,6 +225,15 @@ void Mediator::ResetFavicon(CefRefPtr<CefBrowser> browser)
     }
 }
 
+void Mediator::AddDOMNode(CefRefPtr<CefBrowser> browser, std::shared_ptr<DOMSelectField> spNode)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		// Find corresponding Tab and add DOM Node to its list of nodes
+		pTab->AddDOMNode(spNode);
+	}
+}
+
 void Mediator::AddDOMNode(CefRefPtr<CefBrowser> browser, std::shared_ptr<DOMNode> spNode)
 {
     if (TabCEFInterface* pTab = GetTab(browser))
@@ -255,6 +264,20 @@ bool Mediator::InputTextData(TabCEFInterface* tab, int64 frameID, int nodeID, st
     return false;
 }
 
+
+// TODO: Generic CallJSFunction msg with JS function as argument name and the rest as arguments?
+void Mediator::SetSelectionIndex(TabCEFInterface * tab, int nodeId, int index)
+{
+	if (const auto& browser = GetBrowser(tab))
+	{
+		auto& msg = CefProcessMessage::Create("SetSelectionIndex");
+		auto& args = msg->GetArgumentList();
+		args->SetInt(0, nodeId);
+		args->SetInt(1, index);
+		browser->SendProcessMessage(PID_RENDERER, msg);
+	}
+}
+
 void Mediator::FillDOMNodeWithData(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
@@ -265,7 +288,7 @@ void Mediator::FillDOMNodeWithData(CefRefPtr<CefBrowser> browser, CefRefPtr<CefP
 		int nodeID = args->GetInt(index++);
 		bool visible = args->GetBool(index++);
 
-		// TODO(in the future): Call an update of different attributes for different node types
+		// TODO(Daniel): Call an update of different attributes for different node types
 
 		// Read out multiple Rects
 		std::vector<Rect> rects;
@@ -296,6 +319,50 @@ void Mediator::FillDOMNodeWithData(CefRefPtr<CefBrowser> browser, CefRefPtr<CefP
 		{
 			LogDebug("Mediator: Trying to update node information but DOMNode object doesn't seem to exist!");
 		}
+	}
+}
+
+// TODO: Use only this method for initialization of nodes, which were created empty
+void Mediator::InitializeDOMNode(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		const auto& args = msg->GetArgumentList();
+		const int type = args->GetInt(0);
+		const int id = args->GetInt(1);
+
+		if (type == 2)
+		{
+			if (auto node = pTab->GetDOMSelectFieldNode(id).lock())
+			{
+				// Extract rect data
+				std::vector<Rect> rects;
+				CefRefPtr<CefListValue> rectList = args->GetList(2);
+				for (int i = 0; i < rectList->GetSize(); i++)
+				{
+					CefRefPtr<CefListValue> rectEntry = rectList->GetList(i);
+					std::vector<float> data;
+					for (int j = 0; j < rectEntry->GetSize(); j++)
+					{
+						data.push_back(rectEntry->GetDouble(j));
+					}
+					rects.push_back(Rect(data));
+				}
+				node->SetRects(std::make_shared<std::vector<Rect>>(rects));
+
+				// Extract options data
+				std::vector<std::string> options;
+				CefRefPtr<CefListValue> optionsList = args->GetList(3);
+				for (int i = 0; i < optionsList->GetSize(); i++)
+				{
+					options.push_back(optionsList->GetString(i));
+				}
+				node->SetOptions(options);
+
+			}
+		}
+
+
 	}
 }
 
@@ -510,6 +577,15 @@ std::weak_ptr<DOMNode> Mediator::GetDOMNode(CefRefPtr<CefBrowser> browser, DOMNo
 		return pTab->GetDOMNode(type, nodeID);
 	}
 	return std::weak_ptr<DOMNode>();
+}
+
+std::weak_ptr<DOMSelectField> Mediator::GetDOMSelectFieldNode(CefRefPtr<CefBrowser> browser, int nodeId)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		return pTab->GetDOMSelectFieldNode(nodeId);
+	}
+	return std::weak_ptr<DOMSelectField>();
 }
 
 
