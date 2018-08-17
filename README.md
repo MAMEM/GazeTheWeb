@@ -4,7 +4,7 @@
 
 Software to access the Web using eyes and mind.
 
-Download latest release [**here**](https://github.com/MAMEM/GazeTheWeb/releases/latest).
+Download the latest release [**here**](https://github.com/MAMEM/GazeTheWeb/releases/latest).
 
 ## Cloning
 This project uses Git submodules. Please check it out using:
