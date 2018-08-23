@@ -394,6 +394,7 @@ function AnalyzeNode(node)
 			CreateDOMLink(node);
 		}
 
+        // TODO: it appears to me that button always will create a button, so should be classified as DOMLink. And "none" type for input is text input
 		if(node.tagName == 'INPUT' || node.tagName == "BUTTON") // Fun fact: There exists the combination of tag "BUTTON" and type "submit"
 		{
 			// Identify text input fields
