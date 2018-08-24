@@ -309,122 +309,128 @@ function AnalyzeNode(node)
 				// UpdateDOMRects("AnalyzeNode -- AddFixedElement "+node.className);
 		}
 
-		if(node.tagName == "DIV")
-		{
-			var role = node.getAttribute('role');
-			if(role)
-			{
-				role = role.toLowerCase();
-				if(role == "combobox" || role == "textbox")
-				{
-					CreateDOMTextInput(node);
-				}
-			}
-		}
-
 		if(node.tagName === "IFRAME")
 		{
 
-			try
-			{
-				if(node.contentDocument && node.contentDocument.children.length > 0)
-				{
-					console.log("iframe added, now also observing:", node.contentDocument.children[0]);
-					window.observer.observe(node.contentDocument.children[0], window.observer_config);
-				}
-			}
-			catch(e)
-			{
-				console.log("Caught exception: ", e);
-			}
+		    try
+		    {
+		        if(node.contentDocument && node.contentDocument.children.length > 0)
+		        {
+		            console.log("iframe added, now also observing:", node.contentDocument.children[0]);
+		            window.observer.observe(node.contentDocument.children[0], window.observer_config);
+		        }
+		    }
+		    catch(e)
+		    {
+		        console.log("Caught exception: ", e);
+		    }
 		}
 
-		if(node.tagName === "VIDEO")
+	    // Fix for Facebook's in-site messenger
+	    // --> Added wrong elements as text inputs?!
+	    // if(node.tagName == "DIV" && node.hasAttribute("data-offset-key"))
+	    // {
+	    // 	CreateDOMTextInput(node);
+	    // 	console.log("Found possible text area on Facebook? ", node);
+	    // }
+
+	    // Find high res favicons
+	    // TODO: Loading of smaller resolutions could be prevented
+		if(node.tagName == "LINK")
 		{
-			CreateDOMVideo(node);
+		    if(node.rel && node.rel.includes("apple-touch-icon"))
+		    {
+		        SendFaviconURLtoCEF(node.href);
+		    }
+		    if(node.href && node.href.includes("favicon") && node.href.includes(".png"))
+		    {
+		        SendFaviconURLtoCEF(node.href);
+		    }
 		}
+		if(node.tagName == "META")
+		{
+		    if(prop = node.getAttribute("property"))
+		    {
+		        if(prop.includes("og:image"))
+		        {
+		            SendFaviconURLtoCEF(node.content);
+		        }
+		    }
+		    if(name = node.getAttribute("name"))
+		    {
+		        if(name.includes("msapplication-TileImage"))
+		        {
+		            SendFaviconURLtoCEF(node.content);
+		        }
+		    }
+			
+		}
+
+	    // A
+		if(node.tagName == 'A')
+		{
+		    CreateDOMLink(node);
+		}
+
+	    // INPUT TODO: Handle other kinds of <input> elements
+		if(node.tagName === 'INPUT')
+		{
+		    // Text Input
+		    if(!node.hasAttribute('type') || node.type == 'text' || node.type == 'search' || node.type == 'email' || node.type == 'password')
+		    {
+		        CreateDOMTextInput(node);
+		    }
+
+		    // Checkbox
+		    if(node.type === "checkbox")
+		    {
+		        CreateDOMCheckbox(node);
+		    }
+
+		    // Link
+		    if(node.type === 'button' || node.type === 'submit' || node.type === 'reset')
+		    {
+		        // TODO: CreateDOMButton!
+		        CreateDOMLink(node);
+		    }
+		}
+
+	    // DIV
+		if(node.tagName === 'DIV' && node.hasAttribute('role'))
+		{
+		    var role = node.getAttribute('role').toLowerCase();
+		    if(role === "combobox" || role === "textbox")
+		    {
+		        CreateDOMTextInput(node);
+		    }
+		    if(role === "button")
+		    {
+                CreateDOMLink(node);
+		    }
+		}
+ 
+	    // BUTTON
+		if(node.tagName === "BUTTON")
+		{
+		    CreateDOMLink(node);
+		}
+
+	    // TEXTAREA
+		if(node.tagName === 'TEXTAREA')
+		{
+		    CreateDOMTextInput(node);
+		}
+
+        // SELECT FIELD
 		if(node.tagName === "SELECT")
 		{
 			CreateDOMSelectField(node);
 		}
 
-		// Fix for Facebook's in-site messenger
-		// --> Added wrong elements as text inputs?!
-		// if(node.tagName == "DIV" && node.hasAttribute("data-offset-key"))
-		// {
-		// 	CreateDOMTextInput(node);
-		// 	console.log("Found possible text area on Facebook? ", node);
-		// }
-
-		// Find high res favicons
-		// TODO: Loading of smaller resolutions could be prevented
-		if(node.tagName == "LINK")
+	    // VIDEO
+		if(node.tagName === "VIDEO")
 		{
-			if(node.rel && node.rel.includes("apple-touch-icon"))
-			{
-				SendFaviconURLtoCEF(node.href);
-			}
-			if(node.href && node.href.includes("favicon") && node.href.includes(".png"))
-			{
-				SendFaviconURLtoCEF(node.href);
-			}
-		}
-		if(node.tagName == "META")
-		{
-			if(prop = node.getAttribute("property"))
-			{
-				if(prop.includes("og:image"))
-				{
-					SendFaviconURLtoCEF(node.content);
-				}
-			}
-			if(name = node.getAttribute("name"))
-			{
-				if(name.includes("msapplication-TileImage"))
-				{
-					SendFaviconURLtoCEF(node.content);
-				}
-			}
-			
-		}
-
-		// Find text links
-		if(node.tagName == 'A' )
-		{
-			CreateDOMLink(node);
-		}
-
-        // TODO: it appears to me that button always will create a button, so should be classified as DOMLink. And "none" type for input is text input
-		if(node.tagName == 'INPUT' || node.tagName == "BUTTON") // Fun fact: There exists the combination of tag "BUTTON" and type "submit"
-		{
-			// Identify text input fields
-			if(node.type == 'text' || node.type == 'search' || node.type == 'email' || node.type == 'password')
-			{
-				CreateDOMTextInput(node);
-			}
-
-			// TODO: Handle other kinds of <input> elements
-			if(node.type == 'button' || node.type == 'submit' || node.type == 'reset' || !node.hasAttribute('type'))
-			{
-				// TODO: CreateDOMButton!
-				CreateDOMLink(node);
-			}
-
-			if(node.type === "checkbox")
-			{
-				CreateDOMCheckbox(node);
-			}
-		}
-		// textareas or DIVs, who are treated as text fields
-		if(node.tagName == 'TEXTAREA')
-		{
-			CreateDOMTextInput(node);
-		}
-
-		// Buttons
-		if(node.tagName == 'DIV' && node.getAttribute('role') == 'button')
-		{
-			CreateDOMLink(node);
+		    CreateDOMVideo(node);
 		}
 
 		// GMail
