@@ -60,8 +60,20 @@ std::shared_ptr<const std::deque<std::shared_ptr<HistoryManager::Page> > > Histo
 	return _spPages;
 }
 
+void HistoryManager::ClearHistoryAndDeleteFile()
+{
+	_spPages->clear();
+	std::remove(_fullpathHistory.c_str());
+}
+
 bool HistoryManager::SavePageInHistory(bool initialStoring, int id, std::string URL, std::string title)
 {
+	// Do not save history to file in demo mode
+	if (setup::DEMO_MODE)
+	{
+		return true;
+	}
+
 	// Try to open XML file
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError result = doc.LoadFile(_fullpathHistory.c_str());
@@ -164,6 +176,12 @@ bool HistoryManager::LoadHistory()
 {
     // Clean local history copy
 	_spPages->clear();
+
+	// Do not load history to file in demo mode
+	if (setup::DEMO_MODE)
+	{
+		return true;
+	}
 
 	// Open document
 	tinyxml2::XMLDocument doc;

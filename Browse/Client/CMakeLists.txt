@@ -32,6 +32,10 @@ if(OS_WINDOWS) # Windows
 	set(CLIENT_BUILD_TOBII_EYEX_PLUGIN ON CACHE BOOL "Build plugin for Tobii EyeX.")
 	set(CLIENT_TOBII_EYEX_SDK_PATH "C:/TobiiEyeXSDK-CPP/TobiiEyeXSDK" CACHE PATH "Path to Tobii EyeX SDK.")
 	
+	# Tobii Pro
+	set(CLIENT_BUILD_TOBII_PRO_PLUGIN OFF CACHE BOOL "Build plugin for Tobii Pro.")
+	set(CLIENT_TOBII_PRO_SDK_PATH "C:/tobii_research" CACHE PATH "Path to Tobii Pro SDK.")
+	
 	# Sensor Lib integration
 	set(CLIENT_SENSOR_LIB_INTEGRATION OFF CACHE BOOL "Integrate Sensor Lib.")
 	
@@ -518,5 +522,45 @@ if(${CLIENT_BUILD_TOBII_EYEX_PLUGIN})
 	
 	else()
 		message(WARNING "Tobii EyeX SDK directory not found, plugin will *not* be built.")
+	endif()
+endif()
+
+# Plugin for Tobii Pro
+if(${CLIENT_BUILD_TOBII_PRO_PLUGIN})
+
+	# Check for SDK path
+	if(EXISTS ${CLIENT_TOBII_PRO_SDK_PATH})
+	
+		# Tobii Pro SDK
+		include_directories("${CLIENT_TOBII_PRO_SDK_PATH}/32/include")
+		set(TOBII_PRO_SDK_LIBRARIES "${CLIENT_TOBII_PRO_SDK_PATH}/32/lib/tobii_research.lib")
+
+		# Plugin project
+		add_library(
+			TobiiProPlugin
+			MODULE
+			${EYETRACKER_PLUGIN_DIRECTORY}/Interface/Eyetracker.h
+			${EYETRACKER_PLUGIN_DIRECTORY}/Interface/EyetrackerSample.h
+			${EYETRACKER_PLUGIN_DIRECTORY}/Interface/EyetrackerInfo.h
+			${EYETRACKER_PLUGIN_DIRECTORY}/Interface/EyetrackerGeometry.h
+			${EYETRACKER_PLUGIN_DIRECTORY}/Common/EyetrackerData.h
+			${EYETRACKER_PLUGIN_DIRECTORY}/Common/EyetrackerData.cpp
+			${EYETRACKER_PLUGIN_DIRECTORY}/TobiiPro/TobiiProImpl.cpp
+			${CLIENT_COMMON_PATH}/LabStream/LabStream.cpp)
+			
+		# Link SDK and LSL
+		target_link_libraries(TobiiProPlugin ${TOBII_PRO_SDK_LIBRARIES} ${LIBLSL_LIBRARIES})
+		
+		# Tell user about it
+		message(STATUS "Plugin for Tobii Pro will be built.")
+		
+		# Copy Tobii Pro library to output folder
+		add_custom_command(TARGET TobiiProPlugin POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${CLIENT_TOBII_PRO_SDK_PATH}/32/lib/tobii_research.dll"
+			$<TARGET_FILE_DIR:TobiiProPlugin>)
+	
+	else()
+		message(WARNING "Tobii Pro SDK directory not found, plugin will *not* be built.")
 	endif()
 endif()

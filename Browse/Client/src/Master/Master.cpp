@@ -118,19 +118,22 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     glfwInit();
     LogInfo("..done.");
 
-    // Window mode and size
+    // Window mode and size (assumption: use primary monitor, only)
     GLFWmonitor* usedMonitor = NULL;
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode * mode = glfwGetVideoMode(monitor);
+	_monitorWidth = mode->width;
+	_monitorHeight = mode->height;
     if (setup::FULLSCREEN)
     {
         LogInfo("Fullscreen mode");
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode * mode = glfwGetVideoMode(monitor);
-        _width = mode->width;
-        _height = mode->height;
+        _width = _monitorWidth;
+        _height = _monitorHeight;
         usedMonitor = monitor;
     }
     else
     {
+		
         LogInfo("Windowed mode");
     }
 
@@ -374,12 +377,13 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     // ### HOMEPAGE ###
 	// _upWeb->AddTab("https://developer.mozilla.org/en-US/docs/Web/CSS/overflow");
 	// _upWeb->AddTab("http://html5-demos.appspot.com/static/fullscreen.html");
-	// _upWeb->AddTab(std::string(CONTENT_PATH) + "/websites/index.html");
+	// _upWeb->AddTab(std::string(CONTENT_PATH) + "/websites/test/index.html");
 	// _upWeb->AddTab(_upSettings->GetHomepage());
 
 	if (setup::DEMO_MODE)
 	{
-		_upWeb->AddTab(_upSettings->GetHomepage());
+		// Perform initial reset, includes tab setup
+		_upWeb->DemoModeReset();
 	}
 	else
 	{
@@ -522,14 +526,15 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 
     // ### OTHER ###
 
-	// Maximize window if required
+	// Treat window
 #ifdef _WIN32 // Windows
-	if (!setup::FULLSCREEN && setup::MAXIMIZE_WINDOW)
-	{
-		// Fetch handle to window from GLFW
-		auto Hwnd = glfwGetWin32Window(_pWindow);
 
-		/*
+	// Fetch handle to window from GLFW
+	auto Hwnd = glfwGetWin32Window(_pWindow);
+
+	// Remove window decoration
+	if (!setup::FULLSCREEN && setup::REMOVE_WINDOW_DECORATION)
+	{
 		// Remove frame from window
 		LONG lStyle = GetWindowLong(Hwnd, GWL_STYLE);
 		lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
@@ -539,11 +544,15 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		LONG lExStyle = GetWindowLong(Hwnd, GWL_EXSTYLE);
 		lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
 		SetWindowLong(Hwnd, GWL_EXSTYLE, lExStyle);
-		*/
+	}
 
+	// Maximize window
+	if (!setup::FULLSCREEN && setup::MAXIMIZE_WINDOW)
+	{
 		// Maximize window
 		SendMessage(Hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
 	}
+
 #endif
 
     // Time
@@ -874,7 +883,9 @@ void Master::Loop()
 			windowX,
 			windowY,
 			_width,
-			_height); // returns whether gaze was used (or emulated by mouse)
+			_height,
+			_monitorWidth,
+			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
 
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
@@ -1071,6 +1082,28 @@ void Master::Loop()
             _currentState = nextState;
         }
 
+		// If demo mode reset, just reset to Web
+		if (_demoModeReset)
+		{
+			// deactivate current state
+			switch (_currentState)
+			{
+			case StateType::WEB:
+				_upWeb->Deactivate();
+				break;
+			case StateType::SETTINGS:
+				_upSettings->Deactivate();
+				break;
+			}
+
+			// Activate Web state
+			_upWeb->Activate();
+			_currentState = StateType::WEB;
+
+			// Remember to have it performed
+			_demoModeReset = false;
+		}
+
 		// Enable depth test again
 		glEnable(GL_DEPTH_TEST);
 
@@ -1211,17 +1244,31 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
     {
         switch (key)
         {
-            case GLFW_KEY_ESCAPE: { Exit(); break; }
+			case GLFW_KEY_ESCAPE: { if (!setup::DEMO_MODE) { Exit();} break; }
             case GLFW_KEY_TAB:  { eyegui::hitButton(_pSuperLayout, "pause"); break; }
             case GLFW_KEY_ENTER: { _enterKeyPressed = true; break; }
+			case GLFW_KEY_SPACE: { _enterKeyPressed = true; break; }
 			// case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
 			case GLFW_KEY_R: { ShowSuperCalibrationLayout(); break; } // just show the super calibration layout
 			// case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
 			// case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
 			// case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
-			case GLFW_KEY_0: { _pCefMediator->ShowDevTools(); break; }
+			case GLFW_KEY_0: { if (!setup::DEPLOYMENT && !setup::DEMO_MODE) { _pCefMediator->ShowDevTools(); } break; }
 			// case GLFW_KEY_SPACE: { _upVoiceInput->StartAudioRecording(); break; }
 			// case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
+			case GLFW_KEY_D: {
+				if (mods & GLFW_MOD_CONTROL)
+				{
+					if (setup::DEMO_MODE)
+					{
+						_upWeb->DemoModeReset();
+						_demoModeReset = true;
+						eyegui::buttonDown(_pSuperLayout, "pause");
+						PushNotification(u"Demo Mode Reset", MasterNotificationInterface::Type::SUCCESS, false);
+						LogInfo("Demo Mode Reset");
+					}
+				}
+				break; }
         }
     }
 	else if (action == GLFW_RELEASE)
@@ -1425,6 +1472,9 @@ void Master::PushEyetrackerStatusThreadJob::Execute()
 			break;
 		case EyeTrackerDevice::TOBII_EYEX:
 			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected_tobii_eyex", MasterNotificationInterface::Type::SUCCESS, false);
+			break;
+		case EyeTrackerDevice::TOBII_PRO:
+			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected_tobii_pro", MasterNotificationInterface::Type::SUCCESS, false);
 			break;
 		default:
 			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected", MasterNotificationInterface::Type::SUCCESS, false);

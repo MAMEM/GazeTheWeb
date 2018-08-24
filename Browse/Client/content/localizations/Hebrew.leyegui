@@ -95,6 +95,7 @@ notification:eye_tracker_status:connected_open_gaze=מחובר Open Gaze API
 notification:eye_tracker_status:connected_smi_redn=מחובר SMI REDn Driver
 notification:eye_tracker_status:connected_vi_mygaze=מחובר VI myGaze Driver
 notification:eye_tracker_status:connected_tobii_eyex=מחובר Tobii EyeX Driver
+notification:eye_tracker_status:connected_tobii_pro=מחובר Tobii Pro Driver
 notification:eye_tracker_status:connected=מחובר Eye Tracking Driver
 notification:eye_tracker_status:disconnected=מנותק Eye Tracking Driver
 notification:calibration_success=כיול מוצלח

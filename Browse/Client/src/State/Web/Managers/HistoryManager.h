@@ -33,6 +33,9 @@ public:
 	// Get history
 	std::shared_ptr<const std::deque<std::shared_ptr<Page> > > GetHistory() const;
 
+	// Clear history and delete history file
+	void ClearHistoryAndDeleteFile();
+
 private:
 
 	// Friend class

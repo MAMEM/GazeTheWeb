@@ -137,6 +137,13 @@ EyeInput::EyeInput(MasterThreadsafeInterface* _pMasterThreadsafeInterface, Eyetr
 			ConnectEyeTracker("TobiiEyeXPlugin");
 		}
 
+		// Try to load Tobii Pro plugin
+		if (!_info.connected && setup::CONNECT_TOBII_PRO)
+		{
+			device = EyeTrackerDevice::TOBII_PRO;
+			ConnectEyeTracker("TobiiProPlugin");
+		}
+
 		// If not connected to any eye tracker and provide feedback
 		if (!_info.connected)
 		{
@@ -213,7 +220,9 @@ std::shared_ptr<Input> EyeInput::Update(
 	int windowX,
 	int windowY,
 	int windowWidth,
-	int windowHeight)
+	int windowHeight,
+	int monitorWidth,
+	int monitorHeight)
 {
 	// ### UPDATE GAZE INPUT ###
 
@@ -231,7 +240,6 @@ std::shared_ptr<Input> EyeInput::Update(
 		// Fetch samples
 		_procFetchGazeSamples(spSamples); // shared pointered vector is filled by fetch procedure
 
-		/*
 		// Expecting in screen pixel space
 		for (auto& sample : *spSamples)
 		{
@@ -241,11 +249,14 @@ std::shared_ptr<Input> EyeInput::Update(
 				// everything ok
 				break;
 			case SampleDataCoordinateSystem::SCREEN_RELATIVE:
-				// TODO: this is hacky for multiple monitors... on which is the eye trackers / window displayed?
+				// bring samples into pixel space of monitor (TODO: right now, this does only work for primary monitor)
+				sample.x = sample.x * monitorWidth;
+				sample.y = sample.y * monitorHeight;
+				sample.system = SampleDataCoordinateSystem::SCREEN_PIXELS;
+				LogInfo("Gaze: ", sample.x, ", ", sample.y);
 				break;
 			}
 		}
-		*/
 
 		// Convert parameters to double (use same values for all samples,
 		double windowXDouble = (double)windowX;

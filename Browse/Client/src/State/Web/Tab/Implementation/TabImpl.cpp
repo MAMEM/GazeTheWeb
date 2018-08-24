@@ -112,7 +112,17 @@ Tab::Tab(
 	InitDebuggingOverlay();
 
 	// Fill version string
-	eyegui::setContentOfTextBlock(_pPanelLayout, "version_info", "Version " + std::string(CLIENT_VERSION));
+	if (setup::DEMO_MODE)
+	{
+		eyegui::setContentOfTextBlock(_pPanelLayout, "version_info", "Demo Mode");
+		eyegui::setElementActivity(_pPanelLayout, "dashboard", false, false);
+		eyegui::setElementActivity(_pPanelLayout, "zoom", false, false);
+		eyegui::setElementActivity(_pPanelLayout, "selection", false, false);
+	}
+	else
+	{
+		eyegui::setContentOfTextBlock(_pPanelLayout, "version_info", "Version " + std::string(CLIENT_VERSION));
+	}
 }
 
 Tab::~Tab()

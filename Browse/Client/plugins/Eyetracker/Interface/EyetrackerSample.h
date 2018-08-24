@@ -20,7 +20,7 @@ enum class SampleDataCoordinateSystem
 struct SampleData
 {
 	// Constructor
-	SampleData(double x, double y, SampleDataCoordinateSystem system, std::chrono::milliseconds timestamp, bool valid) : x(x), y(y), timestamp(timestamp), valid(valid)
+	SampleData(double x, double y, SampleDataCoordinateSystem system, std::chrono::milliseconds timestamp, bool valid) : x(x), y(y), system(system), timestamp(timestamp), valid(valid)
 	{};
 
 	// Fields

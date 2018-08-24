@@ -33,6 +33,7 @@ namespace setup
 	// Window
 	static const bool	FULLSCREEN = false; // does not work in combination with eye tracker calibration
 	static const bool	MAXIMIZE_WINDOW = false | DEPLOYMENT | DEMO_MODE; // only implemented for Windows
+	static const bool	REMOVE_WINDOW_DECORATION = DEMO_MODE;
 	static const int	INITIAL_WINDOW_WIDTH = 1280;
 	static const int	INITIAL_WINDOW_HEIGHT = 720;
 
@@ -41,6 +42,7 @@ namespace setup
 	static const bool	CONNECT_SMI_IVIEWX = false;
 	static const bool	CONNECT_VI_MYGAZE = true | DEPLOYMENT;
 	static const bool	CONNECT_TOBII_EYEX = true;
+	static const bool	CONNECT_TOBII_PRO = false;
 	static const float	DURATION_BEFORE_INPUT = 1.f; // wait one second before accepting input
 	static const float	MAX_AGE_OF_USED_GAZE = 0.25f; // only accept gaze as input that is not older than one second (TODO: this is not used by filter but by master to determine when to stop taking gaze input as serious)
 	static const float	DURATION_BEFORE_SUPER_CALIBRATION = 30.f; // duration until recalibration is offered after receiving no gaze samples
@@ -57,7 +59,7 @@ namespace setup
 	static const bool	FILTER_USE_OUTLIER_REMOVAL = true;
 
 	// Distortion
-	static const bool	EYEINPUT_DISTORT_GAZE = false && !DEPLOYMENT;
+	static const bool	EYEINPUT_DISTORT_GAZE = false && !(DEPLOYMENT || DEMO_MODE);
 	static const float	EYEINPUT_DISTORT_GAZE_BIAS_X = 64.f; // pixels
 	static const float	EYEINPUT_DISTORT_GAZE_BIAS_Y = 32.f; // pixels
 

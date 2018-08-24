@@ -30,8 +30,6 @@ bool LinkNavigationAction::Update(float tpf, const std::shared_ptr<const TabInpu
 	double CEFPixelX = coordinate.x;
 	double CEFPixelY = coordinate.y;
 
-	// TODO: Deactivated link click correction
-	/*
     double scrollingX, scrollingY;
     _pTab->GetScrollingOffset(scrollingX, scrollingY);
 	
@@ -57,7 +55,6 @@ bool LinkNavigationAction::Update(float tpf, const std::shared_ptr<const TabInpu
             }
         }
     }
-	*/
 
     // Emulate left mouse button click (TODO: assumption that this was actively triggered by a user)
     _pTab->EmulateLeftMouseButtonClick(CEFPixelX, CEFPixelY, visualize > 0, false, true); // coordinate already in CEFPixel space

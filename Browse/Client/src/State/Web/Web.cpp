@@ -11,6 +11,7 @@
 #include "src/Utils/Texture.h"
 #include "src/Utils/MakeUnique.h"
 #include "src/Arguments.h"
+#include "src/ContentPath.h"
 #include <algorithm>
 
 
@@ -53,6 +54,12 @@ Web::Web(Master* pMaster, Mediator* pCefMediator, bool dataTransfer) : State(pMa
     eyegui::registerButtonListener(_pTabOverviewLayout, "reload_tab", _spWebButtonListener);
     eyegui::registerButtonListener(_pTabOverviewLayout, "edit_url", _spWebButtonListener);
 	eyegui::registerButtonListener(_pTabOverviewLayout, "bookmark_tab", _spWebButtonListener);
+
+	// If firebase mailing is not activated, no "no data transfer" button is required
+	if (!setup::FIREBASE_MAILING)
+	{
+		eyegui::setElementActivity(_pWebLayout, "no_data_transfer", false, false);
+	}
 
 	// Regular expression for URL validation
 	_upURLregex = std::make_unique<std::regex>(
@@ -399,6 +406,27 @@ void Web::SetAward(Award award)
 	}
 }
 
+void Web::DemoModeReset()
+{
+	// Tabs
+	RemoveAllTabs();
+	AddTab(RUNTIME_CONTENT_PATH + "/websites/demo/index.html");
+
+	// History
+	_upHistoryManager->ClearHistoryAndDeleteFile();
+
+	// Bookmarks
+	_upBookmarkManager->ClearBookmarksAndDeleteFile();
+	_upBookmarkManager->AddBookmark("west.uni-koblenz.de/en");
+	_upBookmarkManager->AddBookmark("www.gazetheweb.com");
+	_upBookmarkManager->AddBookmark("www.cebit.de/en");
+	_upBookmarkManager->AddBookmark("www.mamem.eu");
+	_upBookmarkManager->AddBookmark("www.youtube.com");
+	_upBookmarkManager->AddBookmark("C:/wikipedia-simple-html/simple/index.html");
+	
+	// Settings?
+}
+
 StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput)
 {
     // Process jobs first
@@ -546,12 +574,16 @@ void Web::Deactivate()
     // Layout
     eyegui::setVisibilityOfLayout(_pWebLayout, false, true, false);
 
+	// Deactivate all tabs
     if(_currentTabId >= 0)
     {
         _tabs.at(_currentTabId)->Deactivate();
     }
 
+	// Reset all screens
     ShowTabOverview(false);
+	if (_upHistory->IsActive()) { _upHistory->Deactivate(); }
+	if (_upURLInput->IsActive()) { _upURLInput->Deactivate(); }
 }
 
 void Web::PushAddTabAfterJob(Tab* pCaller, std::string URL, CefRefPtr<CefRequestContext> request_context)

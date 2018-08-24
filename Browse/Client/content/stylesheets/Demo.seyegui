@@ -1,6 +1,6 @@
 default
 {
-	ButtonThresholdIncreaseDuration = 1.25
+	ButtonThresholdIncreaseDuration = 1.0
 	ButtonThresholdDecreaseDuration = 2.5
 	ButtonPressingDuration = 0.3
 }

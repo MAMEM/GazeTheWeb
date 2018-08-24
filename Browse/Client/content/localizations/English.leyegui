@@ -95,6 +95,7 @@ notification:eye_tracker_status:connected_open_gaze=Open Gaze API Connected
 notification:eye_tracker_status:connected_smi_redn=SMI REDn Driver Connected
 notification:eye_tracker_status:connected_vi_mygaze=VI myGaze Driver Connected
 notification:eye_tracker_status:connected_tobii_eyex=Tobii EyeX Driver Connected
+notification:eye_tracker_status:connected_tobii_pro=Tobii Pro Driver Connected
 notification:eye_tracker_status:connected=Eye Tracking Driver Connected
 notification:eye_tracker_status:disconnected=Eye Tracking Driver Disconnected
 notification:calibration_success=Calibration Successful

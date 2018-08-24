@@ -51,7 +51,9 @@ public:
 		int windowX,
 		int windowY,
 		int windowWidth,
-		int windowHeight);
+		int windowHeight,
+		int monitorWidth,
+		int monitorHeight);
 
 	// Calibrate the eye tracking device, returns result
 	CalibrationResult Calibrate(std::shared_ptr<CalibrationInfo>& rspCalibrationInfo);

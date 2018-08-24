@@ -176,7 +176,7 @@ EyetrackerInfo Connect(EyetrackerGeometry geometry)
 	if (success)
 	{
 		info.connected = true;
-		info.samplerate = 90;
+		info.samplerate = 90; // 60 for EyeX and 90 for 4C
 	}
 
 	// Return success

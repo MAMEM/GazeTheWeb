@@ -81,6 +81,9 @@ public:
 	// Set award
 	void SetAward(Award award);
 
+	// Demo mode reset (clear and delete history and bookmarks, reset tabs etc.)
+	void DemoModeReset();
+
     // #############
     // ### STATE ###
     // #############

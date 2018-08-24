@@ -36,6 +36,9 @@ public:
 	// Check for existence
 	bool IsBookmark(std::string URL) const;
 
+	// Clear bookmarks and delete bookmark file
+	void ClearBookmarksAndDeleteFile();
+
 private:
 
 	// Save bookmarks to hard disk. Returns whether successful
