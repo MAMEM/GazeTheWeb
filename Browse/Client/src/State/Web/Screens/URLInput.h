@@ -19,14 +19,17 @@ class URLInput
 {
 public:
 
+	// Enumeration about status of URL
+	enum Status { PENDING, MANUAL_URL, BOOKMARK_URL };
+
     // Constructor
-    URLInput(Master* pMaster, BookmarkManager const * pBookmarkManager);
+    URLInput(Master* pMaster, BookmarkManager* pBookmarkManager);
 
     // Destructor
     virtual ~URLInput();
 
     // Update while active. Returns whether input is finished. URL is empty if aborted
-    bool Update();
+	Status Update();
 
     // Activate
     void Activate(int tabId);
@@ -68,14 +71,15 @@ private:
         URLInput* _pURLInput;
     };
 
-    class URLButtonListener : public eyegui::ButtonListener
-    {
-    public:
+	class URLButtonListener : public eyegui::ButtonListener
+	{
+	public:
 
-        URLButtonListener(URLInput* pURLInput) { _pURLInput = pURLInput; }
-        void hit(eyegui::Layout* pLayout, std::string id) {}
-        void down(eyegui::Layout* pLayout, std::string id);
-        void up(eyegui::Layout* pLayout, std::string id) {}
+		URLButtonListener(URLInput* pURLInput) { _pURLInput = pURLInput; }
+		virtual void hit(eyegui::Layout* pLayout, std::string id) {}
+		virtual void down(eyegui::Layout* pLayout, std::string id);
+		virtual void up(eyegui::Layout* pLayout, std::string id);
+		virtual void selected(eyegui::Layout* pLayout, std::string id) {}
 
     private:
 
@@ -90,7 +94,7 @@ private:
     Master* _pMaster;
 
 	// Pointer to bookmark manager
-	BookmarkManager const * _pBookmarkManager;
+	BookmarkManager* _pBookmarkManager;
 
     // Pointer to layouts
     eyegui::Layout* _pLayout;
@@ -102,8 +106,8 @@ private:
     // Bool whether active
     bool _active = false;
 
-    // Bool whether input is finished
-    bool _finished = false;
+    // Status of URL input
+	Status _status = Status::PENDING;
 
     // Id of current tab
     int _currentTabId = -1;

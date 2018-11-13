@@ -54,6 +54,14 @@ void Tab::SetPositionOfFloatingFrameInOverlay(
 	eyegui::setPositionOfFloatingFrame(_pOverlayLayout, index, relativePositionX, relativePositionY);
 }
 
+void Tab::SetSizeOfFloatingFrameInOverlay(
+	int index,
+	float relativeWidth,
+	float relativeHeight)
+{
+	eyegui::setSizeOfFloatingFrame(_pOverlayLayout, index, relativeWidth, relativeHeight);
+}
+
 void Tab::SetVisibilityOfFloatingFrameInOverlay(int index, bool visible)
 {
 	// Reset when becoming visible
@@ -65,7 +73,7 @@ void Tab::RemoveFloatingFrameFromOverlay(int index)
 	eyegui::removeFloatingFrame(_pOverlayLayout, index, true);
 }
 
-void Tab::RegisterButtonListenerInOverlay(std::string id, std::function<void(void)> downCallback, std::function<void(void)> upCallback)
+void Tab::RegisterButtonListenerInOverlay(std::string id, std::function<void(void)> downCallback, std::function<void(void)> upCallback, std::function<void(void)> selectedCallback)
 {
 	// Log bug when id already existing
 	auto iter = _overlayButtonDownCallbacks.find(id);
@@ -78,9 +86,15 @@ void Tab::RegisterButtonListenerInOverlay(std::string id, std::function<void(voi
 	{
 		LogBug("Tab: Element id exists already in overlay button up callbacks: ", id);
 	}
+	iter = _overlayButtonSelectedCallbacks.find(id);
+	if (iter != _overlayButtonSelectedCallbacks.end())
+	{
+		LogBug("Tab: Element id exists already in overlay button selected callbacks: ", id);
+	}
 
 	_overlayButtonDownCallbacks.emplace(id, downCallback);
 	_overlayButtonUpCallbacks.emplace(id, upCallback);
+	_overlayButtonSelectedCallbacks.emplace(id, selectedCallback);
 
 	// Tell eyeGUI about it
 	eyegui::registerButtonListener(_pOverlayLayout, id, _spTabOverlayButtonListener);
@@ -90,6 +104,12 @@ void Tab::UnregisterButtonListenerInOverlay(std::string id)
 {
 	_overlayButtonDownCallbacks.erase(id);
 	_overlayButtonUpCallbacks.erase(id);
+	_overlayButtonSelectedCallbacks.erase(id);
+}
+
+void Tab::ClassifyButton(std::string id, bool accept)
+{
+	eyegui::classifyButton(_pOverlayLayout, id, accept);
 }
 
 void Tab::RegisterKeyboardListenerInOverlay(std::string id, std::function<void(std::string)> selectCallback, std::function<void(std::u16string)> pressCallback)
@@ -288,4 +308,9 @@ int Tab::GetWindowWidth() const
 int Tab::GetWindowHeight() const
 {
 	return _pMaster->GetWindowHeight();
+}
+
+void Tab::ApplyGazeDriftCorrection(float& rPixelX, float& rPixelY) const
+{
+	_pMaster->ApplyGazeDriftCorrection(rPixelX, rPixelY);
 }

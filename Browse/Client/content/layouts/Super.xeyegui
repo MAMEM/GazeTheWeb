@@ -4,7 +4,7 @@
 		<row size="16%">
 			<column size="9%">
 				<stack showbackground="true" style="default_noback" backgroundsrc="graphics/PauseBackground.png" backgroundalignment="stretched">
-					<circlebutton border="7%" switch="true" icon="icons/Pause.png" desckey="pause:pause" id="pause" style="pause"/>
+					<circlebutton border="7%" switch="true" icon="icons/GlobalPause.png" desckey="pause:pause" id="pause" style="pause"/>
 				</stack>
 			</column>
 			<column size="91%"/>

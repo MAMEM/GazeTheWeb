@@ -11,15 +11,17 @@
 ConsolePrint("Starting to import dom_nodes.js ...");
 
 /*
-   ___  ____  __  ____  __        __      
-  / _ \/ __ \/  |/  / |/ /__  ___/ /__ ___
- / // / /_/ / /|_/ /    / _ \/ _  / -_|_-<
-/____/\____/_/  /_/_/|_/\___/\_,_/\__/___/
+    ____  ____  __  ____   __          __   
+   / __ \/ __ \/  |/  / | / /___  ____/ /__ 
+  / / / / / / / /|_/ /  |/ / __ \/ __  / _ \
+ / /_/ / /_/ / /  / / /|  / /_/ / /_/ /  __/
+/_____/\____/_/  /_/_/ |_/\____/\__,_/\___/ 
+                                            
 */
 // Contains lists to all kinds of DOMNode derivates, position defined by numeric node type
 window.domNodes = [];
 
-function DOMNode(node, id, type)
+function DOMNode(node, id, type, cef_hidden=false)
 {    
     // TODO: Check if node already refers to an DOMObject?
 
@@ -36,26 +38,26 @@ function DOMNode(node, id, type)
     this.node = node;
     this.id = id;
     this.type = type;
+    this.cef_hidden = cef_hidden;
 
     this.rects = []
+    this.bitmask = [0];
     // MutationObserver will handle setting up the following references, if necessary
     this.fixObj = undefined;
-    this.overflow = undefined;
+    this.overflow = undefined;  // TODO: Rename to overflowObj for consistency?
 
-    // Initial setup of fixObj, if already set in node
-    this.setFixObj(  GetFixedElementById( node.getAttribute("fixedId") )  );
-    if(this.fixObj === undefined)
-        this.setFixObj(  GetFixedElementById( node.getAttribute("childFixedId") )  );
+    // Initial setup of fixObj & overflow objects
+    this.fixObj = GetFixedElementById(node.getAttribute("fixedId")) || GetFixedElementById(node.getAttribute("childFixedId"));
+    this.overflow = GetDOMOverflowElement(node.getAttribute("overflowid"));
 
-    // Initial setup of overflow, if already set in node
-    var overflowId = node.getAttribute("overflowid");
-    if(overflowId !== null)
-        this.setOverflow(GetDOMOverflowElement(overflowId));
 
-    this.cppReady = false; // TODO: Queuing calls, when node isn't ready yet?
+    this.cppReady = false; // TODO: Queueing calls, when node isn't ready yet?
 
-    // Inform C++ about added DOMNode
-    ConsolePrint("DOM#add#"+type+"#"+id+"#");
+    if(!this.cef_hidden)
+    {
+        // Inform C++ about added DOMNode
+        ConsolePrint("DOM#add#"+type+"#"+id+"#");
+    }
 }
 DOMNode.prototype.Class = "DOMNode";
 
@@ -65,6 +67,19 @@ DOMNode.prototype.getId = function(){
 }
 DOMNode.prototype.getType = function(){
     return this.type;
+}
+DOMNode.prototype.setCefHidden = function(hidden){
+    if(hidden === this.cef_hidden)
+        return;
+
+    this.cef_hidden = hidden;
+    if(hidden)
+        ConsolePrint("DOM#rem#"+this.getType()+"#"+this.getId()+"#");
+    else
+        ConsolePrint("DOM#add#"+this.getType()+"#"+this.getId()+"#");
+}
+DOMNode.prototype.getCefHidden = function(){
+    return this.cef_hidden;
 }
 
 // DOMAttribute Rects
@@ -119,33 +134,154 @@ DOMNode.prototype.updateRects = function(altNode){
     }
 
     var adjustedRects = this.getAdjustedClientRects(altNode);
-    
-    if(!EqualClientRectsData(this.rects, adjustedRects))
+
+
+    var rects_changed = !EqualClientRectsData(this.rects, adjustedRects);
+    if(rects_changed)
     {
         this.rects = adjustedRects;
 
-        var t1 = performance.now();
-        if(this.rects.length > 0)
-        {
-            // TODO: Only update rects, if position contained in window?
-            // DEBUG - toplayer bitmap
-            var bm = [];
-            var r = this.rects[0];
-            bm.push(Number(document.elementFromPoint(r[0],r[1]) == (altNode || this.node)));
-            bm.push(Number(document.elementFromPoint(r[0],r[3]) == (altNode || this.node)));
-            bm.push(Number(document.elementFromPoint(r[2],r[3]) == (altNode || this.node)));
-            bm.push(Number(document.elementFromPoint(r[2],r[1]) == (altNode || this.node)));
-            this.bitmap = bm;
-            ConsolePrint("#TEST#"+bm+"#");
-        }
-        UpdateBitmaskTimer(t1);
-
         SendAttributeChangesToCEF("Rects", this);
-        UpdateRectUpdateTimer(t0);
-        return true; // Rects changed and were updated
     }
     UpdateRectUpdateTimer(t0);
-    return false; // No update needed, no changes
+    
+    this.updateOccBitmask(altNode);
+    
+    return rects_changed; // No update needed, no changes
+}
+
+DOMNode.prototype.updateOccBitmask = function(altNode, debug){
+    var t1 = performance.now();
+    var bm = [];
+    if(this.rects.length > 0)
+    {
+        // Cut with possible overflows hidding node partially
+        var r = Object.assign({}, this.getRects(false)[0]); // deepcopy array, otherwise, coordinates will be changed by the following
+
+        if(debug)
+            console.log("scroll X: ", window.scrollX, ", Y: ", window.scrollY, "\nrects before: ", r);
+        var not_fixed = Number(!Boolean(this.fixObj));
+        r[0] = Math.floor(r[0])+1 - window.scrollY * not_fixed;
+        r[1] = Math.floor(r[1])+1 - window.scrollX * not_fixed;
+        r[2] = Math.floor(r[2])-1 - window.scrollY * not_fixed;
+        r[3] = Math.floor(r[3])-1 - window.scrollX * not_fixed;
+        if(debug)
+            console.log("Used coordinates:", r);
+        // rect corners
+        var pts = [[r[1],r[0]], [r[3],r[0]], [r[3],r[2]], [r[1],r[2]]]; // Note: Seems infinitely small amount to high
+        pts.forEach( (pt) => { // pt[0] == x, pt[1] == y
+            // Rect point in currently shown part of website?
+            // if(pt[0] < window.scrollX || pt[0] > window.scrollX + window.innerWidth ||
+                // pt[1] < window.scrollY || pt[1] > window.scrollY + window.innerHeight)
+                    // bm.push(0);
+            // else
+            // NOTE: OccBitmask is updated less frequently than scrolling may happen!
+            if(true)
+            {
+                // Fix for facebook chat being occluded by child divs
+                if(this.node.tagName == "DIV")
+                {
+                    var layers = document.elementsFromPoint(pt[0], pt[1]);
+                    var layer_id = layers.indexOf(this.node); // TODO: Use altNode instead?
+                    
+                    if(debug)
+                    {
+                        console.log("layer_id:",layer_id);
+                        console.log("layers:", layers);
+                        console.log("pt:", pt);
+                    }
+                    if(layer_id === -1)
+                    {
+                        // Not in layers at all. Shouldn't happen!
+                        bm.push(1);
+                        return;
+                    }
+                    // Is in top layer!
+                    else if(layer_id === 0)
+                    {
+                        bm.push(0);
+                        return;
+                    }
+                    else
+                    {
+                        var parent_for_top_layers = true;
+                        for(var i = layer_id - 1; i >= 0 && parent_for_top_layers; i--)
+                        {
+                            try
+                            {
+                                // Surrounded by anonymous lambda function, because otherwise JS interrupts with maximum
+                                // call stack size reached. When redefining "IsAncestor" in console, it works - just like this.
+                                var generations = (() => { IsAncestor(layers[i], this.node) })();
+                            }
+                            catch(e)
+                            {
+                                var generations = 0;
+                                console.log("IsAncestor failed!");
+                            }
+                            
+                            if(debug)
+                            {
+                                console.log(i, generations, layers[i]);
+                            }
+                            if(generations <= 0) 
+                                parent_for_top_layers = false;
+                        }
+                        
+                        bm.push((!parent_for_top_layers & 1));
+                        return;
+                    }
+                }
+
+                var topNode = document.elementFromPoint(pt[0], pt[1]);
+                if(debug)
+                {
+                    console.log(this.getType(), this.getId(), ": (", pt[0], ",", pt[1], ") => ", topNode);
+                    console.log(document.elementsFromPoint(pt[0], pt[1]));//.slice(0,3));
+                }
+
+                if (!topNode)
+                {
+                    bm.push(0);
+                }
+                else if(//this.node.tagName === "A" && 
+                            (topNode.parentElement === this.node || 
+                                // Quick fix for facebook chat, check if this can be generalized in some way
+                                (topNode.parentElement && topNode.parentElement.parentElement === this.node) 
+                            )
+                        )
+                        {
+                            bm.push(0);
+                        }
+                else
+                    bm.push(Number(topNode !== (altNode || this.node)));
+            }
+        });
+
+    }
+    else
+        bm = [0];
+    
+    var changed = (bm.length !== this.bitmask.length);
+    for(var i = 0, n = bm.length; i < n && !changed; i++)
+        changed = (bm[i] != this.bitmask[i]);
+
+    if (changed)
+    {
+        // DEBUG
+        // console.log(this.getId()+": OccBitmask changed: ", this.bitmask, " --> "+bm+" | cppReady? "+this.cppReady);
+
+        this.bitmask = bm;
+        SendAttributeChangesToCEF("OccBitmask", this);
+    }
+    // DEBUG
+    else
+        // console.log(this.getId()+": OccBitmask didn't change ... "+this.bitmask+" === "+bm+" | cppReady? "+this.cppReady);
+
+    UpdateBitmaskTimer(t1);
+}
+
+DOMNode.prototype.getOccBitmask = function(){
+    return this.bitmask
 }
 
 // DOMAttribute FixedId
@@ -198,31 +334,21 @@ DOMNode.prototype.setOverflowViaId = function(id){
     this.setOverflow(obj);
 }
 
-// TODO: What was this good for? oO
-DOMNode.prototype.setDOMAttribute = function(str){
-    switch(str){
-        case "fixed":
-            return this.setFixed;
-        case "overflow":
-            return this.setOverflow;
-    }
-    return undefined;
-}
-
 
 /*
-   ___  ____  __  _________        __  ____               __    
-  / _ \/ __ \/  |/  /_  __/____ __/ /_/  _/__  ___  __ __/ /____
- / // / /_/ / /|_/ / / / / -_) \ / __// // _ \/ _ \/ // / __(_-<
-/____/\____/_/  /_/ /_/  \__/_\_\\__/___/_//_/ .__/\_,_/\__/___/
-                                            /_/ 
+    ____  ____  __  _________          __  ____                  __ 
+   / __ \/ __ \/  |/  /_  __/__  _  __/ /_/  _/___  ____  __  __/ /_
+  / / / / / / / /|_/ / / / / _ \| |/_/ __// // __ \/ __ \/ / / / __/
+ / /_/ / /_/ / /  / / / / /  __/>  </ /__/ // / / / /_/ / /_/ / /_  
+/_____/\____/_/  /_/ /_/  \___/_/|_|\__/___/_/ /_/ .___/\__,_/\__/  
+                                                /_/                 
 */
 window.domTextInputs = [];
 if(window.domNodes[0] !== undefined)
     console.log("Warning! DOMNode list slot 0 already in use!");
 window.domNodes[0] = window.domTextInputs;
 
-function DOMTextInput(node)
+function DOMTextInput(node, cef_hidden=false)
 {
     if(typeof(node.getAttribute) === "function" && node.getAttribute("aria-hidden") === "true")
     {
@@ -232,7 +358,7 @@ function DOMTextInput(node)
 
     window.domTextInputs.push(this);
     var id = window.domTextInputs.indexOf(this);
-    DOMNode.call(this, node, id, 0);
+    DOMNode.call(this, node, id, 0, cef_hidden);
 
     this.text = "";
 }
@@ -244,9 +370,13 @@ DOMTextInput.prototype.Class = "DOMTextInput";  // Override base class identifie
 DOMTextInput.prototype.getText = function(){
     return this.text;
 }
+
+// TODO: Get notified by mutation observer when specific text attribute gets changed
+// and notify CEF Node object
 DOMTextInput.prototype.setText = function(text){
-    var informCEF = (this.text !== text);
+   var informCEF = (this.text !== text);
     this.text = text;
+    console.log("Text set to: ", text);
     if(informCEF)
         SendAttributeChangesToCEF("Text", this);
 }
@@ -256,26 +386,48 @@ DOMTextInput.prototype.getIsPassword = function(){
     return (this.node.type === "password");
 }
 
+DOMTextInput.prototype.getHTMLId = function(){
+    return this.node.id;
+}
+DOMTextInput.prototype.getHTMLClass = function(){
+    return this.node.className;
+}
+DOMTextInput.prototype.focusNode = function(){
+    if(typeof(this.node.focus) !== "function")
+    {
+        console.log("DOMTextInput.focusNode() failed for id: ", this.getId(), ", type: ", this.getType())
+        return;
+    }
+    console.log("DOMTextInput (id: "+this.getId()+") tries to gain focus...");
+    this.node.focus();
+    if(document.activeElement === this.node)
+    {
+        ConsolePrint("Successfully gained focus!");
+    }
+    else
+    {
+        ConsolePrint("Failed to gain focus!");
+    }
+}
 
 /*
-   ___  ____  __  _____   _      __      
-  / _ \/ __ \/  |/  / /  (_)__  / /__ ___
- / // / /_/ / /|_/ / /__/ / _ \/  '_/(_-<
-/____/\____/_/  /_/____/_/_//_/_/\_\/___/
+    ____  ____  __  _____    _       __  
+   / __ \/ __ \/  |/  / /   (_)___  / /__
+  / / / / / / / /|_/ / /   / / __ \/ //_/
+ / /_/ / /_/ / /  / / /___/ / / / / ,<   
+/_____/\____/_/  /_/_____/_/_/ /_/_/|_|  
+ 
 */
 window.domLinks = [];
 if(window.domNodes[1] !== undefined)
     console.log("Warning! DOMNode list slot 1 already in use!");
 window.domNodes[1] = window.domLinks;
 
-function DOMLink(node)
+function DOMLink(node, cef_hidden=false)
 {
     window.domLinks.push(this);
     var id = window.domLinks.indexOf(this);
-    DOMNode.call(this, node, id, 1);
-
-    this.text = "";
-    this.url = "";
+    DOMNode.call(this, node, id, 1, cef_hidden);
 
     // Search image which might be displayed instead of link text
     var imgs = node.getElementsByTagName("IMG");
@@ -295,44 +447,39 @@ DOMLink.prototype.updateRects = function(){
 
 // DOMAttribute Text
 DOMLink.prototype.getText = function(){
-    return this.text;
-}
-DOMLink.prototype.setText = function(text){
-    var informCEF = (this.text !== text);
-    this.text = text;
-    if(informCEF)
-        SendAttributeChangesToCEF("Text", this);
+    return this.node.textContent;
 }
 
 // DOMAttribute Url
 DOMLink.prototype.getUrl = function(){
-    return this.url;
-}
-DOMLink.prototype.setUrl = function(url){
-    var informCEF = (this.url !== url);
-    this.url = url;
-    if(informCEF)
-        SendAttributeChangesToCEF("Url", this);
+    // NOTE: RenderProcessHandler (Attribute conversion) crashes if undefined is returned instead of
+    // empty string. But only in debug mode. Why?
+    if(this.node.href === undefined)
+        return "";
+
+    return this.node.href;
 }
 
 
 /*
-   __________   _______________  ______________   ___  ____
-  / __/ __/ /  / __/ ___/_  __/ / __/  _/ __/ /  / _ \/ __/
- _\ \/ _// /__/ _// /__  / /   / _/_/ // _// /__/ // /\ \  
-/___/___/____/___/\___/ /_/   /_/ /___/___/____/____/___/
+    ____  ____  __  ________      __          __  _______      __    __
+   / __ \/ __ \/  |/  / ___/___  / /__  _____/ /_/ ____(_)__  / /___/ /
+  / / / / / / / /|_/ /\__ \/ _ \/ / _ \/ ___/ __/ /_  / / _ \/ / __  / 
+ / /_/ / /_/ / /  / /___/ /  __/ /  __/ /__/ /_/ __/ / /  __/ / /_/ /  
+/_____/\____/_/  /_//____/\___/_/\___/\___/\__/_/   /_/\___/_/\__,_/   
+                                                                     
 */
 window.domSelectFields = []
 if(window.domNodes[2] !== undefined)
     console.log("Warning! DOMNode list slot 2 already in use!");
 window.domNodes[2] = window.domSelectFields;
 
-function DOMSelectField(node)
+function DOMSelectField(node, cef_hidden=false)
 {
     window.domSelectFields.push(this);
     var id = window.domSelectFields.indexOf(this);
 
-    DOMNode.call(this, node, id, 2);
+    DOMNode.call(this, node, id, 2, cef_hidden);
 }
 DOMSelectField.prototype = Object.create(DOMNode.prototype);
 DOMSelectField.prototype.constructor = DOMSelectField;
@@ -351,6 +498,8 @@ DOMSelectField.prototype.getOptions = function(){
     return options;
 }
 DOMSelectField.prototype.setSelectionIdx = function(idx){
+    if(typeof(this.node.focus) === "function")
+        this.node.focus();
     this.node.selectedIndex = idx;
 }
 DOMSelectField.prototype.getSelectionIdx = function(){
@@ -359,26 +508,37 @@ DOMSelectField.prototype.getSelectionIdx = function(){
 
 
 /*
-  ____               _____           ______                   __    
- / __ \_  _____ ____/ _/ /__ _    __/ __/ /__ __ _  ___ ___  / /____
-/ /_/ / |/ / -_) __/ _/ / _ \ |/|/ / _// / -_)  ' \/ -_) _ \/ __(_-<
-\____/|___/\__/_/ /_//_/\___/__,__/___/_/\__/_/_/_/\__/_//_/\__/___/
+    ____  ____  __  _______                  ______              ________                          __ 
+   / __ \/ __ \/  |/  / __ \_   _____  _____/ __/ /___ _      __/ ____/ /__  ____ ___  ___  ____  / /_
+  / / / / / / / /|_/ / / / / | / / _ \/ ___/ /_/ / __ \ | /| / / __/ / / _ \/ __ `__ \/ _ \/ __ \/ __/
+ / /_/ / /_/ / /  / / /_/ /| |/ /  __/ /  / __/ / /_/ / |/ |/ / /___/ /  __/ / / / / /  __/ / / / /_  
+/_____/\____/_/  /_/\____/ |___/\___/_/  /_/ /_/\____/|__/|__/_____/_/\___/_/ /_/ /_/\___/_/ /_/\__/  
+                                                                                                    
 */
 window.domOverflowElements = []
 if(window.domNodes[3] !== undefined)
     console.log("Warning! DOMNode list slot 3 already in use!");
 window.domNodes[3] = window.domOverflowElements;
 
-function DOMOverflowElement(node)
+// TODO: cef_hidden should have been toggled on/off without being affected by other hiding variables
+// but this isn't the case at the moment. Overflow elements will toggle themselves hidden or visible if
+// necessary!
+function DOMOverflowElement(node, cef_hidden=false)
 {
     window.domOverflowElements.push(this);
     var id = window.domOverflowElements.indexOf(this);
 
-    DOMNode.call(this, node, id, 3);
+    DOMNode.call(this, node, id, 3, cef_hidden);
 
-    // Disable scrolling for divs which shouldn't be scrolled
-    this.hidden_overflow = window.getComputedStyle(node, null).getPropertyValue("overflow") === "hidden";
+    // Take first value which isn't ""
+    // TODO: Improve this for cases where y- and x-overflow differ from each other?
+    this.cs_overflows = [];
+    this.updateOverflowProperties();    // Fetch cs_overflows
 
+    // DEBUG
+    // console.log(id, ": ", this.cs_overflows, " cef_hidden: ", this.cef_hidden,
+        // "hidden_overflow: ", this.hidden_overflow, "hidden_auto_overflow: ", this.hidden_auto_overflow);
+ 
     this.scrollLeftMax = -1
     this.scrollTopMax = -1
     this.scrollLeft = -1
@@ -407,15 +567,19 @@ function DOMOverflowElement(node)
     for(var i = 0, n = node.childNodes.length; i < n; i++)
     {
         var child = node.childNodes[i];
-        if(child === undefined || typeof(child.setAttribute) !== "function")
-            continue;
-        child.setAttribute("overflowId", id);
+
+        SetOverflowId(child, id);
     }
 
 }
 DOMOverflowElement.prototype = Object.create(DOMNode.prototype);
 DOMOverflowElement.prototype.constructor = DOMOverflowElement;
 DOMOverflowElement.prototype.Class = "DOMOverflowElement";  // Override base class identifier for this derivated class
+
+DOMOverflowElement.prototype.updateRects = function(){
+    this.checkIfAutoOverflows();
+    DOMNode.prototype.updateRects.call(this);
+}
 
 // DOMAttribute MaxScrolling
 DOMOverflowElement.prototype.getMaxScrolling = function(){
@@ -465,12 +629,162 @@ DOMOverflowElement.prototype.cutRectsWith = function(domObj, skip_update=true){
     return objRects.map(
         (objRect) => {
             return oeRects.reduce(
-                (acc, oeRect) => {
-                    return CutRectOnRectWindow(acc, oeRect);
-                }, objRect
+                (acc, oeRect) => { return CutRectOnRectWindow(acc, oeRect); },
+                objRect
             )
         }
     )
+}
+
+DOMOverflowElement.prototype.checkIfAutoOverflows = function(){
+    if(this.hidden_auto_overflow === undefined)
+        return;
+
+    var hidden = (this.node.scrollHeight <= this.node.clientHeight) && 
+                    (this.node.scrollWidth <= this.node.clientWidth);
+
+    // Value doesn't change
+    if(hidden === this.hidden_auto_overflow)
+        return;
+
+    // Monitor if overall visibility changes when setting variable
+    var sum_hidden = this.getCefHidden();
+
+    this.hidden_auto_overflow = hidden;
+
+    var sum_hidden_updated = this.getCefHidden();
+    
+    // Compare old and new value, when changes happened, react accordingly
+    if(sum_hidden !== sum_hidden_updated)
+    {   
+        SetObjectAvailabilityForCEFto(this, !sum_hidden_updated);
+    }
+}
+
+// TODO: Separate cef_hidden from hidden_overflow
+DOMOverflowElement.prototype.getCefHidden = function()
+{
+    if(this.hidden_auto_overflow === undefined)
+        return this.hidden_overflow;
+    return this.hidden_overflow || this.hidden_auto_overflow;
+}
+
+DOMOverflowElement.prototype.updateOverflowProperties = function()
+{
+    // TODO: Method seems to be called via updateRects before attribute is set up?
+    if(!this.cs_overflows)
+        return;
+
+    // Fetch up-to-date properties
+    var cs_overflows = [
+        window.getComputedStyle(this.node, null).getPropertyValue("overflow"),
+        window.getComputedStyle(this.node, null).getPropertyValue("overflow-y"),
+        window.getComputedStyle(this.node, null).getPropertyValue("overflow-x")
+    ];
+
+    // Escape if properties haven't changed
+    if(this.cs_overflows.length === cs_overflows || 
+        cs_overflows.map((val, idx) => {return (val === this.cs_overflows[idx]);}).indexOf(false) === -1 )
+        return false;
+
+    // Properties have changed
+    this.cs_overflows = cs_overflows;
+    
+    // console.log("auto in cs_overflows: ", this.cs_overflows, "cs_overflows: ", this.cs_overflows);
+
+    /* ### Add or remove auto-overflow-identifying attribute ### */
+    // Add auto-overflow-identifying attribute
+    if(this.cs_overflows.indexOf("auto") !== -1)
+        this.hidden_auto_overflow = false;  // Check if auto-overflow overflows later
+    // Remove it
+    else
+        this.hidden_auto_overflow = undefined;
+
+    // Distinction between cef_hidden and hidden because useless overflow
+    this.setHiddenOverflow( !(this.cs_overflows.indexOf("auto") !== -1 || 
+                                this.cs_overflows.indexOf("scroll") !== -1) );
+
+    // Update overflowing state, if needed
+    this.checkIfAutoOverflows();
+
+    // console.log(this.getId(), ": cs_overflows: ", cs_overflows, "hidden_overflow: ", this.hidden_overflow,
+                    // "hidden_auto_overflow: ", this.hidden_auto_overflow)
+
+
+
+    return true;
+}
+
+DOMOverflowElement.prototype.setHiddenOverflow = function(val)
+{
+    if(val === this.hidden_overflow)
+        return;
+
+    this.hidden_overflow = val;
+    SetObjectAvailabilityForCEFto(this, !val);
+}
+
+
+/*
+    ____  ____  __  ____    ___     __         
+   / __ \/ __ \/  |/  / |  / (_)___/ /__  ____ 
+  / / / / / / / /|_/ /| | / / / __  / _ \/ __ \
+ / /_/ / /_/ / /  / / | |/ / / /_/ /  __/ /_/ /
+/_____/\____/_/  /_/  |___/_/\__,_/\___/\____/ 
+
+*/
+window.domVideos = []
+if(window.domNodes[4] !== undefined)
+    console.log("Warning! DOMNode list slot 4 already in use!");
+window.domNodes[4] = window.domVideos;
+
+function DOMVideo(node, cef_hidden=false)
+{
+    window.domVideos.push(this);
+    var id = window.domVideos.indexOf(this);
+
+    DOMNode.call(this, node, id, 4, cef_hidden);
+
+    /* Currently now attributes, only interaction */
+    console.log("DOMVideo node #"+id+" successfully created.");
+}
+DOMVideo.prototype = Object.create(DOMNode.prototype);
+DOMVideo.prototype.constructor = DOMOverflowElement;
+DOMVideo.prototype.Class = "DOMVideo";  // Override base class identifier for this derivated class
+
+
+/*
+    ____  ____  __  ___________              __   __              
+   / __ \/ __ \/  |/  / ____/ /_  ___  _____/ /__/ /_  ____  _  __
+  / / / / / / / /|_/ / /   / __ \/ _ \/ ___/ //_/ __ \/ __ \| |/_/
+ / /_/ / /_/ / /  / / /___/ / / /  __/ /__/ ,< / /_/ / /_/ />  <  
+/_____/\____/_/  /_/\____/_/ /_/\___/\___/_/|_/_.___/\____/_/|_|  
+ 
+*/
+window.domCheckboxes = [];
+if(window.domNodes[5] !== undefined)
+    console.log("Warning! DOMNode list slot 5 already in use!");
+window.domNodes[5] = window.domCheckboxes;
+
+function DOMCheckbox(node, cef_hidden=false)
+{
+    // // DEBUG
+    // console.log("Prevented creation of DOMCheckbox object!");
+    // return; 
+
+    window.domCheckboxes.push(this);
+    var id = window.domCheckboxes.indexOf(this);
+
+    DOMNode.call(this, node, id, 5, cef_hidden);
+
+}
+DOMCheckbox.prototype = Object.create(DOMNode.prototype);
+DOMCheckbox.prototype.constructor = DOMCheckbox;
+DOMCheckbox.prototype.Class = "DOMCheckbox";
+
+DOMCheckbox.prototype.getCheckedState = function()
+{
+    return this.node.checked;
 }
 
 ConsolePrint("Successfully imported dom_nodes.js!");

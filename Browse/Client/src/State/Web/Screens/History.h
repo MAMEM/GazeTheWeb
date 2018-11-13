@@ -58,6 +58,7 @@ private:
 		void hit(eyegui::Layout* pLayout, std::string id) {}
 		void down(eyegui::Layout* pLayout, std::string id);
 		void up(eyegui::Layout* pLayout, std::string id) {}
+		virtual void selected(eyegui::Layout* pLayout, std::string id) {}
 
 	private:
 
@@ -87,9 +88,6 @@ private:
 
 	// Id of current tab
 	int _currentTabId = -1;
-
-	// Hold copy of pages in order to access their URL at interaction
-	std::deque<HistoryManager::Page> _pages;
 };
 
 #endif // HISTORY_H_

@@ -33,6 +33,24 @@ public:
     // Deactivate
     virtual void Deactivate() = 0;
 
+	// Trigger in next update
+	virtual void Schedule() = 0;
+
+	// Get relative screen position
+	virtual glm::vec2 GetPosition() const = 0;
+
+	// Get CEF pixel position of center on page
+	virtual glm::vec2 GetDOMPosition() const = 0;
+
+	// Get button offset index
+	virtual int GetButtonOffsetIndex() const = 0;
+
+	// Get type of DOM node
+	virtual int GetDOMType() const = 0;
+
+	// Get whether DOMNode is marked as fixed
+	virtual bool GetDOMFixed() const = 0;
+
 protected:
 
     // Pointer to tab interface

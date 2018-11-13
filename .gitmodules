@@ -17,3 +17,6 @@
 [submodule "BrowseUpdater/submodules/miniz"]
 	path = BrowseUpdater/submodules/miniz
 	url = https://github.com/richgel999/miniz
+[submodule "Browse/Client/submodules/json"]
+	path = Browse/Client/submodules/json
+	url = https://github.com/nlohmann/json.git

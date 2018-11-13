@@ -25,7 +25,7 @@
 									</row>
 									<row size="20%">
 										<column size="100%">
-											<textblock style="default_noback" alignment="center" verticalalignment="top" fontsize="medium" content="Toggle Descriptions"/>
+											<textblock style="default_noback" alignment="center" verticalalignment="top" fontsize="medium" key="settings:toggle_descriptions"/>
 										</column>
 									</row>
 								</grid>
@@ -37,7 +37,7 @@
 									</row>
 									<row size="20%">
 										<column size="100%">
-											<textblock style="default_noback" alignment="center" verticalalignment="top" fontsize="medium" content="Toggle Gaze Visualization"/>
+											<textblock style="default_noback" alignment="center" verticalalignment="top" fontsize="medium" key="settings:toggle_gaze_visualization"/>
 										</column>
 									</row>
 								</grid>

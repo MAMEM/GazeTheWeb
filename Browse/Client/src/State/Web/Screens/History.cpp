@@ -53,7 +53,7 @@ void History::Activate(int tabId)
 		_active = true;
 
 		// Fetch history
-		_pages = _pHistoryManager->GetHistory(HISTORY_DISPLAY_COUNT);
+		auto spPages = _pHistoryManager->GetHistory();
 
 		// Replace stack in layout with fresh one
 		eyegui::replaceElementWithBrick(
@@ -66,13 +66,16 @@ void History::Activate(int tabId)
 		std::string brickId;
 		std::map<std::string, std::string> idMapper;
 
+		// Page count
+		int pageCount = glm::min(HISTORY_DISPLAY_COUNT, (int)spPages->size());
+
 		// Set space of flow
-		float space = ((float)(_pages.size() + 1) / (float)HISTORY_ROWS_ON_SCREEN); // size + 1 for title
+		float space = ((float)(pageCount + 1) / (float)HISTORY_ROWS_ON_SCREEN); // size + 1 for title
 		space = space < 1.f ? 1.f : space;
 		eyegui::setSpaceOfFlow(_pLayout, "history_flow", space);
 
-		// Go over available pages
-		for (int i = 0; i < (int)_pages.size(); i++)
+		// Go over available pages but maximum the desired count to display
+		for (int i = 0; i < pageCount; i++)
 		{
 			// Brick id
 			brickId = "history_" + std::to_string(i);
@@ -101,10 +104,10 @@ void History::Activate(int tabId)
 				idMapper);
 
 			// Set content of displayed URL
-			eyegui::setContentOfTextBlock(_pLayout, URLId, _pages.at(i).URL);
+			eyegui::setContentOfTextBlock(_pLayout, URLId, spPages->at(i)->GetURL());
 
 			// Set content of display title
-			eyegui::setContentOfTextBlock(_pLayout, titleId, _pages.at(i).title);
+			eyegui::setContentOfTextBlock(_pLayout, titleId, spPages->at(i)->GetTitle());
 
 			// Register button listener for select buttons
 			eyegui::registerButtonListener(_pLayout, selectId, _spHistoryButtonListener);
@@ -149,12 +152,15 @@ void History::HistoryButtonListener::down(eyegui::Layout* pLayout, std::string i
 		// Check for keyword "select"
 		if (((pos = id.find(delimiter)) != std::string::npos) && id.substr(0, pos) == "select")
 		{
-			// Extract number of page which should be used
-			std::string URL = _pHistory->_pages.at((int)(StringToFloat(id.substr(pos + 1, id.length() - 1)))).URL;
+			// Get URL of selected history entry
+			auto spPages = _pHistory->_pHistoryManager->GetHistory();
+			std::string URL = spPages->at((int)(StringToFloat(id.substr(pos + 1, id.length() - 1))))->GetURL();
 			std::u16string URL16;
 			eyegui_helper::convertUTF8ToUTF16(URL, URL16);
 			_pHistory->_collectedURL = URL16;
 			_pHistory->_finished = true;
+			nlohmann::json record = { { "url", URL } };
+			_pHistory->_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_HISTORY_USAGE_COUNT, FirebaseJSONKey::GENERAL_HISTORY_USAGE, record);
 		}
 	}
 }

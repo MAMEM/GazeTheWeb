@@ -2,11 +2,62 @@
 <layout style="default slow_animation">
 	<grid showbackground="true" style="super_calibration_background" consumeinput="true">
 		<row size="100%">
-			<column size="20%">
-				<circlebutton id="continue" border="30%" icon="icons/Cross.png" desckey="super_calibration:continue"/>
+			<column size="50%">
+				<grid>
+					<row size="3%">
+						<column size="100%"/>
+					</row>
+					<row size="5%">
+						<column size="100%">
+							<textblock key="super_calibration:calibration_display_title" alignment="center" verticalalignment="center" fontsize="medium" border="5%" props="BackgroundColor=0x00000000"/>
+						</column>
+					</row>
+					<row size="40%">
+						<column size="100%">
+							<stack showbackground="true" border="10%" style="super_calibration_info_border">
+								<textblock key="super_calibration:calibration_display_message" id="calibration_display_message" alignment="center" verticalalignment="center" fontsize="medium" border="3%" style="super_calibration_info_background"/>
+							</stack>
+						</column>
+					</row>
+					<row size="7%">
+						<column size="100%">
+							<textblock key="super_calibration:trackbox_display_title" alignment="center" verticalalignment="center" fontsize="medium" border="5%" props="BackgroundColor=0x00000000"/>
+						</column>
+					</row>
+					<row size="40%">
+						<column size="100%">
+							<stack showbackground="true" border="10%" style="super_calibration_info_border">
+								<block border="3%" style="super_calibration_info_background"/>
+							</stack>
+						</column>
+					</row>
+					<row size="5%">
+						<column size="100%"/>
+					</row>
+				</grid>
 			</column>
-			<column size="80%">
-				<circlebutton id="recalibration" style="recalibration" border="30%" icon="icons/Recalibration.png" desckey="super_calibration:recalibration"/>
+			<column size="50%">
+				<grid>
+					<row size="2%">
+						<column size="100%"/>
+					</row>
+					<row size="71%">
+						<column size="100%">
+							<circlebutton id="recalibration" style="recalibration" icon="icons/Recalibration.png" desckey="super_calibration:recalibration"/>
+						</column>
+					</row>
+					<row size="2%">
+						<column size="100%"/>
+					</row>
+					<row size="20%">
+						<column size="100%">
+							<circlebutton  id="continue" icon="icons/Cross.png" desckey="super_calibration:continue"/>
+						</column>
+					</row>
+					<row size="5%">
+						<column size="100%"/>
+					</row>
+				</grid>
 			</column>
 		</row>
 	</grid>

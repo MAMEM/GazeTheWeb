@@ -14,15 +14,17 @@ class Input
 public:
 
     Input(
+		bool windowFocused,
 		float gazeX,
 		float gazeY,
 		float rawGazeX,
 		float rawGazeY,
-		float gazeAge,
+		double gazeAge,
 		bool gazeEmulated,
 		bool gazeUponGUI,
 		bool instantInteraction,
 		float fixationDuration) :
+	windowFocused(windowFocused),
 	gazeX(gazeX),
 	gazeY(gazeY),
 	rawGazeX(rawGazeX),
@@ -34,11 +36,12 @@ public:
 	fixationDuration(fixationDuration) {}
 
 	// Fields
+	bool windowFocused;
     float gazeX;
 	float gazeY;
 	float rawGazeX;
 	float rawGazeY;
-	float gazeAge;
+	double gazeAge;
 	bool gazeEmulated;
     bool gazeUponGUI;
 	bool instantInteraction;
@@ -58,6 +61,7 @@ public:
 		int webViewResolutionY) :
 
 		// Fields from input
+		windowFocused(spInput->windowFocused),
 		gazeX(spInput->gazeX),
 		gazeY(spInput->gazeY),
 		rawGazeX(spInput->rawGazeX),
@@ -104,11 +108,12 @@ public:
 	bool insideWebView;
 
 	// Fields from input as reference
+	const bool& windowFocused;
 	const float& gazeX;
 	const float& gazeY;
 	const float& rawGazeX;
 	const float& rawGazeY;
-	const float& gazeAge;
+	const double& gazeAge;
 	const bool& gazeEmulated;
 	const bool& gazeUponGUI;
 	const bool& instantInteraction;

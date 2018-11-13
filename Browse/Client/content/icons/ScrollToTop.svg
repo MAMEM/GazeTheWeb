@@ -15,7 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="ScrollToTop.svg">
+   sodipodi:docname="ScrollToTop.svg"
+   inkscape:export-filename="C:\Users\Raphael\Git\GazeTheWeb\Browse\Client\content\icons\ScrollToTop.png"
+   inkscape:export-xdpi="97.535995"
+   inkscape:export-ydpi="97.535995">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -25,9 +28,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="205.52175"
-     inkscape:cy="211.58554"
+     inkscape:zoom="2.8"
+     inkscape:cx="67.894356"
+     inkscape:cy="214.47417"
      inkscape:document-units="px"
      inkscape:current-layer="g4148"
      showgrid="true"
@@ -65,7 +68,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -82,9 +85,16 @@
          transform="matrix(1.9058515,0,0,1.6731437,-248.46243,-634.58484)">
         <path
            style="opacity:1;fill:#f2f2f2;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-           d="m 142.12622,846.14301 0,22.5 39.09521,0 c -13.98879,27.45811 -29.42999,54.26477 -42.8789,81.90382 l -0.0278,0.0527 0.004,0 c -0.29232,0.72073 -0.44396,1.4989 -0.44531,2.28662 0,3.14497 2.34492,5.69532 5.23681,5.69532 l 12.96387,0 57.61817,0 -0.001,-10e-4 13.19825,0 c 2.89189,0 5.23681,-2.54888 5.23681,-5.69385 -0.002,-0.95122 -0.22315,-1.8858 -0.64306,-2.72022 l 0.006,0 -42.57275,-81.52295 38.95752,0 0,-22.5 -85.74756,0 z"
+           d="m 181.22143,868.64301 c 0,0 -29.42999,54.26477 -42.8789,81.90382 l -0.0278,0.0527 0.004,0 c -0.29232,0.72073 -0.44396,1.4989 -0.44531,2.28662 0,3.14497 2.34492,5.69532 5.23681,5.69532 l 12.96387,0 57.61817,0 -0.001,-10e-4 13.19825,0 c 2.89189,0 5.23681,-2.54888 5.23681,-5.69385 -0.002,-0.95122 -0.22315,-1.8858 -0.64306,-2.72022 l 0.006,0 -42.57275,-81.52295 z"
            id="path4161"
-           inkscape:connector-curvature="0" />
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccscccsccccc" />
+        <path
+           inkscape:connector-curvature="0"
+           id="path4167"
+           d="m 142.12622,846.23604 0,22.5 85.74782,4.4e-4 0,-22.5 -85.74756,0 z"
+           style="opacity:1;fill:#505659;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           sodipodi:nodetypes="cccccc" />
       </g>
     </g>
   </g>

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <flow space="100%" direction="vertical" id="select_options_flow">
-	<stack id="select_options_stack" direction="vertical"  showbackground="true" consumeinput="true" style="tab_overlay">
+	<stack id="select_options_stack" direction="vertical"  showbackground="true" consumeinput="true" style="panel">
 		<textblock style="default_noback" alignment="center" verticalalignment="center" fontsize="tall" key="action_select_options_flow:title"/>
 	</stack>
 </flow>

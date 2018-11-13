@@ -38,6 +38,12 @@ public:
         float relativePositionX,
         float relativePositionY) = 0;
 
+	// Size floating frame in overlay
+	virtual void SetSizeOfFloatingFrameInOverlay(
+		int index,
+		float relativeWidth,
+		float relativeHeight) = 0;
+
     // Set visibility of floating frame in overlay
     virtual void SetVisibilityOfFloatingFrameInOverlay(int index, bool visible) = 0;
 
@@ -45,10 +51,13 @@ public:
     virtual void RemoveFloatingFrameFromOverlay(int index) = 0;
 
     // Register button listener callback in overlay
-    virtual void RegisterButtonListenerInOverlay(std::string id, std::function<void(void)> downCallback, std::function<void(void)> upCallback) = 0;
+    virtual void RegisterButtonListenerInOverlay(std::string id, std::function<void(void)> downCallback, std::function<void(void)> upCallback, std::function<void(void)> selectedCallback = []() {}) = 0;
 
     // Unregister button listener callback in overlay
     virtual void UnregisterButtonListenerInOverlay(std::string id) = 0;
+
+	// Classify button hit
+	virtual void ClassifyButton(std::string id, bool accept) = 0;
 
     // Register keyboard listener in overlay
     virtual void RegisterKeyboardListenerInOverlay(std::string id, std::function<void(std::string)> selectCallback, std::function<void(std::u16string)> pressCallback) = 0;
@@ -132,6 +141,9 @@ public:
 	virtual int GetWebViewResolutionY() const = 0;
 	virtual int GetWindowWidth() const = 0;
 	virtual int GetWindowHeight() const = 0;
+
+	// Use eyeGUI drift map to perform drift correction. Does nothing if USE_EYEGUI_DRIFT_MAP is false
+	virtual void ApplyGazeDriftCorrection(float& rPixelX, float& rPixelY) const = 0;
 };
 
 #endif // TABOVERLAYINTERFACE_H_

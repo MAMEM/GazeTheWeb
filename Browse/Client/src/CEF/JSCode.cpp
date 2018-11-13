@@ -5,20 +5,17 @@
 //============================================================================
 
 #include "JSCode.h"
+#include "src/ContentPath.h"
 #include <map>
 #include <fstream>
 #include <iostream> // as called from differen processes, one cannot simply use LogInfo / LogError :(
 
 // Folder with external JavaScript code
-const std::string src = CONTENT_PATH "/javascript/";
+const std::string src = RUNTIME_CONTENT_PATH + "/javascript/";
 
 // List of all available JS code file paths and how to access them with JSCode enum
 const std::map<JSFile, std::string> findJSFile =
 {
-	// Favicon
-	std::make_pair<JSFile, std::string>(FAVICON_GET_URL_AND_RESOLUTION, src + "favicon/favicon_get_url_and_resolution.js"),
-	std::make_pair<JSFile, std::string>(FAVICON_CREATE_IMG, src + "favicon/favicon_create_img.js"),
-	std::make_pair<JSFile, std::string>(FAVICON_COPY_IMG_BYTES_TO_V8ARRAY, src + "favicon/favicon_copy_img_bytes_to_v8array.js"),
 	// MutationObserver & DOMNodes
     std::make_pair<JSFile, std::string>(HELPERS, src + "helpers.js"),
     std::make_pair<JSFile, std::string>(DOM_NODES, src + "dom_nodes.js"),

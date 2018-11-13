@@ -15,6 +15,7 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 	AddString16InputSlot("text");
     AddString16OutputSlot("text");
     AddIntOutputSlot("submit");
+	AddFloatOutputSlot("duration", 0.f);
 
 	// TODO: forget about ids and move all of this into activation
 
@@ -75,7 +76,7 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
     // Add overlay
     _overlayFrameIndex = _pTab->AddFloatingFrameToOverlay("bricks/actions/Keyboard.beyegui", x, y, sizeX, sizeY, idMapper);
 
-    // Register listeners
+    // ### Register listeners
 
 	// Keyboard
     _pTab->RegisterKeyboardListenerInOverlay(
@@ -91,11 +92,13 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 			// Start classification here (send something to LSL)
 			_classificationTime = CLASSIFICATION_DURATION;
 
+			// Tell member it was a key from keyboard
+			_classifyingButton = false;
+
 			// ######################################################
 
 			// Send marker about key selection into lab streaming layer
 			LabStreamMailer::instance().Send("GAZE_SELECTED_KEY_" + value);
-
 		},
         [&](std::u16string value) // press callback
         {
@@ -109,6 +112,9 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
             _pTab->DisplaySuggestionsInWordSuggest(
 				_overlayWordSuggestId,
 				_pTab->GetActiveEntityContentInTextEdit(_overlayTextEditId));
+
+			// Make letters in keyboard small again
+			_pTab->ButtonUp(_overlayShiftButtonId);
         });
 
 	// Complete button
@@ -172,7 +178,29 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 			// Clear suggestions
 			_pTab->DisplaySuggestionsInWordSuggest(_overlayWordSuggestId, u"");
         },
-		[](){}); // up callback
+		[](){}, // up callback
+		[&]() // select callback
+		{
+			// ######################################################
+			// ### TODO CERTH #######################################
+			// ######################################################
+			// This lambda function is called when the space bar button is selected by user.
+			// In this example, the timer for classification is reset.
+
+			// TODO: Deactivate input for all other buttons and the keyboard which interaction can be classified while classification.
+			// Otherwise one can select something else for classification while the previous is still pending.
+
+			// Start classification here (send something to LSL)
+			_classificationTime = CLASSIFICATION_DURATION;
+
+			// Tell member it was a button
+			_classifyingButton = true;
+
+			// ######################################################
+
+			// Send marker about button selection into lab streaming layer
+			LabStreamMailer::instance().Send("GAZE_SELECTED_BUTTON_SPACE");
+		});
 
 	// Word suggestion
     _pTab->RegisterWordSuggestListenerInOverlay(
@@ -280,7 +308,7 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 		_pTab->SetKeyboardLayout(eyegui::KeyboardLayout::US_ENGLISH);
 
 		// Hide drop menu
-		// _pTab->ButtonUp(_overlayLayoutId);
+		_pTab->ButtonUp(_overlayLayoutId);
 
 		// Go to standard mode of keyboard
 		_pTab->ButtonUp(_overlayExtraKeyId);
@@ -296,7 +324,7 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 		_pTab->SetKeyboardLayout(eyegui::KeyboardLayout::GERMANY_GERMAN);
 
 		// Hide drop menu
-		// _pTab->ButtonUp(_overlayLayoutId);
+		_pTab->ButtonUp(_overlayLayoutId);
 
 		// Go to standard mode of keyboard
 		_pTab->ButtonUp(_overlayExtraKeyId);
@@ -312,7 +340,7 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 		_pTab->SetKeyboardLayout(eyegui::KeyboardLayout::ISRAEL_HEBREW);
 
 		// Hide drop menu
-		// _pTab->ButtonUp(_overlayLayoutId);
+		_pTab->ButtonUp(_overlayLayoutId);
 
 		// Go to standard mode of keyboard
 		_pTab->ButtonUp(_overlayExtraKeyId);
@@ -328,7 +356,7 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 		_pTab->SetKeyboardLayout(eyegui::KeyboardLayout::GREECE_GREEK);
 
 		// Hide drop menu
-		// _pTab->ButtonUp(_overlayLayoutId);
+		_pTab->ButtonUp(_overlayLayoutId);
 
 		// Go to standard mode of keyboard
 		_pTab->ButtonUp(_overlayExtraKeyId);
@@ -355,15 +383,13 @@ KeyboardAction::KeyboardAction(TabInteractionInterface *pTab) : Action(pTab)
 	{
 		for (const std::string& rMessage : messages)
 		{
-			// ######################################################
-			// ### TODO CERTH #######################################
-			// ######################################################
-			
-			// Parse string and check for classification. If available,
-			// set some member in keyboard action to know in update
-			// that classification is done and how to proceed
-
-			// ######################################################
+			// Check for the message content
+			LogInfo("ERRP Message: ", rMessage);
+			if (!strcmp(rMessage.c_str(), "-1"))
+			{
+				// Just delete last character
+				_pTab->DeleteContentAtCursorInTextEdit(_overlayTextEditId, -1);
+			}
 		}
 	}
 	));
@@ -402,10 +428,12 @@ KeyboardAction::~KeyboardAction()
 
 bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
 {
-	// ######################################################
-	// ### TODO CERTH #######################################
-	// ######################################################
-	// When classification timer is set, it is decremted at each update.
+	// Update duration
+	float duration = 0.f;
+	GetOutputValue("duration", duration);
+	SetOutputValue("duration", duration + tpf);
+
+	// When classification timer is set, it is decremented at each update.
 	// When timer is zero, selection is ALWAYS accepted. Please change as required.
 
 	// Check classification
@@ -417,7 +445,14 @@ bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spI
 		// When timer is complete, accept selection
 		if (_classificationTime <= 0)
 		{
-			_pTab->ClassifyKey(_overlayKeyboardId, true); // true for accept
+			if (_classifyingButton)
+			{
+				_pTab->ClassifyButton(_overlaySpaceButtonId, true); // true for accept (TODO: encode id of button-to-classify in LabStream message or store it in member)
+			}
+			else // key from keyboard
+			{
+				_pTab->ClassifyKey(_overlayKeyboardId, true); // true for accept
+			}
 		}
 	}
 

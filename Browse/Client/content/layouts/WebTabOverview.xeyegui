@@ -11,24 +11,14 @@
 					<grid style="panel" showbackground="true">
 						<row size="100%">
 							<column size="100%">
-								<stack border="15%" style="bright_panel" showbackground="true">
-									<grid>
-										<row size="15%">
-											<column size="100%">
-													<textblock alignment="center" verticalalignment="bottom" fontsize="medium" id="url"/>
-											</column>
-										</row>
-										<row size="5%">
-											<column size="100%">
-													<blank/>
-											</column>
-										</row>
-										<row size="80%">
-											<column size="100%">
-													<picture id="preview" alignment="zoomed" border="10%"/>
-											</column>
-										</row>
-									</grid>
+								<stack border="10%" style="bright_panel" showbackground="true">
+									<stack direction="vertical" showbackground="true" border="8%" style="default" separator="0.1%">
+										<textblock alignment="center" verticalalignment="center" fontsize="small" id="url" relativescale="10%" style="standard_text"/>
+										<textblock alignment="center" verticalalignment="center" fontsize="medium" id="title" relativescale="20%" style="tab_overview_page_title" innerborder="1%"/>
+										<stack props="BackgroundColor=0xFFFFFFFF" showbackground="true">
+											<picture id="preview" alignment="zoomed"/>
+										</stack>
+									</stack>
 								</stack>
 							</column>
 						</row>

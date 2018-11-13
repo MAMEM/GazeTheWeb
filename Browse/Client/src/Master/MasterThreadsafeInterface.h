@@ -16,6 +16,9 @@ public:
 
 	// Notify about eye tracker status
 	virtual void threadsafe_NotifyEyeTrackerStatus(EyeTrackerStatus status, EyeTrackerDevice device) = 0;
+
+	// Get whether data may be transferred
+	virtual bool threadsafe_MayTransferData() = 0;
 };
 
 #endif // MASTERTHREADSAFEINTERFACE_H_

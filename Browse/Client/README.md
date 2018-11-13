@@ -7,36 +7,6 @@ Gaze-controlled Web browser, part of the EU-funded research project MAMEM.
 ## HowTo
 Please refer to the Readme in the [parent folder](https://github.com/MAMEM/GazeTheWeb/tree/master/Browse) for details about compiling.
 
-For configuration, edit the lines in _src/Setup.h_:
-```C++
-// Window
-static const bool FULLSCREEN = false;
-static const int INITIAL_WINDOW_WIDTH = 1280;
-static const int INITIAL_WINDOW_HEIGHT = 720;
-
-// Control
-static const float DURATION_BEFORE_INPUT = 1.f; // wait one second before accepting input
-static const bool PAUSED_AT_STARTUP = false;
-static const float LINK_CORRECTION_MAX_PIXEL_DISTANCE = 5.f;
-static const int TEXT_SELECTION_MARGIN = 4; // area which is selected before / after zoom coordinate in CEFPixels
-
-// Debugging
-static const bool LOG_DEBUG_MESSAGES = false;
-static const bool DRAW_DEBUG_OVERLAY = false;
-
-// Experiments
-static const std::string LAB_STREAM_OUTPUT_NAME = "BrowserOutputStream";
-static const std::string LAB_STREAM_OUTPUT_SOURCE_ID = "myuniquesourceid23443";
-static const std::string LAB_STREAM_INPUT_NAME = "MiddlewareStream"; // may be set to same value as LAB_STREAM_OUTPUT_NAME to receive own events for debugging purposes
-static const bool LOG_INTERACTIONS = false;
-
-// Other
-static const bool ENABLE_WEBGL = false; // only on Windows
-static const bool BLUR_PERIPHERY = false;
-static const float WEB_VIEW_RESOLUTION_SCALE = 1.f;
-static const unsigned int HISTORY_MAX_PAGE_COUNT = 100; // maximal length of history
-```
-
 ## Shortcuts
 * ESC: Exit application
 * Tab: Toggle pause
@@ -62,6 +32,8 @@ Dependencies are provided in the __externals__ and __submodules__ folder.
 __externals__:
 * liblsl: https://github.com/sccn/labstreaminglayer
   * Boost: https://github.com/boostorg/boost
+* curl: https://github.com/curl/curl
+* SensorLib: https://github.com/MAMEM/SensorLib
 	
 __submodules__:
 * eyeGUI: https://github.com/raphaelmenges/eyeGUI
@@ -71,6 +43,7 @@ __submodules__:
 * GLM: http://glm.g-truc.net/0.9.7/index.html (MIT license chosen)
 * spdlog: https://github.com/gabime/spdlog
 * text-csv: https://github.com/roman-kashitsyn/text-csv
+* JSON: https://github.com/nlohmann/json
 
 __plugins__:
 
@@ -89,7 +62,7 @@ plugins/Eyetracker/TobiiEyeX:
 * Connection to Tobii EyeX SDK, copyright Tobii Technology AB (http://developer.tobii.com/eyex-sdk)
 
 ## License
->Copyright 2017 Raphael Menges and Daniel Müller
+>Copyright 2018 Raphael Menges and Daniel Müller
 
 >Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 

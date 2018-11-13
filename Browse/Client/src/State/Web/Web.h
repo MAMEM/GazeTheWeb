@@ -19,24 +19,31 @@
 #include <stack>
 #include <regex>
 
+
 // Forward declaration
 class Mediator;
+
+enum class WebPanelMode
+{
+	STANDARD, NO_DATA_TRANSFER
+};
 
 class Web : public State, public WebTabInterface
 {
 public:
 
     // Constructor
-    Web(Master* pMaster, Mediator* pCefMediator);
+    Web(Master* pMaster, Mediator* pCefMediator, bool dataTransfer);
 
     // Destructor
     virtual ~Web();
 
     // Add tab and return id of it
-    int AddTab(std::string URL, bool show = true);
+	int AddTab(bool show = true);
+    int AddTab(std::string URL, bool show = true, CefRefPtr<CefRequestContext> request_context = nullptr);
 
     // Add tab after another
-    int AddTabAfter(Tab* other, std::string URL, bool show = true);
+    int AddTabAfter(Tab* other, std::string URL, bool show = true, CefRefPtr<CefRequestContext> request_context = nullptr);
 
     // Remove tab
     void RemoveTab(int id);
@@ -62,6 +69,21 @@ public:
 	// Pushs back pointing evaluation pipeline in current tab
 	void PushBackPointingEvaluationPipeline(PointingApproach approach);
 
+	// Web panel mode
+	void SetWebPanelMode(WebPanelMode mode);
+
+	// Pause data transfer
+	void SetDataTransfer(bool active);
+
+	// Notify about click
+	void NotifyClick(std::string tag, std::string id, float x, float y);
+
+	// Set award
+	void SetAward(Award award);
+
+	// Demo mode reset (clear and delete history and bookmarks, reset tabs etc.)
+	void DemoModeReset();
+
     // #############
     // ### STATE ###
     // #############
@@ -83,13 +105,16 @@ public:
 	// #########################
 
 	// Add tab after that tab
-    virtual void PushAddTabAfterJob(Tab* pCaller, std::string URL);
+    virtual void PushAddTabAfterJob(Tab* pCaller, std::string URL, CefRefPtr<CefRequestContext> request_context);
 
-	// Add page to history job
-	virtual void PushAddPageToHistoryJob(Tab* pCaller, HistoryManager::Page page);
+	// Update award
+	virtual void PushUpdateAwardJob(Tab* pCaller, Award award);
 
     // Get own id in web. Returns -1 if not found
     virtual int GetIdOfTab(Tab const * pCaller) const;
+
+	// Add history entry
+	virtual std::shared_ptr<HistoryManager::Page> AddPageToHistory(std::string URL, std::string title);
 
 private:
 
@@ -115,10 +140,11 @@ private:
     public:
 
         // Constructor
-		AddTabAfterJob(Tab* pCaller, std::string URL, bool show) : TabJob(pCaller)
+		AddTabAfterJob(Tab* pCaller, std::string URL, bool show, CefRefPtr<CefRequestContext> request_context) : TabJob(pCaller)
 		{
 			_URL = URL;
 			_show = show;
+			_request_context = request_context;
 		}
 
         // Execute
@@ -128,17 +154,18 @@ private:
 
         // Members
         std::string _URL;
-        bool _show;
-    };
+		bool _show;
+		CefRefPtr<CefRequestContext> _request_context;
+	};
 
-	class AddPageToHistoryJob : public TabJob
+	class UpdateAwardJob : public TabJob
 	{
 	public:
 
 		// Constructor
-		AddPageToHistoryJob(Tab* pCaller, HistoryManager::Page page) : TabJob(pCaller)
+		UpdateAwardJob(Tab* pCaller, Award award) : TabJob(pCaller)
 		{
-			_page = page;
+			_award = award;
 		}
 
 		// Execute
@@ -147,7 +174,7 @@ private:
 	protected:
 
 		// Members
-		HistoryManager::Page _page;
+		Award _award;
 	};
 
     // Give listener full access
@@ -161,7 +188,8 @@ private:
         WebButtonListener(Web* pWeb) { _pWeb = pWeb; }
         virtual void hit(eyegui::Layout* pLayout, std::string id) {}
         virtual void down(eyegui::Layout* pLayout, std::string id);
-        virtual void up(eyegui::Layout* pLayout, std::string id) {}
+		virtual void up(eyegui::Layout* pLayout, std::string id);
+		virtual void selected(eyegui::Layout* pLayout, std::string id) {}
 
     private:
 
@@ -212,7 +240,7 @@ private:
     bool _goToSettings = false;
 
     // List of jobs which have to be executed
-    std::stack<std::unique_ptr<TabJob> > _jobs;
+    std::deque<std::unique_ptr<TabJob> > _jobs;
 
 	// Bookmark manager
 	std::unique_ptr<BookmarkManager> _upBookmarkManager;
@@ -225,6 +253,12 @@ private:
 
 	// URL input object
 	std::unique_ptr<URLInput> _upURLInput;
+
+	// Data transfer
+	bool _dataTransfer = false;
+
+	// Store which award the user currently has (in terms of persuasive design)
+	Award _award = Award::BRONZE;
 
 	// Regex for URL validation
 	std::unique_ptr<std::regex> _upURLregex;

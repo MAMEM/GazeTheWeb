@@ -68,6 +68,24 @@ const CefRefPtr<CefListValue> V8ToCefListValue::ListOfIntegers(CefRefPtr<CefV8Va
 	return wrapper;
 }
 
+const CefRefPtr<CefListValue> V8ToCefListValue::ListOfBools(CefRefPtr<CefV8Value> attrData)
+{
+	if (!attrData->IsArray())
+		return CefRefPtr<CefListValue>();
+
+	CefRefPtr<CefListValue> wrapper = CefListValue::Create();
+	CefRefPtr<CefListValue> list = CefListValue::Create();
+	for (int i = 0; i < attrData->GetArrayLength(); i++)
+	{
+		if (!attrData->GetValue(i)->IsBool())
+			list->SetBool(i, false);
+		else
+			list->SetBool(i, attrData->GetValue(i)->GetBoolValue());
+	}
+	wrapper->SetList(0, list);
+	return wrapper;
+}
+
 const CefRefPtr<CefListValue> V8ToCefListValue::Boolean(CefRefPtr<CefV8Value> attrData)
 {
 	if (!attrData->IsBool())
@@ -82,7 +100,6 @@ const CefRefPtr<CefListValue> V8ToCefListValue::Integer(CefRefPtr<CefV8Value> at
 {
 
 	CefRefPtr<CefListValue> wrapper = CefListValue::Create();
-	// TODO: Doesn't really catch null?
 	if (attrData->IsNull() || attrData->IsUndefined() || !attrData->IsInt()) // TODO: Check everywhere for null and undefined!
 		wrapper->SetInt(0, -1);
 	else
@@ -130,7 +147,8 @@ const CefRefPtr<CefListValue> V8ToCefListValue::ExtractAttributeData(DOMAttribut
 	// Check if getter function is valid
 	if (getter->IsUndefined() || getter->IsNull() || !getter->IsFunction())
 	{
-		_Log("V8ToCefListValue conversion: Could not access getter function for DOMAttribute " + std::to_string((int)attr) + " in Javascript object.", browser);
+		_Log("V8ToCefListValue conversion: Could not access getter function '"+AttrGetter.at(attr)+
+			"' for DOMAttribute " + std::to_string((int)attr) + " in Javascript object.", browser);
 		return CefRefPtr<CefListValue>();
 	}
 
@@ -203,6 +221,33 @@ const CefRefPtr<CefListValue> StringToCefListValue::ListOfIntegers(std::string a
 	return wrapper;
 }
 
+const CefRefPtr<CefListValue> StringToCefListValue::ListOfBools(std::string attrData)
+{
+	CefRefPtr<CefListValue> wrapper = CefListValue::Create();
+	CefRefPtr<CefListValue> extracted_data = CefListValue::Create();
+
+	std::vector<std::string> options = SplitBySeparator(attrData, ';');
+	for (int i = 0; i < (int)options.size(); i++)
+	{
+		extracted_data->SetBool(i, (std::stoi(options[i]) > 0) );
+	}
+	wrapper->SetList(0, extracted_data);
+	return wrapper;
+}
+
+const CefRefPtr<CefListValue> StringToCefListValue::Bitmask(std::string attrData)
+{
+	CefRefPtr<CefListValue> wrapper = CefListValue::Create();
+	CefRefPtr<CefListValue> extracted_data = CefListValue::Create();
+
+	for (size_t i = 0; i < attrData.length(); i++)
+	{
+		extracted_data->SetBool(i, (attrData[i] == '1'));
+	}
+	wrapper->SetList(0, extracted_data);
+	return wrapper;
+}
+
 const CefRefPtr<CefListValue> StringToCefListValue::Boolean(std::string attrData)
 {
 	CefRefPtr<CefListValue> wrapper = CefListValue::Create();
@@ -235,3 +280,4 @@ const CefRefPtr<CefListValue> StringToCefListValue::ExtractAttributeData(DOMAttr
 
 	return AttrConversion.at(attr)(attrData);
 }
+

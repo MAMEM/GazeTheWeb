@@ -15,6 +15,8 @@
 #include "src/Input/Filters/Filter.h"
 #include "src/Input/Input.h"
 #include "plugins/Eyetracker/Interface/EyetrackerSample.h"
+#include "plugins/Eyetracker/Interface/EyetrackerInfo.h"
+#include "plugins/Eyetracker/Interface/EyetrackerGeometry.h"
 #include <memory>
 #include <vector>
 #include <thread>
@@ -24,7 +26,10 @@
 #include <windows.h>
 typedef void(__cdecl *FETCH_SAMPLES)(SampleQueue&);
 typedef bool(__cdecl *IS_TRACKING)();
-typedef bool(__cdecl *CALIBRATE)();
+typedef CalibrationResult(__cdecl *CALIBRATE)(std::shared_ptr<CalibrationInfo>&);
+typedef TrackboxInfo(__cdecl *GET_TRACKBOX_INFO)();
+typedef void(__cdecl *CONTINUE_LAB_STREAM)();
+typedef void(__cdecl *PAUSE_LAB_STREAM)();
 #endif
 
 class EyeInput
@@ -32,26 +37,41 @@ class EyeInput
 public:
 
     // Constructor, starts thread to establish eye tracker connection. Callback called from a different thread!
-    EyeInput(MasterThreadsafeInterface* _pMasterThreadsafeInterface);
+    EyeInput(MasterThreadsafeInterface* _pMasterThreadsafeInterface, EyetrackerGeometry geometry);
 
     // Destructor
     virtual ~EyeInput();
 
     // Update method fills Input struct and returns it
 	std::shared_ptr<Input> Update(
+		bool windowFocused,
 		float tpf,
 		double mouseX,
 		double mouseY,
 		int windowX,
 		int windowY,
 		int windowWidth,
-		int windowHeight);
+		int windowHeight,
+		int monitorWidth,
+		int monitorHeight);
 
-	// Calibrate the eye tracking device, returns whether succesfull
-	bool Calibrate();
+	// Calibrate the eye tracking device, returns result
+	CalibrationResult Calibrate(std::shared_ptr<CalibrationInfo>& rspCalibrationInfo);
+
+	// Get trackbox info
+	TrackboxInfo GetTrackboxInfo();
 
 	// Delegation of filter. Indicated whether age of input does say something...
 	bool SamplesReceived() const;
+
+	// Continue lab streaming layer streaming of eye gaze data
+	void ContinueLabStream();
+
+	// Pause lab streaming layer streaming of eye gaze data
+	void PauseLabStream();
+
+	// Get pointer to interface for custom transformation of samples before filtering
+	std::weak_ptr<CustomTransformationInterface> GetCustomTransformationInterface();
 
 private:
 
@@ -73,10 +93,19 @@ private:
 
 	// Handle to calibration
 	CALIBRATE _procCalibrate = NULL;
-#endif
 
-	// Remember whether connection has been established
-	bool _connected = false; // indicator whether thread was successfully finished
+	// Handle to get trackbox info
+	GET_TRACKBOX_INFO _procGetTrackboxInfo = NULL;
+
+	// Handle to continue lab stream
+	CONTINUE_LAB_STREAM _procContinueLabStream = NULL;
+
+	// Handle to pause lab stream
+	PAUSE_LAB_STREAM _procPauseLabStream = NULL;
+#endif // _WIN32
+
+	// Info about eye tracking device
+	EyetrackerInfo _info; // also indicator for successful connection
 	
 	// ###################################
 
@@ -94,7 +123,7 @@ private:
     bool _mouseOverrideInitFrame = false;
 
 	// Filter of gaze data
-	std::unique_ptr<Filter> _upFilter;
+	std::shared_ptr<Filter> _spFilter;
 };
 
 #endif // EYEINPUT_H_

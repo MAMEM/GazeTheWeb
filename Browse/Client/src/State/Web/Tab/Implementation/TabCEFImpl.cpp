@@ -10,8 +10,9 @@
 #include "src/State/Web/Managers/HistoryManager.h"
 #include "src/State/Web/Tab/Pipelines/JSDialogPipeline.h"
 #include "src/Singletons/LabStreamMailer.h"
-#include <algorithm>
+#include "src/Singletons/FirebaseMailer.h"
 #include "src/CEF/Mediator.h"
+#include <algorithm>
 
 #define SendRenderMessage [this](CefRefPtr<CefProcessMessage> msg) { return _pCefMediator->SendProcessMessageToRenderer(msg, this); }
 
@@ -27,16 +28,35 @@ void Tab::GetWebRenderResolution(int& rWidth, int& rHeight) const
 
 void Tab::SetURL(std::string URL)
 {
+	// Set URL
 	_url = URL;
-	LabStreamMailer::instance().Send("Loading URL: " + _url);
+
+	// Reset title
+	_title = "";
+
+	// Check whether current history page entry contains same URL. If not, create new one
+	if (_spHistoryPage == nullptr || _spHistoryPage->GetURL() != _url)
+	{
+		if (_dataTransfer)
+		{
+			// Add history entry for new url with current title, will be updated asap
+			_spHistoryPage = _pWeb->AddPageToHistory(_url, _title);
+		}
+	}
 }
 
 void Tab::ReceiveFaviconBytes(std::unique_ptr< std::vector<unsigned char> > upData, int width, int height)
 {
 	// Go over colors and get most colorful as accent (should be always RGBA)
 	int size; // width * height * 4
-	if (upData != NULL && ((size = (int)upData->size()) >= 4) && width > 0 && height > 0)
+	if (upData != NULL && ((size = (int)upData->size()) >= 4) && width > 0 && height == width) // only accept square icons
 	{
+		if (size <= _current_favicon_bytes)
+			return;
+
+		LogInfo("Tab: Current favicon resolution -- ", width, " x ", height);
+		_current_favicon_bytes = size;
+
 		// Load icon into eyeGUI
 		eyegui::fetchImage(_pPanelLayout, GetFaviconIdentifier(), width, height, eyegui::ColorFormat::RGBA, upData->data(), true);
 		_faviconLoaded = true;
@@ -46,8 +66,19 @@ void Tab::ReceiveFaviconBytes(std::unique_ptr< std::vector<unsigned char> > upDa
 		steps = glm::max(1, steps);
 		int maxIndex = 0;
 		int maxSaturation = 0;
+		bool foundColor = false;
 		for (int i = 0; i < size; i += steps * 4)
 		{
+			// Discard pixels that are transparent
+			if (upData->at(i + 3) < 200)
+			{
+				continue;
+			}
+			else
+			{
+				foundColor = true;
+			}
+
 			// Extract colors
 			float r = upData->at(i);
 			float g = upData->at(i + 1);
@@ -72,27 +103,34 @@ void Tab::ReceiveFaviconBytes(std::unique_ptr< std::vector<unsigned char> > upDa
 			}
 		}
 
-		// Extract accent color
-		_targetColorAccent = glm::vec4(
-			((float)upData->at(maxIndex) / 255.f),
-			((float)upData->at(maxIndex + 1) / 255.f),
-			((float)upData->at(maxIndex + 2) / 255.f),
-			1.f);
+		if (foundColor)
+		{
+			// Extract accent color
+			_targetColorAccent = glm::vec4(
+				((float)upData->at(maxIndex) / 255.f),
+				((float)upData->at(maxIndex + 1) / 255.f),
+				((float)upData->at(maxIndex + 2) / 255.f),
+				1.f);
 
-		// Check, whether new target color is too much white
-		float sum = _targetColorAccent.r + _targetColorAccent.g + _targetColorAccent.b; // maximal 3
-		float whiteBorder = 2.5f;
-		if (sum >= whiteBorder)
-		{
-			// Too bright, darken it
-			float multiplier = (1.f - (sum - whiteBorder));
-			_targetColorAccent.r *= multiplier;
-			_targetColorAccent.g *= multiplier;
-			_targetColorAccent.b *= multiplier;
+			// Check, whether new target color is too much white
+			float sum = _targetColorAccent.r + _targetColorAccent.g + _targetColorAccent.b; // maximal 3
+			float whiteBorder = 2.0;
+			if (sum >= whiteBorder)
+			{
+				// Too bright, darken it
+				float multiplier = (1.f - ((sum - whiteBorder)/3.f));
+				_targetColorAccent.r *= multiplier;
+				_targetColorAccent.g *= multiplier;
+				_targetColorAccent.b *= multiplier;
+			}
+			else if (sum <= 0.3f)
+			{
+				// Too dark, use default instead
+				_targetColorAccent = TAB_DEFAULT_COLOR_ACCENT;
+			}
 		}
-		else if (sum <= 0.3f)
+		else
 		{
-			// Too dark, use default instead
 			_targetColorAccent = TAB_DEFAULT_COLOR_ACCENT;
 		}
 
@@ -105,14 +143,25 @@ void Tab::ReceiveFaviconBytes(std::unique_ptr< std::vector<unsigned char> > upDa
 
 void Tab::ResetFaviconBytes()
 {
+	LogInfo("Tab: ResetFaviconBytes called!");
     _faviconLoaded = false;
+	_current_favicon_bytes = 0;
+	_loaded_favicon_urls.clear();
 }
 
-void Tab::AddDOMTextInput(CefRefPtr<CefBrowser> browser, int id)
+bool Tab::IsFaviconAlreadyAvailable(std::string img_url)
 {
-	std::shared_ptr<DOMTextInput> spNode = std::make_shared<DOMTextInput>(
-		id,
-		SendRenderMessage);
+	if (std::find(_loaded_favicon_urls.begin(), _loaded_favicon_urls.end(), img_url) == _loaded_favicon_urls.end())
+	{
+		_loaded_favicon_urls.push_back(img_url);
+		return false;
+	}
+	return true;
+}
+
+void Tab::AddDOMTextInput(int id)
+{
+	std::shared_ptr<DOMTextInput> spNode = std::make_shared<DOMTextInput>(id, this);
 
 	// Add node to ID->node map
 	_TextInputMap.emplace(id, spNode);
@@ -130,18 +179,14 @@ void Tab::AddDOMTextInput(CefRefPtr<CefBrowser> browser, int id)
 	_textInputTriggers.emplace(id, std::move(upDOMTrigger));
 }
 
-void Tab::AddDOMLink(CefRefPtr<CefBrowser> browser, int id)
+void Tab::AddDOMLink(int id)
 {
-	_TextLinkMap.emplace(id, std::make_shared<DOMLink>(
-		id,
-		SendRenderMessage));
+	_TextLinkMap.emplace(id, std::make_shared<DOMLink>(id));
 }
 
-void Tab::AddDOMSelectField(CefRefPtr<CefBrowser> browser, int id)
+void Tab::AddDOMSelectField(int id)
 {
-	std::shared_ptr<DOMSelectField> spNode = std::make_shared<DOMSelectField>(
-		id,
-		SendRenderMessage);
+	std::shared_ptr<DOMSelectField> spNode = std::make_shared<DOMSelectField>(id, this);
 
 	// Add node to ID->node map
 	_SelectFieldMap.emplace(id, spNode);
@@ -159,11 +204,38 @@ void Tab::AddDOMSelectField(CefRefPtr<CefBrowser> browser, int id)
 	_selectFieldTriggers.emplace(id, std::move(upDOMTrigger));
 }
 
-void Tab::AddDOMOverflowElement(CefRefPtr<CefBrowser> browser, int id)
+void Tab::AddDOMOverflowElement(int id)
 {
-	_OverflowElementMap.emplace(id, std::make_shared<DOMOverflowElement>(
-		id,
-		SendRenderMessage));
+	_OverflowElementMap.emplace(id, std::make_shared<DOMOverflowElement>(id, this));
+}
+
+void Tab::AddDOMVideo(int id)
+{
+	std::shared_ptr<DOMVideo> spNode = std::make_shared<DOMVideo>(id, this);
+
+	// Add node to ID->node map
+	_VideoMap.emplace(id, spNode);
+
+	// Create DOMTrigger
+	std::unique_ptr<VideoModeTrigger> upDOMTrigger = std::unique_ptr<VideoModeTrigger>(new VideoModeTrigger(this, _triggers, spNode,
+		[&](int id)
+	{
+		this->EnterVideoMode(id);
+	}));
+
+	// Activate trigger
+	if (!_pipelineActive)
+	{
+		upDOMTrigger->Activate();
+	}
+
+	// Place trigger in map
+	_videoModeTriggers.emplace(id, std::move(upDOMTrigger));
+}
+
+void Tab::AddDOMCheckbox(int id)
+{
+	_CheckboxMap.emplace(id, std::make_shared<DOMCheckbox>(id, this));
 }
 
 
@@ -187,9 +259,20 @@ std::weak_ptr<DOMOverflowElement> Tab::GetDOMOverflowElement(int id)
 	return (_OverflowElementMap.find(id) != _OverflowElementMap.end()) ? _OverflowElementMap.at(id) : std::weak_ptr<DOMOverflowElement>();
 }
 
+std::weak_ptr<DOMVideo> Tab::GetDOMVideo(int id)
+{
+	return (_VideoMap.find(id) != _VideoMap.end()) ? _VideoMap.at(id) : std::weak_ptr<DOMVideo>();
+}
+
+std::weak_ptr<DOMCheckbox> Tab::GetDOMCheckbox(int id)
+{
+	return (_CheckboxMap.find(id) != _CheckboxMap.end()) ? _CheckboxMap.at(id) : std::weak_ptr<DOMCheckbox>();
+}
+
+
 void Tab::ClearDOMNodes()
 {
-	// Deactivate all triggers (TODO: when there are other triggers than only DOM based triggers, this has to be handled differently)
+	// Deactivate all triggers
 	for (auto pTrigger : _triggers)
 	{
 		pTrigger->Deactivate();
@@ -198,11 +281,14 @@ void Tab::ClearDOMNodes()
 	// Clear vector with triggers
 	_textInputTriggers.clear();
 	_selectFieldTriggers.clear();
+	_videoModeTriggers.clear();
 
 	// Clear ID->node maps
 	_TextLinkMap.clear();
 	_TextInputMap.clear();
 	_SelectFieldMap.clear();
+	_VideoMap.clear();
+	_CheckboxMap.clear();
 
 	// Clear fixed elements
 	_fixedElements.clear();
@@ -213,9 +299,8 @@ void Tab::ClearDOMNodes()
 
 void Tab::RemoveDOMTextInput(int id)
 {
+	if (_textInputTriggers.find(id) != _textInputTriggers.end()) { _textInputTriggers.erase(id); }
 	if (_TextInputMap.find(id) != _TextInputMap.end()) { _TextInputMap.erase(id); }
-
-	// TODO: Remove DOMTrigger, if corresponding DOMTextInput gets removed and destroyed?
 }
 
 void Tab::RemoveDOMLink(int id)
@@ -225,6 +310,7 @@ void Tab::RemoveDOMLink(int id)
 
 void Tab::RemoveDOMSelectField(int id)
 {
+	if (_selectFieldTriggers.find(id) != _selectFieldTriggers.end()) { _selectFieldTriggers.erase(id); }
 	if (_SelectFieldMap.find(id) != _SelectFieldMap.end()) { _SelectFieldMap.erase(id); }
 }
 
@@ -233,19 +319,27 @@ void Tab::RemoveDOMOverflowElement(int id)
 	if (_OverflowElementMap.find(id) != _OverflowElementMap.end()) { _OverflowElementMap.erase(id); }
 }
 
+void Tab::RemoveDOMVideo(int id)
+{
+	// Exit video mode if currently showing the video
+	if (id == _videoModeId)
+	{
+		ExitVideoMode();
+	}
+
+	if (_videoModeTriggers.find(id) != _videoModeTriggers.end()) { _videoModeTriggers.erase(id); }
+	if (_VideoMap.find(id) != _VideoMap.end()) { _VideoMap.erase(id); }
+}
+
+void Tab::RemoveDOMCheckbox(int id)
+{
+	if (_CheckboxMap.find(id) != _CheckboxMap.end()) { _CheckboxMap.erase(id); }
+}
+
+
+
 void Tab::SetScrollingOffset(double x, double y)
 {
-	// Update page size information when nearly reached end of page size (in case of endless scrollable sites like e.g. Fb.com)
-	// (but don't do it if scrolling offset hasn't changed)
-	/*
-	auto webViewPositionAndSize = CalculateWebViewPositionAndSize();
-	if ((x != _scrollingOffsetX && abs(_pageWidth - webViewPositionAndSize.width - x) < 50)
-	|| (y != _scrollingOffsetY && abs(_pageHeight - webViewPositionAndSize.height - y) < 50))
-	{
-	_pCefMediator->GetPageResolution(this);
-	}
-	*/
-
 	_scrollingOffsetX = x;
 	_scrollingOffsetY = y;
 }
@@ -255,9 +349,9 @@ void Tab::SetPageResolution(double width, double height)
 	if (width != _pageWidth || height != _pageHeight)
 	{
 		LogInfo("Tab: Page size (w: ", _pageWidth, ", h: ", _pageHeight, ") changed to (w: ", width, ", h: ", height, ").");
+		_pageWidth = width;
+		_pageHeight = height;
 	}
-	_pageWidth = width;
-	_pageHeight = height;
 }
 
 void Tab::AddFixedElementsCoordinates(int id, std::vector<Rect> elements)
@@ -269,29 +363,6 @@ void Tab::AddFixedElementsCoordinates(int id, std::vector<Rect> elements)
 	}
 	_fixedElements[id] = elements;
 
-	 //DEBUG
-	//LogDebug("------------------ TAB ------------------> BEGIN");
-	//LogDebug("Added fixed element with id=", id);
-	//LogDebug("#fixedElements: ", _fixedElements.size());
-	//for (int i = 0; i < _fixedElements.size(); i++)
-	//{
-	//	if (_fixedElements[i].empty())
-	//	{
-	//		LogDebug(i, ": {}");
-	//	}
-	//	else if (_fixedElements[i][0].isZero())
-	//	{
-	//		LogDebug(i, ": 0");
-	//	}
-	//	else
-	//	{
-	//		for (const auto& rect : _fixedElements[i])
-	//		{
-	//			LogDebug(i, ": ", rect.toString());
-	//		}
-	//	}
-	//}
-	//LogDebug("------------------ TAB ------------------< END");
 }
 
 void Tab::RemoveFixedElement(int id)
@@ -309,44 +380,66 @@ void Tab::RemoveFixedElement(int id)
 	//}
 }
 
-void Tab::SetLoadingStatus(int64 frameID, bool isMain, bool isLoading)
+void Tab::SetTitle(std::string title)
 {
-	// isMain=true && isLoading=false may indicate, that site has completely finished loading
-	if (isMain)
+	_title = title;
+	if (_spHistoryPage != nullptr)
 	{
-        if(isLoading)
-        {
-            // Main frame is loading
-            eyegui::setImageOfPicture(_pPanelLayout, "icon", "icons/TabLoading_0.png");
-            _timeUntilNextLoadingIconFrame = TAB_LOADING_ICON_FRAME_DURATION;
-            _iconState = IconState::LOADING;
-        }
-        else
-        {
-            // Main frame is done with loading
-            if (_faviconLoaded)
-            {
-                eyegui::setImageOfPicture(_pPanelLayout, "icon", GetFaviconIdentifier());
-                _iconState = IconState::FAVICON;
-            }
-            else
-            {
-                eyegui::setImageOfPicture(_pPanelLayout, "icon", "icons/TabIconNotFound.png");
-                _iconState = IconState::ICON_NOT_FOUND;
-            }
-
-			// Add page to history after loading
-			HistoryManager::Page page;
-			page.URL = _url;
-			page.title = _title;
-			_pWeb->PushAddPageToHistoryJob(this, page);
-        }
+		_spHistoryPage->SetTitle(_title);
 	}
 }
 
+void Tab::SetLoadingStatus(bool isLoading, bool isMainFrame)
+{
+	if (!isMainFrame)
+		return;
+
+	// isLoading=false may indicate, that site has completely finished loading
+	if(isLoading)
+    {
+        // Main frame is loading
+        eyegui::setImageOfPicture(_pPanelLayout, "icon", "icons/TabLoading_0.png");
+        _timeUntilNextLoadingIconFrame = TAB_LOADING_ICON_FRAME_DURATION;
+        _iconState = IconState::LOADING;
+
+		// Abort any pipeline execution when loading of main frame starts
+		AbortAndClearPipelines();
+
+		// Tell lab stream layer
+		LabStreamMailer::instance().Send("Start Loading New URL");
+    }
+    else
+    {
+        // Main frame is done with loading
+        if (_faviconLoaded)
+        {
+            eyegui::setImageOfPicture(_pPanelLayout, "icon", GetFaviconIdentifier());
+            _iconState = IconState::FAVICON;
+        }
+        else
+        {
+            eyegui::setImageOfPicture(_pPanelLayout, "icon", "icons/TabIconNotFound.png");
+            _iconState = IconState::ICON_NOT_FOUND;
+        }
+
+		// Check whether it was the dashboard and whether to update the award in Web
+		if (_url.find(setup::DASHBOARD_URL) != std::string::npos)
+		{
+			// Update award TODO: will update on every subpage of the dashboard. maybe improve on that
+			_pWeb->PushUpdateAwardJob(this, FirebaseMailer::Instance().GetUserAward());
+		}
+
+		// Tell lab stream layer
+		LabStreamMailer::instance().Send("Finished Loading URL: " + _url);
+    }
+}
 
 void Tab::RequestJSDialog(JavaScriptDialogType type, std::string message)
 {
 	this->PushBackPipeline(std::unique_ptr<Pipeline>(new JSDialogPipeline(this, type, message)));
 }
 
+void Tab::SetMetaKeywords(std::string content)
+{
+	_metaKeywords = content;
+}

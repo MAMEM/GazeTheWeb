@@ -53,6 +53,11 @@ bool RenderProcessHandler::OnProcessMessageReceived(
     const std::string& msgName = msg->GetName().ToString();
     //IPCLogDebug(browser, "Received '" + msgName + "' IPC msg in RenderProcessHandler");
 
+	if ((msgName == "EmulateKeyboardStrokes") || (msgName == "EmulateEnterKey") || (msgName == "EmulateSelectAll"))
+	{
+		browser->SendProcessMessage(PID_BROWSER, msg);
+	}
+
 	if (msgName == "ExecuteJavascriptFunction")
 	{
 		const auto& args = msg->GetArgumentList();
@@ -103,15 +108,15 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 				// TODO: If command is known command!
 				msg = CefProcessMessage::Create(command);
 				const auto& innerArgs = msg->GetArgumentList();
-				// TODO: This could be move to DOMNodeInteraction.h
-				if (command == "EmulateEnterKey")
+				// TODO: This could be moved to DOMNodeInteraction.h
+				if (command == "EmulateEnterKey" || command == "EmulateMouseClick")
 				{
 					innerArgs->SetDouble(0, ret_val->GetValue("x")->GetDoubleValue());
 					innerArgs->SetDouble(1, ret_val->GetValue("y")->GetDoubleValue());
 					browser->SendProcessMessage(PID_BROWSER, msg);
 					
 				}
-
+				
 			}
 
 			context->Exit();
@@ -156,7 +161,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 		{
 			CefRefPtr<CefV8Value> window = context->GetGlobal();
 			CefRefPtr<CefV8Value> logMediator = window->GetValue("loggingMediator");
-			if (logMediator->IsObject())
+			if (logMediator->IsObject() && logMediator->GetValue("log")->IsFunction())
 			{
 				logMediator->GetValue("log")->ExecuteFunction(logMediator, { log });
 			}
@@ -165,105 +170,6 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 		}
 	}
 
-    // EXPERIMENTAL: Handle request of favicon image bytes
-    if (msgName == "GetFavIconBytes")
-    {
-        CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-        CefRefPtr<CefV8Context> context = frame->GetV8Context();
-
-		CefRefPtr<CefListValue> args = msg->GetArgumentList();
-		int height = -2, width = -2;
-		const std::string url = args->GetString(0);
-		//height = args->GetInt(1);
-
-        // Create process message, which is to be sent to Handler
-        msg = CefProcessMessage::Create("ReceiveFavIconBytes");
-        args = msg->GetArgumentList();
-
-        if (context->Enter())
-		{
-            CefRefPtr<CefV8Value> globalObj = context->GetGlobal();
-
-			if (globalObj->GetValue("favIconHeight")->IsDouble() && globalObj->GetValue("favIconWidth")->IsDouble())
-			{
-				height = globalObj->GetValue("favIconHeight")->GetDoubleValue();
-				width = globalObj->GetValue("favIconWidth")->GetDoubleValue();
-
-				// Fill msg args with help of this index variable
-				int index = 0;
-				// Write image resolution to IPC response
-				args->SetInt(index++, width);
-				args->SetInt(index++, height);
-
-				if (width > 0 && height > 0)
-				{
-					IPCLogDebug(browser, "Reading bytes of favicon (w: " + std::to_string(width) + ", h: " + std::to_string(height) + ")");
-
-					CefRefPtr<CefV8Value> byteArray = globalObj->GetValue("favIconData");
-
-					// Fill byte array with JS
-					browser->GetMainFrame()->ExecuteJavaScript(_js_favicon_copy_img_bytes_to_v8array, browser->GetMainFrame()->GetURL(), 0);
-
-					// Read out each byte and write it to IPC msg
-					//bool error_occured = false;
-					for (int i = 0; i < byteArray->GetArrayLength(); i++)
-					{
-						//// Check if value IsInt will fail!
-						//error_occured = error_occured || byteArray->GetValue(i)->IsInt();
-						//if (error_occured)
-						//{
-						args->SetInt(index++, byteArray->GetValue(i)->GetIntValue());
-						//}
-					}
-					
-					//if(!error_occured)
-					browser->SendProcessMessage(PID_BROWSER, msg);
-					//else
-					//{
-					//	IPCLogDebug(browser, "An error occured while reading out favicon bytes!");
-					//}
-				}
-				else
-				{
-					IPCLogDebug(browser, "Invalid favicon image resolution: w=" + std::to_string(width) + ", h=" + std::to_string(height));
-				}
-			}
-			else
-			{
-				IPCLogDebug(browser, "Failed to load favicon height and/or width, expected double value, got something different. Aborting.");
-			}
-            context->Exit();
-        }
-
-    }
-
-    if (msgName == "GetPageResolution")
-    {
-        CefRefPtr<CefV8Context> context = browser->GetMainFrame()->GetV8Context();
-
-        if (context->Enter())
-        {
-            CefRefPtr<CefV8Value> global = context->GetGlobal();
-
-			if (global->GetValue("_pageWidth")->IsDouble() && global->GetValue("_pageHeight")->IsDouble())
-			{
-				double pageWidth = global->GetValue("_pageWidth")->GetDoubleValue();
-				double pageHeight = global->GetValue("_pageHeight")->GetDoubleValue();
-
-				msg = CefProcessMessage::Create("ReceivePageResolution");
-				msg->GetArgumentList()->SetDouble(0, pageWidth);
-				msg->GetArgumentList()->SetDouble(1, pageHeight);
-				browser->SendProcessMessage(PID_BROWSER, msg);
-			}
-			else
-			{
-				IPCLogDebug(browser, "Failed to read page width and/or height, expected double value, got something different. Aborting.");
-			}
-            
-            context->Exit();
-        }
-        return true;
-    }
 
     // EXPERIMENTAL: Handle request of fixed elements' coordinates
     if (msgName == "FetchFixedElements")
@@ -342,10 +248,6 @@ bool RenderProcessHandler::OnProcessMessageReceived(
         }
     }
 
-	if (msgName == "FetchDOMTextLink" || msgName == "FetchDOMTextInput")
-	{
-		IPCLogDebug(browser, "Received deprecated "+msgName+" message!");
-	}
 
 	if (msgName.substr(0, 7) == "LoadDOM")
 	{
@@ -375,9 +277,10 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			if (!objGetter->IsFunction())
 			{
 				IPCLog(browser, "Renderer: Could not find JS object getter function '" + js_obj_getter_name + "'.");
+				context->Exit();
 				return true;
 			}
-
+			
 			// Call object getter and save returned object
 			CefRefPtr<CefV8Value> domObj = objGetter->ExecuteFunction(context->GetGlobal(), { CefV8Value::CreateInt(id) });
 
@@ -397,6 +300,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 					args->SetList(args_count++, listValue);
 				}
 			}
+			
 			if (args->GetSize() <= 2)
 			{
 				LogDebug(browser, "Renderer: ERROR processing " + js_obj_getter_name + "(" + std::to_string(id) + ")!");
@@ -413,7 +317,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 			else
 			{
 				IPCLog(browser, "Renderer: Failed to set node ready in Javascript! Attribute updates won't be received for"\
-					"node of type: " + nodeType + "and id: ", id);
+					"node of type: " + nodeType + "and id: ", (int)id);
 			}
 
 			context->Exit();
@@ -431,7 +335,17 @@ void RenderProcessHandler::OnFocusedNodeChanged(
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefDOMNode> node)
 {
-    // TODO, if needed
+	if (node == nullptr)
+		return;
+
+
+	const std::string tag_name = node->GetElementTagName().ToString();
+	IPCLog(browser, "OnFocusNodeChanged, now focused: "+tag_name);
+
+	// TODO:
+	// 1. Try to call node.focus() when hovering with your gaze over input fields
+	// 2. Get tagname (or even role) to decide, if cursor is set in possible input (OR find other way to determine if cursor is set)
+	//    If true, try to add DOMTextInput for this node
 }
 
 void RenderProcessHandler::OnContextCreated(
@@ -441,8 +355,12 @@ void RenderProcessHandler::OnContextCreated(
 {
 	_msgRouter->OnContextCreated(browser, frame, context);
 
+
     if (frame->IsMain())
     {
+	/*	frame->ExecuteJavaScript("window.addEventListener('message', (event) => {"
+			"if(window.debug) console.log('Window object',window,'received message ', event);}, false);", "", 0);*/
+
 		frame->ExecuteJavaScript("window.starting_time_ = window.performance.now();", "", 0);
 
 		// Clear previous DOM nodes in current Tab
@@ -465,9 +383,6 @@ void RenderProcessHandler::OnContextCreated(
             // Create JS variables for width and height of favicon image
             globalObj->SetValue("favIconHeight", CefV8Value::CreateInt(-1), V8_PROPERTY_ATTRIBUTE_NONE);
             globalObj->SetValue("favIconWidth", CefV8Value::CreateInt(-1), V8_PROPERTY_ATTRIBUTE_NONE);
-
-			// Create an image object, which will later contain favicon image 
-            frame->ExecuteJavaScript(_js_favicon_create_img, frame->GetURL(), 0);
 
 			// Inject Javascript code which extends the current page's context by our methods
 			// and automatically creates a MutationObserver instance
@@ -510,12 +425,18 @@ void RenderProcessHandler::OnContextCreated(
 
             context->Exit();
         }
-        /*
-        *	GetFavIconBytes
-        * END *******************************************************************************/
+		else
+		{
+			// EXPERIMENTAL: Moved to Handler::OnLoadStart for sub-frames
+			//frame->ExecuteJavaScript(
+			//	"window.addEventListener('message', (event) => {"
+			//	"console.log('Window object',window,'received message from',event.source);"
+			//	"event.source.postMessage('Answering event source...', event.origin);"
+			//	"}, false);", "", 0);
+		}
 
     }
-    //else IPCLogDebug(browser, "Not able to enter context! (main frame?="+std::to_string(frame->IsMain())+")");
+
 }
 
 void RenderProcessHandler::OnContextReleased(CefRefPtr<CefBrowser> browser,

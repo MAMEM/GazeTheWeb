@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="10cm"
+   height="10cm"
+   viewBox="0 0 354.33071 354.3307"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="OkPoint.svg"
+   inkscape:export-filename="C:\Users\Raphael\Git\GazeTheWeb\Browse\Client\content\icons\OkPoint.png"
+   inkscape:export-xdpi="97.535995"
+   inkscape:export-ydpi="97.535995">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.9899495"
+     inkscape:cx="18.721409"
+     inkscape:cy="407.28905"
+     inkscape:document-units="px"
+     inkscape:current-layer="g4138"
+     showgrid="true"
+     units="cm"
+     inkscape:snap-bbox="true"
+     inkscape:bbox-paths="true"
+     inkscape:snap-page="false"
+     inkscape:bbox-nodes="true"
+     inkscape:snap-bbox-edge-midpoints="true"
+     inkscape:snap-bbox-midpoints="true"
+     inkscape:window-width="2560"
+     inkscape:window-height="1387"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:snap-object-midpoints="true"
+     inkscape:snap-center="true"
+     inkscape:snap-to-guides="false"
+     inkscape:object-paths="false"
+     inkscape:snap-intersection-paths="false"
+     inkscape:object-nodes="true"
+     inkscape:snap-smooth-nodes="false"
+     inkscape:snap-midpoints="false"
+     inkscape:snap-grids="false"
+     showguides="false">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4686" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-698.03155)">
+    <g
+       id="g4138"
+       transform="matrix(0.69959977,0,0,0.79690303,104.32296,177.74986)">
+      <ellipse
+         style="opacity:0.3;fill:#50baa6;fill-opacity:1;stroke:none;stroke-opacity:1"
+         id="path4137"
+         cx="104.12009"
+         cy="875.19684"
+         rx="238.60457"
+         ry="208.20293" />
+      <ellipse
+         style="opacity:1;fill:#50baa6;fill-opacity:1;stroke:none;stroke-opacity:1"
+         id="path4137-8"
+         cx="104.12009"
+         cy="875.19684"
+         rx="221.39642"
+         ry="193.18735" />
+      <ellipse
+         style="opacity:1;fill:#f2f2f2;fill-opacity:1;stroke:none;stroke-opacity:1"
+         id="path4137-1"
+         cx="104.12009"
+         cy="875.19684"
+         rx="157.74614"
+         ry="137.64702" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-weight:normal;font-size:136.03338623px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#50baa6;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         x="-18.38397"
+         y="983.59717"
+         id="text4169"
+         sodipodi:linespacing="125%"
+         transform="scale(1.0672789,0.93696222)"><tspan
+           sodipodi:role="line"
+           id="tspan4171"
+           x="-18.38397"
+           y="983.59717"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'DejaVu Sans';-inkscape-font-specification:'DejaVu Sans Bold';fill:#50baa6;fill-opacity:1">OK</tspan></text>
+    </g>
+  </g>
+</svg>

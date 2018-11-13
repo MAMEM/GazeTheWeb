@@ -5,9 +5,9 @@
 
 #include "MagnificationCoordinateAction.h"
 #include "src/State/Web/Tab/Interface/TabInteractionInterface.h"
+#include "src/Setup.h"
 #include "submodules/glm/glm/gtx/vector_angle.hpp"
 #include <algorithm>
-#include <iostream>
 
 MagnificationCoordinateAction::MagnificationCoordinateAction(TabInteractionInterface* pTab, bool doDimming) : Action(pTab)
 {
@@ -32,12 +32,35 @@ bool MagnificationCoordinateAction::Update(float tpf, const std::shared_ptr<cons
 		rCoordinate *= glm::vec2(_pTab->GetWebViewResolutionX(), _pTab->GetWebViewResolutionY()); // bring into pixel space of CEF
 	};
 
+	// Function to apply eyeGUI gaze drift correction to WebView relative coordinate
+	const std::function<void(glm::vec2&)> driftCorrection = [&](glm::vec2& rCoordinate)
+	{
+		// From relative WebView gaze to window pixel coordinate
+		float windowPixelX = (rCoordinate.x * (float)_pTab->GetWebViewWidth()) + (float)_pTab->GetWebViewX();
+		float windowPixelY = (rCoordinate.y * (float)_pTab->GetWebViewHeight()) + (float)_pTab->GetWebViewY();
+
+		// Apply drift correction
+		_pTab->ApplyGazeDriftCorrection(windowPixelX, windowPixelY);
+
+		// Back from window pixel coordinate to relative WebView gaze
+		rCoordinate.x = (windowPixelX - (float)_pTab->GetWebViewX()) / (float)_pTab->GetWebViewWidth();
+		rCoordinate.y = (windowPixelY - (float)_pTab->GetWebViewY()) / (float)_pTab->GetWebViewHeight();
+	};
+
+	// Update magnification
+	if (_magnify && _magnification < 1.f)
+	{
+		_magnification += tpf / MAGNIFICATION_ANIMATION_DURATION;
+		_magnification = glm::min(_magnification, 1.f);
+	}
+	float magnificationAnimation = 1.f - (glm::cos(glm::pi<float>()*_magnification) + 1.f) / 2.f;
+
 	// Current gaze
 	glm::vec2 relativeGazeCoordinate = glm::vec2(spInput->webViewRelativeGazeX, spInput->webViewRelativeGazeY); // relative WebView space
 
 	// Values of interest
-	glm::vec2 relativeCenterOffset = _magnified ? _relativeMagnificationCenter - glm::vec2(0.5f, 0.5f) : glm::vec2(0);
-	float zoom = _magnified ? MAGNIFICATION : 1.f;
+	glm::vec2 relativeCenterOffset = magnificationAnimation * (_relativeMagnificationCenter - glm::vec2(0.5f, 0.5f));
+	float zoom = (magnificationAnimation * MAGNIFICATION) + (1.f - magnificationAnimation);
 	glm::vec2 relativeMagnificationCenter = _relativeMagnificationCenter;
 
 	// Decrease fixationWaitTime
@@ -49,37 +72,46 @@ bool MagnificationCoordinateAction::Update(float tpf, const std::shared_ptr<cons
 
 	// Decide whether to magnify or to finish
 	bool finished = false;
-	if (!spInput->gazeUponGUI && (spInput->instantInteraction || (fixationWaitTime <= 0 && spInput->fixationDuration >= FIXATION_DURATION))) // user demands on instant interaction or fixates on the screen
+	if (!spInput->gazeUponGUI && (spInput->instantInteraction || (!spInput->gazeEmulated && fixationWaitTime <= 0 && spInput->fixationDuration >= FIXATION_DURATION))) // user demands on instant interaction or fixates on the screen
 	{
 		// Check for magnification
-		if (_magnified) // already magnified, so finish this action
+		if (_magnification >= 1.f) // already magnified, so finish this action
 		{
 			// Set output
 			glm::vec2 coordinate = relativeGazeCoordinate;
+
+			// Drift correction
+			driftCorrection(coordinate);
+
+			// Further transformation to CEF pixel space
 			pageCoordinate(zoom, relativeMagnificationCenter, relativeCenterOffset, coordinate); // transform gaze relative to WebView to page coordinates
 			SetOutputValue("coordinate", coordinate); // into pixel space of CEF
 
 			// Finish this action
 			finished = true;
 		}
-		else // not yet magnified, do it now
+		else if(_magnification <= 0.f) // not yet magnified, do it now
 		{
 			// Set magnification center
 			_relativeMagnificationCenter = relativeGazeCoordinate;
 
+			// Drift correction
+			driftCorrection(_relativeMagnificationCenter);
+
 			// Remember magnification
-			_magnified = true;
+			_magnify = true;
 
 			// Reset fixation wait time so no accidential instant interaction after magnification can happen
 			fixationWaitTime = FIXATION_DURATION;
 		}
+		// else: in the middle of magnification animation
 	}
 
 	// Decrement dimming
 	_dimming += tpf;
 	_dimming = glm::min(_dimming, DIMMING_DURATION);
 
-	// Tell web view about zoom
+	// Tell WebView about zoom
 	WebViewParameters webViewParameters;
 	webViewParameters.centerOffset = relativeCenterOffset;
 	webViewParameters.zoom = zoom;
@@ -103,7 +135,7 @@ void MagnificationCoordinateAction::Activate()
 
 void MagnificationCoordinateAction::Deactivate()
 {
-	// Reset web view (necessary because of dimming)
+	// Reset WebView (necessary because of dimming)
 	WebViewParameters webViewParameters;
 	_pTab->SetWebViewParameters(webViewParameters);
 }

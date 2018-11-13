@@ -6,6 +6,7 @@
 // - Input: std::u16string text (which is given)
 // - Output: std::u16string text (which is edited by keyboard)
 // - Output: int submit (0 if not, else submit)
+// - Output: float duration (how long text input took)
 
 #ifndef KEYBOARDACTION_H_
 #define KEYBOARDACTION_H_
@@ -99,10 +100,13 @@ protected:
     bool _submit = false;
 
 	// Key selection classification duration in seconds
-	const float CLASSIFICATION_DURATION = 0.0001f; // set low since currently not used
+	const float CLASSIFICATION_DURATION = 0.000001f; // set low since currently not used
 
 	// Key selection classification time in seconds
 	float _classificationTime = 0.f;
+
+	// Bool indicating whether currently a key or a button is classified
+	bool _classifyingButton = false;
 
 	// LabStreamMailer callback to receive classification of key
 	std::shared_ptr<LabStreamCallback> _spLabStreamCallback;

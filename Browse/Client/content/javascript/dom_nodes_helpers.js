@@ -14,6 +14,13 @@ DOMNode.prototype.isCppReady = function(){
 }
 DOMNode.prototype.getAdjustedClientRects = function(altNode){
     var rects = (altNode === undefined) ? this.node.getClientRects() : altNode.getClientRects();
+
+    if (typeof(rects.map) !== "function")
+    {
+        console.log("Something went wrong in DOMNode.getAdjustedClientRects: rects.map function not available. Aborting.");
+        return [];
+    }
+
     if (this.getFixedId() === -1)
     {
         return rects.map(

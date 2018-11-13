@@ -11,6 +11,9 @@
 #include "src/Utils/Helper.h"
 #include "src/Utils/Logger.h"
 #include "submodules/glm/glm/gtc/matrix_transform.hpp"
+// Integrating reduce..
+#include <algorithm>
+#include <numeric>
 
 // Shader programs (For debugging rectangles)
 const std::string vertexShaderSource =
@@ -150,10 +153,21 @@ void Tab::DrawDebuggingOverlay() const
 			// Render rects
 			for (const auto rRect : rDOMTextLink->GetRects())
 			{
-				renderRect(
-					rRect, 
-					(rDOMTextLink->IsFixed())
-				);
+				renderRect(rRect, (rDOMTextLink->IsFixed()));
+				bool visible = !rDOMTextLink->IsOccluded();
+				if (visible)
+					renderRect(
+						rRect,
+						(rDOMTextLink->IsFixed())
+					);
+				else
+				{
+					_upDebugLineQuad->GetShader()->UpdateValue("color", glm::vec3(0.2, 0.2, 0.2));
+					renderRect(rRect, rDOMTextLink->IsFixed());
+					_upDebugLineQuad->GetShader()->UpdateValue("color", DOM_TEXT_LINKS_DEBUG_COLOR);
+				}
+				// else
+				//	LogInfo("TabDebuggingImpl: Hiding DOMTextLink with id=", rDOMTextLink->GetId());
 			}
 		}
 
@@ -209,14 +223,48 @@ void Tab::DrawDebuggingOverlay() const
 		{
 			const auto& rOverflowElement = rIdNodePair.second;
 			for (const auto& rect : rOverflowElement->GetRects())
+			{
 				renderRect(
 					rect,
 					(rOverflowElement->IsFixed())
 				);
+			}
+		}
+
+		// ### DOM VIDEO ELEMENTS ### 
+		_upDebugLineQuad->GetShader()->UpdateValue("color", glm::vec3(255.f / 255.f, 255.f / 255.f, 60.f / 255.f));
+
+		for (const auto& rIdNodePair : _VideoMap)
+		{
+			const auto& rVideoNode = rIdNodePair.second;
+			for (const auto& rect : rVideoNode->GetRects())
+			{
+				renderRect(
+					rect,
+					(rVideoNode->IsFixed())
+				);
+			}
+		}
+
+		// ### DOM CHECKBOX ELEMENTS ### 
+		_upDebugLineQuad->GetShader()->UpdateValue("color", glm::vec3(120.f / 255.f, 0.f / 255.f, 255.f / 255.f));
+
+		for (const auto& rIdNodePair : _CheckboxMap)
+		{
+			const auto& rCheckboxNode = rIdNodePair.second;
+			for (const auto& rect : rCheckboxNode->GetRects())
+			{
+				renderRect(
+					rect,
+					(rCheckboxNode->IsFixed())
+				);
+			}
 		}
 	}
 
 	// ### EXACT GAZE INPUT VISUALIZTION ###
+
+	/*
 
 	// Bind render item and set color
 	_upDebugFillQuad->Bind();
@@ -240,6 +288,8 @@ void Tab::DrawDebuggingOverlay() const
 		// Render rectangle
 		_upDebugFillQuad->Draw(GL_TRIANGLES);
 	}
+
+	*/
 }
 
 void Tab::Debug_DrawRectangle(glm::vec2 coordinate, glm::vec2 size, glm::vec3 color) const

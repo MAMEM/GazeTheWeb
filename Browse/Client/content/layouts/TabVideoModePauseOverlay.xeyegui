@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<layout style="default">
+    <grid style="dark_panel">
+    	<row size="100%">
+    		<column size="9.375%">
+    			<blank/> <!-- reserved for Web -->
+    		</column>
+    		<column size="90.625%">
+    			<grid>
+    				<row size="100%">
+	    				<column size="90%">
+	    					<grid style="tab_panel">
+								<row size="100%">
+									<column size="50%">
+										<circlebutton border="60%" icon="icons/Skip-10.png" dimming="true" id="skip-10"/>
+									</column>
+									<column size="50%">
+										<circlebutton border="60%" icon="icons/Skip+30.png" dimming="true" id="skip+30"/>
+									</column>
+								</row>
+							</grid>
+    					</column>
+    					<column size="10%">
+    						<blank/> <!-- reserved for Tab -->
+    					</column>
+    				</row>
+    			</grid>
+    		</column>
+    	</row>
+    </grid>
+</layout>

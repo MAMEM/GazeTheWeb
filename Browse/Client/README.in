@@ -1,7 +1,6 @@
 ### Binary release of GazeTheWeb - Browse ###
 Date: ${DATE}
-Version: ${VERSION}
-Build setup: All eyetracker plugins, windowed, no WebGL
+Version: ${CLIENT_MAJOR_VERSION}.${CLIENT_MINOR_VERSION}
 
 Please go to our GitHub repository at https://github.com/MAMEM/GazeTheWeb/tree/master/Browse for more information about the project!
 
@@ -9,24 +8,34 @@ Please go to our GitHub repository at https://github.com/MAMEM/GazeTheWeb/tree/m
 Windows 7, 8, 8.1 or 10
 Graphics card with OpenGL 3.3 or higher support
 
+## Compatible eyetrackers
+- SMI RED-n series
+- Visual Interactive myGaze-n
+- Tobii EyeX
+- Tobii 4C
+
 ## Installation
-1. Install Microsoft Visual C++ 2015 Redistributable for x86 applications
-	Get it here: https://www.microsoft.com/en-us/download/details.aspx?id=51682
+1. Install Microsoft Visual C++ 2015 Redistributable for x86 applications (on both x86 and 64bit systems!)
+	Get vc_redist.x86.exe here: https://www.microsoft.com/en-us/download/details.aspx?id=53840
 2. Install eyetracker software (instructions should be included)
 3. Unzip content of this zip (if not already done)
 
-## Usage
+## Usage with Eyetracker
 1. Connect eyetracker
-2. Start eyetracker server application
+2. Start eyetracker server application (not required for Visual Interactive myGaze-n)
 3. Calibrate eyetracker
-4. Start GazeTheWeb.exe which was included in this zip 
+4. Start Client.exe that was included in this zip 
+
+## Usage with Mouse
+1. Start Client.exe that was included in this zip
+2. Gaze is emulated through mouse pointer. Fixation is emulated through mouse click.
 
 ## Shortcuts
 ESC: Exit application
 Tab: Toggle pause
 
 ## License
-Copyright 2017 Raphael Menges and Daniel Müller
+Copyright 2018 Raphael Menges and Daniel Müller
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,15 +51,19 @@ limitations under the License.
 
 ## Software used in this project
 CEF3: https://bitbucket.org/chromiumembedded/cef
-	Binary release of branch 2454 Windows 32bit included from here: https://cefbuilds.com/#branch_2454
+	Binary release of CEF 3.3071.1634.g9cc59c8 / Chromium 59.0.3071.82 Windows 32bit included from here: http://opensource.spotify.com/cefbuilds/index.html
 GLM: http://glm.g-truc.net/0.9.7/index.html (MIT license chosen)
 GLFW3: http://www.glfw.org
 iViewX: Connection to the iViewX SDK, copyright SMI GmbH (http://www.smivision.com)
+myGaze: Connection to myGaze SDK, copyright Visual Interaction GmbH (http://www.mygaze.com)
 TobiiEyeX: Connection to Tobii EyeX SDK, copyright Tobii Technology AB (http://developer.tobii.com/eyex-sdk)
 eyeGUI: https://github.com/raphaelmenges/eyeGUI
 	FreeType 2.6.1: http://www.freetype.org (FreeType license chosen)
 spdlog: https://github.com/gabime/spdlog
 liblsl: https://github.com/sccn/labstreaminglayer
 	Boost: https://github.com/boostorg/boost
+SensorLib: https://github.com/MAMEM/SensorLib
 text-csv: https://github.com/roman-kashitsyn/text-csv
 TinyXML2 (used one from eyeGUI library): https://github.com/leethomason/tinyxml2
+curl: https://github.com/curl/curl
+JSON: https://github.com/nlohmann/json

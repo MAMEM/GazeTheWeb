@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 <grid style="default" id="grid" border="15%" showbackground="true">
 	<row size="100%">
+		<column size="15%">
+			<boxbutton style="dangerous" icon="icons/RemoveBookmark.png" desckey="url_input_bookmarks:remove" id="remove"/>
+		</column>
 		<column size="5%">
 			<blank/>
 		</column>
-		<column size="80%">
+		<column size="65%">
 			<textblock border="10%" id="url" alignment="left" verticalalignment="center"/>
 		</column>
 		<column size="15%">

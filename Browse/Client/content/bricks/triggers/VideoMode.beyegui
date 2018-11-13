@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<circlebutton icon="icons/VideoMode.png" dimming="true" id="button" style="tab_overlay"/>

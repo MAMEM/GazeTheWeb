@@ -56,8 +56,6 @@ private:
 	CefRefPtr<CefMessageRouterRendererSide> _msgRouter;
 
     // JavaScript code as Strings
-	const std::string _js_favicon_create_img = GetJSCode(FAVICON_CREATE_IMG);
-	const std::string _js_favicon_copy_img_bytes_to_v8array = GetJSCode(FAVICON_COPY_IMG_BYTES_TO_V8ARRAY);
 	const std::string _js_dom_nodes				= GetJSCode(DOM_NODES);
 	const std::string _js_dom_nodes_interaction	= GetJSCode(DOM_NODES_INTERACTION);
 	const std::string _js_dom_mutationobserver	= GetJSCode(DOM_MUTATIONOBSERVER);

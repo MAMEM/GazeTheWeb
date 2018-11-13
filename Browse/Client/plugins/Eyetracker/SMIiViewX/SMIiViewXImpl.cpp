@@ -21,38 +21,38 @@ int __stdcall SampleCallbackFunction(SampleStruct sampleData)
 	double gazeY = std::max(sampleData.leftEye.gazeY, sampleData.rightEye.gazeY);
 
 	// Push back to vector
-	if (gazeX != 0 && gazeY != 0) // push only valid samples
-	{
-		using namespace std::chrono;
-		eyetracker_global::PushBackSample(
-			SampleData(
-				gazeX, // x
-				gazeY, // y
-				SampleDataCoordinateSystem::SCREEN_PIXELS,
-				duration_cast<milliseconds>(
-					system_clock::now().time_since_epoch() // timestamp
-					)
-			)
-		);
-	}
+	using namespace std::chrono;
+	eyetracker_global::PushBackSample(
+		SampleData(
+			gazeX, // x
+			gazeY, // y
+			SampleDataCoordinateSystem::SCREEN_PIXELS,
+			duration_cast<milliseconds>(
+				system_clock::now().time_since_epoch() // timestamp
+				),
+			!(gazeX == 0 && gazeY == 0)
+		)
+	);
 
 	return 1;
 }
 
-bool Connect()
+EyetrackerInfo Connect(EyetrackerGeometry geometry)
 {
-	// Initialize eyetracker
-	SystemInfoStruct systemInfoData;
+	// TODO: use provided geometry similar to myGaze plugin
+
+	// Variables
+	EyetrackerInfo info;
 	int ret_connect = 0;
 
 	// Connect to iViewX server
-	ret_connect = iV_ConnectLocal(); // TODO BUG: never works, but it does for minimal sample code :(
+	ret_connect = iV_ConnectLocal();
 
 	// If server not running, try to start it
 	if (ret_connect != RET_SUCCESS)
 	{
 		// Start iViewX server
-		iV_Start(iViewX);
+		iV_Start(iViewNG);
 
 		// Retry to connect to iViewX server
 		ret_connect = iV_ConnectLocal();
@@ -67,20 +67,38 @@ bool Connect()
 	// Set sample callback
 	if (ret_connect == RET_SUCCESS)
 	{
-		/*
+		// Connection successful
+		info.connected = true;
+
+		// Get system info
+		SystemInfoStruct systemInfoData;
 		iV_GetSystemInfo(&systemInfoData);
-		LogInfo("iViewX ETSystem: ", systemInfoData.iV_ETDevice);
-		LogInfo("iViewX iV_Version: ", systemInfoData.iV_MajorVersion, ".", systemInfoData.iV_MinorVersion, ".", systemInfoData.iV_Buildnumber);
-		LogInfo("iViewX API_Version: ", systemInfoData.API_MajorVersion, ".", systemInfoData.API_MinorVersion, ".", systemInfoData.API_Buildnumber);
-		LogInfo("iViewX SystemInfo Samplerate: ", systemInfoData.samplerate);
-		*/
+		info.samplerate = systemInfoData.samplerate;
+
+		// Setup LabStreamingLayer
+		lsl::stream_info streamInfo(
+			"myViewXLSL",
+			"Gaze",
+			2, // must match with number of samples in SampleData structure
+			lsl::IRREGULAR_RATE, // otherwise will generate samples even if transmission paused (and somehow even gets the "real" samples, no idea how)
+			lsl::cf_double64, // must match with type of samples in SampleData structure
+			"source_id");
+		streamInfo.desc().append_child_value("manufacturer", "SensoMotoric Instruments GmbH");
+		lsl::xml_element channels = streamInfo.desc().append_child("channels");
+		channels.append_child("channel")
+			.append_child_value("label", "gazeX")
+			.append_child_value("unit", "screenPixels");
+		channels.append_child("channel")
+			.append_child_value("label", "gazeY")
+			.append_child_value("unit", "screenPixels");
+		eyetracker_global::SetupLabStream(streamInfo);
 
 		// Define a callback function for receiving samples
 		iV_SetSampleCallback(SampleCallbackFunction);
 	}
 
-	// Return success or failure
-	return (ret_connect == RET_SUCCESS);
+	// Return info structure
+	return info;
 }
 
 bool IsTracking()
@@ -90,6 +108,9 @@ bool IsTracking()
 
 bool Disconnect()
 {
+	// Just terminate lab stream (not necessary to have done setup)
+	eyetracker_global::TerminateLabStream();
+
 	// Disable callbacks
 	iV_SetSampleCallback(NULL);
 
@@ -109,8 +130,23 @@ void FetchSamples(SampleQueue& rspSamples)
 	eyetracker_global::FetchSamples(rspSamples);
 }
 
-bool Calibrate()
+CalibrationResult Calibrate(std::shared_ptr<CalibrationInfo>& rspInfo)
 {
 	// Start calibration
-	return iV_Calibrate() == RET_SUCCESS;
+	return iV_Calibrate() == RET_SUCCESS ? CALIBRATION_OK : CALIBRATION_FAILED;
+}
+
+TrackboxInfo GetTrackboxInfo()
+{
+	return TrackboxInfo();
+}
+
+void ContinueLabStream()
+{
+	eyetracker_global::ContinueLabStream();
+}
+
+void PauseLabStream()
+{
+	eyetracker_global::PauseLabStream();
 }

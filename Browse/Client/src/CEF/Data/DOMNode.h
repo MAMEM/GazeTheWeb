@@ -31,10 +31,12 @@ namespace DOM
 }
 
 /*
-   ___  ____  __  ____  __        __      
-  / _ \/ __ \/  |/  / |/ /__  ___/ /__ ___
- / // / /_/ / /|_/ /    / _ \/ _  / -_|_-<
-/____/\____/_/  /_/_/|_/\___/\_,_/\__/___/
+    ____  ____  __  ____   __          __   
+   / __ \/ __ \/  |/  / | / /___  ____/ /__ 
+  / / / / / / / /|_/ /  |/ / __ \/ __  / _ \
+ / /_/ / /_/ / /  / / /|  / /_/ / /_/ /  __/
+/_____/\____/_/  /_/_/ |_/\____/\__,_/\___/ 
+         
 */
 class DOMNode :
 	public virtual DOMBaseInterface
@@ -55,6 +57,9 @@ public:
 	static void GetDescription(std::vector<const std::vector<DOMAttribute>* >* descriptions) {
 		descriptions->push_back(&_description);
 	}
+
+	// Enable accessing attribute data while running the program
+	virtual bool PrintAttribute(DOMAttribute attr);	// TODO: Return or receive genericly typed value and check if same value is on Javascript side?
 	
 	// Getter from DOMBaseInterface
 	virtual int GetId() override { return _id; }
@@ -63,7 +68,8 @@ public:
 	std::vector<Rect> GetRects() const { return _rects; }
 	int GetFixedId() const { return _fixedId; }
 	int GetOverflowId() const { return _overflowId; }
-	int IsFixed() const { return (_fixedId >= 0); }
+	bool IsFixed() const { return (_fixedId >= 0); }
+	bool IsOccluded() const { return _occluded; }
 
 private:
 
@@ -72,10 +78,19 @@ private:
 	void SetRects(std::vector<Rect> rects) { _rects = rects; }
 	void SetFixedId(int fixedId) { _fixedId = fixedId; }
 	void SetOverflowId(int overflowId) { _overflowId = overflowId; }
+	void SetOccBitmask(std::vector<bool> bitmask) { 
+		_occBitmask = bitmask; 
+		_occluded = true; 
+		for (const auto rOcc : _occBitmask) 
+		{ 
+			_occluded &= rOcc;
+		}
+	}
 
 	bool IPCSetRects(CefRefPtr<CefListValue> data);
 	bool IPCSetFixedId(CefRefPtr<CefListValue> data);
 	bool IPCSetOverflowId(CefRefPtr<CefListValue> data);
+	bool IPCSetOccBitmask(CefRefPtr<CefListValue> data);
 
 	// Members
 	static const std::vector<DOMAttribute> _description;
@@ -83,14 +98,17 @@ private:
 	std::vector<Rect> _rects = {};
 	int _fixedId = -1;		// first FixedElement's ID, which is hierarchically above this node, if any
 	int _overflowId = -1;	// first DOMOverflowElement's ID, which is hierarchically above this node, if any
+	std::vector<bool> _occBitmask;
+	bool _occluded = false; // true if occluded
 };
 
 /*
-   ___  ____  __  _________        __  ____               __    
-  / _ \/ __ \/  |/  /_  __/____ __/ /_/  _/__  ___  __ __/ /____
- / // / /_/ / /|_/ / / / / -_) \ / __// // _ \/ _ \/ // / __(_-<
-/____/\____/_/  /_/ /_/  \__/_\_\\__/___/_//_/ .__/\_,_/\__/___/
-                                            /_/ 
+    ____  ____  __  _________          __  ____                  __ 
+   / __ \/ __ \/  |/  /_  __/__  _  __/ /_/  _/___  ____  __  __/ /_
+  / / / / / / / /|_/ / / / / _ \| |/_/ __// // __ \/ __ \/ / / / __/
+ / /_/ / /_/ / /  / / / / /  __/>  </ /__/ // / / / /_/ / /_/ / /_  
+/_____/\____/_/  /_/ /_/  \___/_/|_|\__/___/_/ /_/ .___/\__,_/\__/  
+                                                /_/                 
 */
 
 class DOMTextInput : 
@@ -100,9 +118,9 @@ class DOMTextInput :
 public:
 
 	// Empty construction
-	DOMTextInput(int id, SendRenderMessage sendRenderMessage) :
-        DOMNode(id),
-        DOMJavascriptCommunication(sendRenderMessage),
+	DOMTextInput(int id, TabDOMNodeInterface* pTab) :
+		DOMNode(id),
+        DOMJavascriptCommunication(pTab),
         DOMTextInputInteraction() {}
 
 	// Define initialization through ICP message in each DOMNode subclass
@@ -123,12 +141,16 @@ public:
 		return "GetDOMTextInput";
 	}
 
+	virtual bool PrintAttribute(DOMAttribute attr);
+
 	// TODO: somehow set enum per subclass and return this in DOMNode?
     virtual int GetType() override { return 0; }
 	
 	// Custom getter
 	std::string GetText() const { return _text; }
 	bool IsPasswordField() const { return _isPassword; }
+	std::string GetHTMLId() const { return _htmlId; }
+	std::string GetHTMLClass() const { return _htmlClass; }
 
 private:
 
@@ -137,21 +159,31 @@ private:
 	// Setter
 	void SetText(std::string text) { _text = text; }
 	void SetPassword(bool isPwd) { _isPassword = isPwd; }
+	void SetHTMLId(std::string htmlId) { _htmlId = htmlId; }
+	void SetHTMLClass(std::string htmlClass) { _htmlClass = htmlClass; }
 
 	bool IPCSetText(CefRefPtr<CefListValue> data);
 	bool IPCSetPassword(CefRefPtr<CefListValue> data);
+	bool IPCSetHTMLId(CefRefPtr<CefListValue> data);
+	bool IPCSetHTMLClass(CefRefPtr<CefListValue> data);
+
 
 	// Members
 	static const std::vector<DOMAttribute> _description;
 	std::string _text = "";
 	bool _isPassword = false;
+	std::string _htmlId = "";
+	std::string _htmlClass = "";
+
 };
 
 /*
-   ___  ____  __  _____   _      __      
-  / _ \/ __ \/  |/  / /  (_)__  / /__ ___
- / // / /_/ / /|_/ / /__/ / _ \/  '_/(_-<
-/____/\____/_/  /_/____/_/_//_/_/\_\/___/
+    ____  ____  __  _____    _       __  
+   / __ \/ __ \/  |/  / /   (_)___  / /__
+  / / / / / / / /|_/ / /   / / __ \/ //_/
+ / /_/ / /_/ / /  / / /___/ / / / / ,<   
+/_____/\____/_/  /_/_____/_/_/ /_/_/|_|  
+ 
 */
 
 class DOMLink :
@@ -161,7 +193,7 @@ class DOMLink :
 public:
 
 	// Empty construction
-	DOMLink(int id, SendRenderMessage sendRenderMessage) :
+	DOMLink(int id) :
 		DOMNode(id) {};
 
 	// Define initialization through ICP message in each DOMNode subclass
@@ -181,6 +213,8 @@ public:
 	{
 		return "GetDOMLink";
 	}
+
+	virtual bool PrintAttribute(DOMAttribute attr);
 
 	// TODO: somehow set enum per subclass and return this in DOMNode?
     virtual int GetType() override { return 1; }
@@ -208,11 +242,11 @@ private:
 
 /*
     ____  ____  __  ________      __          __  _______      __    __
-   / __ \/ __ \/  |/  / ___/___  / /__  _____/ /_/ ____(_)__  / /___/ /____
-  / / / / / / / /|_/ /\__ \/ _ \/ / _ \/ ___/ __/ /_  / / _ \/ / __  / ___/
- / /_/ / /_/ / /  / /___/ /  __/ /  __/ /__/ /_/ __/ / /  __/ / /_/ (__  )
-/_____/\____/_/  /_//____/\___/_/\___/\___/\__/_/   /_/\___/_/\__,_/____/
-
+   / __ \/ __ \/  |/  / ___/___  / /__  _____/ /_/ ____(_)__  / /___/ /
+  / / / / / / / /|_/ /\__ \/ _ \/ / _ \/ ___/ __/ /_  / / _ \/ / __  / 
+ / /_/ / /_/ / /  / /___/ /  __/ /  __/ /__/ /_/ __/ / /  __/ / /_/ /  
+/_____/\____/_/  /_//____/\___/_/\___/\___/\__/_/   /_/\___/_/\__,_/   
+                                                                 
 */
 
 class DOMSelectField : 
@@ -222,9 +256,9 @@ class DOMSelectField :
 public:
 
 	// Empty construction
-	DOMSelectField(int id, SendRenderMessage sendRenderMessage) :
+	DOMSelectField(int id, TabDOMNodeInterface* pTab) :
 		DOMNode(id), 
-        DOMJavascriptCommunication(sendRenderMessage),
+        DOMJavascriptCommunication(pTab),
         DOMSelectFieldInteraction() {}
 
 	// Define initialization through ICP message in each DOMNode subclass
@@ -244,6 +278,8 @@ public:
 	{
 		return "GetDOMSelectField";
 	}
+
+	virtual bool PrintAttribute(DOMAttribute attr);
 
 	// TODO: somehow set enum per subclass and return this in DOMNode?
     virtual int GetType() override { return 2; }
@@ -266,11 +302,12 @@ private:
 };
 
 /*
-    ____  ____  __  _______                  ______              ________                          __
-   / __ \/ __ \/  |/  / __ \_   _____  _____/ __/ /___ _      __/ ____/ /__  ____ ___  ___  ____  / /______
-  / / / / / / / /|_/ / / / / | / / _ \/ ___/ /_/ / __ \ | /| / / __/ / / _ \/ __ `__ \/ _ \/ __ \/ __/ ___/
- / /_/ / /_/ / /  / / /_/ /| |/ /  __/ /  / __/ / /_/ / |/ |/ / /___/ /  __/ / / / / /  __/ / / / /_(__  )
-/_____/\____/_/  /_/\____/ |___/\___/_/  /_/ /_/\____/|__/|__/_____/_/\___/_/ /_/ /_/\___/_/ /_/\__/____/
+    ____  ____  __  _______                  ______              ________                          __ 
+   / __ \/ __ \/  |/  / __ \_   _____  _____/ __/ /___ _      __/ ____/ /__  ____ ___  ___  ____  / /_
+  / / / / / / / /|_/ / / / / | / / _ \/ ___/ /_/ / __ \ | /| / / __/ / / _ \/ __ `__ \/ _ \/ __ \/ __/
+ / /_/ / /_/ / /  / / /_/ /| |/ /  __/ /  / __/ / /_/ / |/ |/ / /___/ /  __/ / / / / /  __/ / / / /_  
+/_____/\____/_/  /_/\____/ |___/\___/_/  /_/ /_/\____/|__/|__/_____/_/\___/_/ /_/ /_/\___/_/ /_/\__/  
+                                                                                                    
 */
 
 class DOMOverflowElement : 
@@ -280,9 +317,9 @@ class DOMOverflowElement :
 public:
 
 	// Empty construction
-	DOMOverflowElement(int id, SendRenderMessage sendRenderMessage) :
+	DOMOverflowElement(int id, TabDOMNodeInterface* pTab) :
 		DOMNode(id),
-        DOMJavascriptCommunication(sendRenderMessage),
+        DOMJavascriptCommunication(pTab),
         DOMOverflowElementInteraction() {}
 
 	// Define initialization through ICP message in each DOMNode subclass
@@ -302,6 +339,8 @@ public:
 	{
 		return "GetDOMOverflowElement";
 	}
+
+	virtual bool PrintAttribute(DOMAttribute attr);
 
 	// TODO: somehow set enum per subclass and return this in DOMNode?
     virtual int GetType() override { return 3; }
@@ -327,6 +366,119 @@ private:
 	int _scrollTopMax = 0; 
 	int _scrollLeft = 0;		// current position in interval [0, max value]
 	int _scrollTop = 0; 
+};
+
+/*
+    ____  ____  __  ____    ___     __         
+   / __ \/ __ \/  |/  / |  / (_)___/ /__  ____ 
+  / / / / / / / /|_/ /| | / / / __  / _ \/ __ \
+ / /_/ / /_/ / /  / / | |/ / / /_/ /  __/ /_/ /
+/_____/\____/_/  /_/  |___/_/\__,_/\___/\____/ 
+
+*/
+class DOMVideo :
+	public virtual DOMNode,
+	public virtual DOMVideoInteraction
+{
+public:
+
+	// Empty construction
+	DOMVideo(int id, TabDOMNodeInterface* pTab) :
+		DOMNode(id),
+		DOMJavascriptCommunication(pTab),
+		DOMVideoInteraction() {}
+
+	// Define initialization through ICP message in each DOMNode subclass
+	virtual int Initialize(CefRefPtr<CefProcessMessage> msg) override;
+
+	// Extract data from CefProcessMessage to C++ object's corresponding attibute
+	virtual bool Update(DOMAttribute attr, CefRefPtr<CefListValue> data) override;
+
+	// Build description
+	static void GetDescription(std::vector< const std::vector<DOMAttribute>* >* descriptions) {
+		super::GetDescription(descriptions);
+		descriptions->push_back(&_description);
+	}
+
+	// TODO: why no abstract declaration in DOMNode?
+	static const std::string GetJSObjectGetter()
+	{
+		return "GetDOMVideo";
+	}
+
+	virtual bool PrintAttribute(DOMAttribute attr);
+
+	// TODO: somehow set enum per subclass and return this in DOMNode?
+	virtual int GetType() override { return 4; }
+
+
+private:
+
+	typedef DOMNode super;
+
+	// Setter
+
+	// Members
+	static const std::vector<DOMAttribute> _description;
+};
+
+
+/*
+    ____  ____  __  ___________              __   __              
+   / __ \/ __ \/  |/  / ____/ /_  ___  _____/ /__/ /_  ____  _  __
+  / / / / / / / /|_/ / /   / __ \/ _ \/ ___/ //_/ __ \/ __ \| |/_/
+ / /_/ / /_/ / /  / / /___/ / / /  __/ /__/ ,< / /_/ / /_/ />  <  
+/_____/\____/_/  /_/\____/_/ /_/\___/\___/_/|_/_.___/\____/_/|_|  
+ 
+*/
+class DOMCheckbox :
+	public virtual DOMNode,
+	public virtual DOMCheckboxInteraction
+{
+public:
+	DOMCheckbox(int id, TabDOMNodeInterface* pTab) :
+		DOMNode(id), 
+		DOMJavascriptCommunication(pTab), 
+		DOMCheckboxInteraction() {}
+
+	// Define initialization through ICP message in each DOMNode subclass
+	virtual int Initialize(CefRefPtr<CefProcessMessage> msg) override;
+
+	// Extract data from CefProcessMessage to C++ object's corresponding attibute
+	virtual bool Update(DOMAttribute attr, CefRefPtr<CefListValue> data) override;
+
+	// Build description
+	static void GetDescription(std::vector< const std::vector<DOMAttribute>* >* descriptions) {
+		super::GetDescription(descriptions);
+		descriptions->push_back(&_description);
+	}
+
+
+	static const std::string GetJSObjectGetter()
+	{
+		return "GetDOMCheckbox";
+	}
+
+	virtual bool PrintAttribute(DOMAttribute attr);
+
+	virtual int GetType() override { return 4; }
+
+	bool GetCheckedState() const { return _checked; }
+
+private:
+	typedef DOMNode super;
+
+
+	// Setter
+	void SetCheckedState(bool state) { _checked = state; }
+
+	bool IPCSetCheckedState(CefRefPtr<CefListValue> data);
+
+	// Members
+	bool _checked = false;
+
+
+	static const std::vector<DOMAttribute> _description;
 };
 
 #pragma warning(pop) // warning about dominance inheritage

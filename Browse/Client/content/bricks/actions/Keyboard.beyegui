@@ -54,7 +54,7 @@
 	</row>
 	<row size="46%">
 		<column size="100%">
-			<keyboard style="tab_overlay_noback" id="keyboard" border="2%"/>
+			<keyboard style="tab_overlay_noback" id="keyboard" border="2%" instantpress="false"/>
 		</column>
 	</row>
 	<row size="12%">
@@ -70,7 +70,7 @@
 						<boxbutton icon="icons/LayoutGreeceGreek.png" id="layout_greece_greek" desckey="action_keyboard:layout_greece_greek"/>
 					</stack>
 				</dropbutton>
-				<boxbutton id="space" icon="icons/Empty.png" desckey="action_keyboard:space" relativescale="200%"/>
+				<boxbutton id="space" icon="icons/Space.png" desckey="action_keyboard:space" relativescale="200%" instantpress="false"/>
 				<boxbutton icon="icons/DeleteAllCharacters.png" id="delete_all" desckey="action_keyboard:delete_all" style="dangerous"/>
 				<boxbutton icon="icons/NewLine.png" id="new_line" desckey="action_keyboard:new_line"  relativescale="150%"/>
 			</stack>

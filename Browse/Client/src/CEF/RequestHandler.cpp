@@ -2386,19 +2386,22 @@ CefRequestHandler::ReturnValue RequestHandler::OnBeforeResourceLoad(
 	CefRefPtr<CefRequest> request,
 	CefRefPtr<CefRequestCallback> callback)
 {
-	// Fetch URL
-	std::string URL = request->GetURL().ToString();
-
-	// Remove unnessary parts from front of URL
-	URL = std::regex_replace(URL, std::regex("(https?://)?"), "");
-	URL = std::regex_replace(URL, std::regex("(www\\.)?"), "");
-
-	// Check for all ad URLs
-	for (const auto& rAdURL : adURLs)
+	if (_blockAds)
 	{
-		if (URL.find(rAdURL) != std::string::npos) // does URL contain ad URL?
+		// Fetch URL
+		std::string URL = request->GetURL().ToString();
+
+		// Remove unnessary parts from front of URL
+		URL = std::regex_replace(URL, std::regex("(https?://)?"), "");
+		URL = std::regex_replace(URL, std::regex("(www\\.)?"), "");
+
+		// Check for all ad URLs
+		for (const auto& rAdURL : adURLs)
 		{
-			return RV_CANCEL;
+			if (URL.find(rAdURL) != std::string::npos) // does URL contain ad URL?
+			{
+				return RV_CANCEL;
+			}
 		}
 	}
 

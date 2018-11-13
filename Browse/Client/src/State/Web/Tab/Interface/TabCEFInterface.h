@@ -21,6 +21,8 @@ class DOMTextInput;
 class DOMLink;
 class DOMSelectField;
 class DOMOverflowElement;
+class DOMVideo;
+class DOMCheckbox;
 
 
 class TabCEFInterface
@@ -49,27 +51,32 @@ public:
     virtual std::weak_ptr<Texture> GetWebViewTexture() = 0;
 
 	// Add, remove and update Tab's current DOMNodes
-    virtual void AddDOMTextInput(CefRefPtr<CefBrowser> browser, int id) = 0;
-	virtual void AddDOMLink(CefRefPtr<CefBrowser> browser, int id) = 0;
-	virtual void AddDOMSelectField(CefRefPtr<CefBrowser> browser, int id) = 0;
-	virtual void AddDOMOverflowElement(CefRefPtr<CefBrowser> browser, int id) = 0;
+    virtual void AddDOMTextInput(int id) = 0;
+	virtual void AddDOMLink(int id) = 0;
+	virtual void AddDOMSelectField(int id) = 0;
+	virtual void AddDOMOverflowElement(int id) = 0;
+	virtual void AddDOMVideo(int id) = 0;
+	virtual void AddDOMCheckbox(int id) = 0;
 
 	virtual std::weak_ptr<DOMTextInput> GetDOMTextInput(int id) = 0;
 	virtual std::weak_ptr<DOMLink> GetDOMLink(int id) = 0;
 	virtual std::weak_ptr<DOMSelectField> GetDOMSelectField(int id) = 0;
 	virtual std::weak_ptr<DOMOverflowElement> GetDOMOverflowElement(int id) = 0;
+	virtual std::weak_ptr<DOMVideo> GetDOMVideo(int id) = 0;
+	virtual std::weak_ptr<DOMCheckbox> GetDOMCheckbox(int id) = 0;
 
 	virtual void RemoveDOMTextInput(int id) = 0;
 	virtual void RemoveDOMLink(int id) = 0;
 	virtual void RemoveDOMSelectField(int id) = 0;
 	virtual void RemoveDOMOverflowElement(int id) = 0;
+	virtual void RemoveDOMVideo(int id) = 0;
+	virtual void RemoveDOMCheckbox(int id) = 0;
 	virtual void ClearDOMNodes() = 0;
+
+	virtual void SetMetaKeywords(std::string content) = 0;
 
     // Receive callbacks from CefMediator upon scrolling offset changes
     virtual void SetScrollingOffset(double x, double y) = 0;
-
-    // Getter for URL
-    virtual std::string GetURL() const = 0;
 
     // Getter for current zoom level of corresponding browser
     virtual double GetZoomLevel() const = 0;
@@ -85,15 +92,19 @@ public:
     virtual void SetTitle(std::string title) = 0;
 
     // Add new Tab after that one
-    virtual void AddTabAfter(std::string URL) = 0;
+    virtual void AddTabAfter(std::string URL, CefRefPtr<CefRequestContext> request_context) = 0;
 
 	// Receive current loading status of each frame
-	virtual void SetLoadingStatus(int64 frameID, bool isMain, bool isLoading) = 0;
-
-
+	virtual void SetLoadingStatus(bool isLoading, bool isMainFrame) = 0;
 
 	// Tell about JavaScript dialog
 	virtual void RequestJSDialog(JavaScriptDialogType type, std::string message) = 0;
+
+	// Mediator checks first if favicon image has to be loaded
+	virtual bool IsFaviconAlreadyAvailable(std::string img_url) = 0;
+
+	int _current_favicon_bytes = 0;
+	std::vector<std::string> _loaded_favicon_urls;
 };
 
 #endif // TABCEFINTERFACE_H_

@@ -31,7 +31,7 @@ file(GLOB_RECURSE HEADERS
 
 ### EXTERNALS ##################################################################
 
-# Set path to submodules
+# Set path to externals
 set(EXTERNALS_DIR "${CMAKE_SOURCE_DIR}/externals")
 
 # Curl

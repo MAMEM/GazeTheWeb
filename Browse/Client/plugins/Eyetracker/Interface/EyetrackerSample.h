@@ -20,7 +20,7 @@ enum class SampleDataCoordinateSystem
 struct SampleData
 {
 	// Constructor
-	SampleData(double x, double y, SampleDataCoordinateSystem system, std::chrono::milliseconds timestamp) : x(x), y(y), timestamp(timestamp)
+	SampleData(double x, double y, SampleDataCoordinateSystem system, std::chrono::milliseconds timestamp, bool valid) : x(x), y(y), system(system), timestamp(timestamp), valid(valid)
 	{};
 
 	// Fields
@@ -28,6 +28,7 @@ struct SampleData
 	double y;
 	SampleDataCoordinateSystem system;
 	std::chrono::milliseconds timestamp; // expected to be filled initially with system_clock::now().time_since_epoch()
+	bool valid;
 };
 
 // Typedef for unique pointer of sample queue

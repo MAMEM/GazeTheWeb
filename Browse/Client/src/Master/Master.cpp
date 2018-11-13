@@ -6,6 +6,8 @@
 #include "Master.h"
 #include "src/Utils/Helper.h"
 #include "src/Utils/Logger.h"
+#include "src/Arguments.h"
+#include "src/ContentPath.h"
 #include "submodules/glfw/include/GLFW/glfw3.h"
 #include "submodules/text-csv/include/text/csv/ostream.hpp"
 #include <functional>
@@ -116,19 +118,22 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     glfwInit();
     LogInfo("..done.");
 
-    // Window mode and size
+    // Window mode and size (assumption: use primary monitor, only)
     GLFWmonitor* usedMonitor = NULL;
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode * mode = glfwGetVideoMode(monitor);
+	_monitorWidth = mode->width;
+	_monitorHeight = mode->height;
     if (setup::FULLSCREEN)
     {
         LogInfo("Fullscreen mode");
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode * mode = glfwGetVideoMode(monitor);
-        _width = mode->width;
-        _height = mode->height;
+        _width = _monitorWidth;
+        _height = _monitorHeight;
         usedMonitor = monitor;
     }
     else
     {
+		
         LogInfo("Windowed mode");
     }
 
@@ -176,10 +181,11 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     static std::function<void(int, int)> fC = [&](int w, int h) { this->GLFWResizeCallback(w, h); };
     glfwSetFramebufferSizeCallback(_pWindow, [](GLFWwindow* window, int w, int h) { fC(w, h); });
 
-	// ### WINDOW ICON ###
+	// ### CONTENT PATH ###
 
-	// Set content path (before using it in the helper)
-	eyegui::setRootFilepath(CONTENT_PATH);
+	eyegui::setRootFilepath(RUNTIME_CONTENT_PATH);
+
+	// ### WINDOW ICON ###
 
 	// Load window icons for GLFW
 	std::vector<unsigned char> icon16Data;
@@ -213,7 +219,41 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		(int)icons.size(),
 		icons.data());
 
+	// ### DRIFT MAP USAGE  ###
+
+	// Decide on whether to use the drift map
+	if (setup::ENABLE_EYEGUI_DRIFT_MAP_ACTIVATION)
+	{
+		std::srand(std::time(nullptr)); // use current time as seed for random generator
+		_useDriftMap = (std::rand() % 2) == 1;
+	}
+	
+	// Provide this info in log
+	if (_useDriftMap)
+	{
+		LogInfo("Drift Map is used");
+	}
+	else
+	{
+		LogInfo("Drift Map is *not* used");
+	}
+
     // ### EYEGUI ###
+
+	// Decide on localization
+	std::string localizationFilepath = "";
+	switch (Argument::localization)
+	{
+	case Argument::Localization::English:
+		localizationFilepath = "localizations/English.leyegui";
+		break;
+	case Argument::Localization::Greek:
+		localizationFilepath = "localizations/Greek.leyegui";
+		break;
+	case Argument::Localization::Hebrew:
+		localizationFilepath = "localizations/Hebrew.leyegui";
+		break;
+	}
 
     // Set print callbacks
     std::function<void(std::string)> printGUICallback = [&](std::string message) { this->GUIPrintCallback(message); };
@@ -226,13 +266,14 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	guiBuilder.width = _width;
 	guiBuilder.height = _height;
 	guiBuilder.fontFilepath = "fonts/dejavu-sans/ttf/DejaVuSans.ttf";
-	guiBuilder.localizationFilepath = "localizations/English.leyegui";
+	guiBuilder.localizationFilepath = localizationFilepath;
 	guiBuilder.fontTallSize = 0.07f;
+	guiBuilder.useDriftMap = false;
 
 	// Create splash screen GUI, render it one time and throw it away
 	eyegui::GUI* pSplashGUI = guiBuilder.construct();
 	eyegui::loadStyleSheet(pSplashGUI, "stylesheets/Global.seyegui"); // load styling
-	eyegui::addLayout(pSplashGUI, "layouts/Splash.xeyegui"); // TODO: fill version string
+	eyegui::addLayout(pSplashGUI, "layouts/Splash.xeyegui");
 	eyegui::updateGUI(pSplashGUI, 1.f, eyegui::Input()); // update GUI one time for resizing
 	eyegui::drawGUI(pSplashGUI);
 	glfwSwapBuffers(_pWindow);
@@ -240,13 +281,21 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	eyegui::terminateGUI(pSplashGUI);
 
     // Construct GUI
+	guiBuilder.useDriftMap = _useDriftMap;
     _pGUI = guiBuilder.construct(); // standard GUI object used everywhere
+	guiBuilder.useDriftMap = false;
     _pSuperGUI = guiBuilder.construct(); // GUI which is rendered on top of everything else
     LogInfo("..done.");
 
     // Load styling
     eyegui::loadStyleSheet(_pGUI, "stylesheets/Global.seyegui");
 	eyegui::loadStyleSheet(_pSuperGUI, "stylesheets/Global.seyegui");
+
+	// Load overriding styles for demo mode
+#ifdef CLIENT_DEMO
+		eyegui::loadStyleSheet(_pGUI, "stylesheets/Demo.seyegui");
+		eyegui::loadStyleSheet(_pSuperGUI, "stylesheets/Demo.seyegui");
+#endif
 
     // Set resize callback of GUI
     std::function<void(int, int)> resizeGUICallback = [&](int width, int height) { this->GUIResizeCallback(width, height); };
@@ -318,7 +367,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     // ### STATES ###
 
     // Create states
-    _upWeb = std::unique_ptr<Web>(new Web(this, _pCefMediator));
+    _upWeb = std::unique_ptr<Web>(new Web(this, _pCefMediator, _dataTransfer));
     _upSettings = std::unique_ptr<Settings>(new Settings(this));
 
     // Set first state
@@ -326,15 +375,40 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     _upWeb->Activate();
 
     // ### HOMEPAGE ###
-	_upWeb->AddTab("https://developer.mozilla.org/en-US/docs/Web/CSS/overflow");
-	// _upWeb->AddTab(std::string(CONTENT_PATH) + "/websites/index.html");
-	// _upWeb->AddTab(_upSettings->GetHomepage());
+	// _upWeb->AddTab("https://developer.mozilla.org/en-US/docs/Web/CSS/overflow");
+	// _upWeb->AddTab("http://html5-demos.appspot.com/static/fullscreen.html");
+	// _upWeb->AddTab(std::string(CONTENT_PATH) + "/websites/test/index.html");
+	_upWeb->AddTab(_upSettings->GetHomepage());
+
+	if (setup::DEMO_MODE)
+	{
+		// Perform initial reset, includes tab setup
+		_upWeb->DemoModeReset();
+	}
+	else
+	{
+		// TODO: make modes as enum: STANDARD; DEMO; MAMEM
+		/*
+		auto parameters = GetDashboardParameters();
+		std::string URL(setup::DASHBOARD_URL + "/?");
+		URL += "email=" + parameters.email + "&";
+		URL += "pass=" + parameters.password + "&";
+		URL += "api_key=" + parameters.APIKey + "&";
+		URL += "project_id=" + parameters.projectId;
+		_upWeb->AddTab(URL);
+		*/
+	}
 
     // ### SUPER LAYOUT ###
 
-    // Load layouts (deleted at eyeGUI termination)
-    _pSuperLayout = eyegui::addLayout(_pSuperGUI, "layouts/Super.xeyegui", EYEGUI_SUPER_LAYER, true);
+	// Load layouts
+	_pSuperLayout = eyegui::addLayout(_pSuperGUI, "layouts/Super.xeyegui", EYEGUI_SUPER_LAYER, true);
+
+	// Load super calibration layout
 	_pSuperCalibrationLayout = eyegui::addLayout(_pSuperGUI, "layouts/SuperCalibration.xeyegui", EYEGUI_SUPER_LAYER, false); // adding on top of super layout but still beneath cursor
+
+    // Load notification layout
+	_pSuperNotificationLayout = eyegui::addLayout(_pSuperGUI, "layouts/Empty.xeyegui", EYEGUI_SUPER_LAYER, true);
 
     // Button listener for pause
     _spMasterButtonListener = std::shared_ptr<MasterButtonListener>(new MasterButtonListener(this));
@@ -344,16 +418,12 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	eyegui::registerButtonListener(_pSuperCalibrationLayout, "continue", _spMasterButtonListener);
 	eyegui::registerButtonListener(_pSuperCalibrationLayout, "recalibration", _spMasterButtonListener);
 
-    // Initialization
-    if(setup::PAUSED_AT_STARTUP)
-    {
-        eyegui::buttonDown(_pSuperLayout, "pause", true);
-    }
-    _pausedDimming.setValue(0);
+	// Disable continuing from super calibration screen (until calibration is done)
+	eyegui::setElementActivity(_pSuperCalibrationLayout, "continue", false, false);
 
 	// Add floating frame for notification
 	_notificationFrameIndex = eyegui::addFloatingFrameWithBrick(
-		_pSuperLayout,
+		_pSuperNotificationLayout,
 		"bricks/Notification.beyegui",
 		(1.f - NOTIFICATION_WIDTH) / 2.f,
 		NOTIFICATION_Y,
@@ -361,6 +431,10 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		NOTIFICATION_HEIGHT,
 		false,
 		false);
+
+	// Add floating frames for eyes in trackbox display of super calibration layout
+	_trackboxLeftFrameIndex = eyegui::addFloatingFrameWithBrick(_pSuperCalibrationLayout, "bricks/TrackboxEyeLeft.beyegui", 0, 0, 0, 0, true, false);
+	_trackboxRightFrameIndex = eyegui::addFloatingFrameWithBrick(_pSuperCalibrationLayout, "bricks/TrackboxEyeRight.beyegui", 0, 0, 0, 0, true, false);
 	
 	// ### CURSOR LAYOUT ###
 
@@ -370,10 +444,10 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
     _cursorFrameIndex = eyegui::addFloatingFrameWithBrick(_pCursorLayout, "bricks/Cursor.beyegui", 0, 0, 0, 0, true, false); // will be moved and sized in loop
 
     // ### EYE INPUT ###
-	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this));
+	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
 	// ### VOICE INPUT ###
-	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput(_pGUI));
+	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput());
 
     // ### FRAMEBUFFER ###
     _upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
@@ -386,12 +460,42 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
             geometryShaderSource,
             setup::BLUR_PERIPHERY ? blurFragmentShaderSource : simpleFragmentShaderSource));
 
-	// ### JavaScript to LSL ###
+	// ### FIREBASE MAILER ###
+
+	// Login (waits until complete)
+	std::promise<std::string> idTokenPromise; auto idTokenFuture = idTokenPromise.get_future(); // future provides initial idToken
+	bool pushedBack = FirebaseMailer::Instance().PushBack_Login(_upSettings->GetFirebaseEmail(), _upSettings->GetFirebasePassword(), _useDriftMap, &idTokenPromise);
+	if (pushedBack) { LogInfo(idTokenFuture.get()); };
+
+	// Retrieve user award
+	Award award = FirebaseMailer::Instance().GetUserAward();
+
+	// Set award in Web
+	_upWeb->SetAward(award);
+
+	// ### JAVASCRIPT TO LAB STREAMING LAYER ###
 
 	// Registers a JavaScript callback function that pipes JS callbacks starting with "lsl:" to LabStreamingLayer
 	_pCefMediator->RegisterJavascriptCallback("lsl:", [this](std::string message) { LabStreamMailer::instance().Send(message); });
 
-	// ### LabStreamCallback ###
+	// ### JAVASCRIPT TO THIS DATA TRANSFER ###
+
+	// Register callback
+	_pCefMediator->RegisterJavascriptCallback("data:", [this](std::string message)
+	{
+		std::string tag;
+		std::string id;
+		float x = -1;
+		float y = -1;
+		auto tokens = SplitBySeparator(message, ',');
+		if (tokens.size() > 0) { tag = tokens.at(0); }
+		if (tokens.size() > 1) { id = tokens.at(1); }
+		if (tokens.size() > 2) { x = std::stof(tokens.at(2)); }
+		if (tokens.size() > 3) { y = std::stof(tokens.at(3)); }
+		this->NotifyClick(tag, id, x, y);
+	});
+
+	// ### LAB STREAM CALLBACK ###
 
 	// Create callback
 	_spLabStreamCallback = std::shared_ptr<LabStreamCallback>(new LabStreamCallback(
@@ -399,6 +503,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		{
 			for (const std::string& rMessage : messages)
 			{
+				// Just print all message received via LabStreamingLayer
 				LogInfo("LabStream: " + rMessage);
 			}
 		}
@@ -407,16 +512,32 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	// Register callback
 	LabStreamMailer::instance().RegisterCallback(_spLabStreamCallback);
 
+	// ### INITIALIZATION ###
+
+	// Paused at startup
+	if (setup::PAUSED_AT_STARTUP)
+	{
+		eyegui::buttonDown(_pSuperLayout, "pause", true);
+	}
+	_pausedDimming.setValue(0);
+
+	// Show super calibration layout at startup
+	if (setup::SUPER_CALIBRATION_AT_STARTUP)
+	{
+		ShowSuperCalibrationLayout();
+	}
+
     // ### OTHER ###
 
-	// Maximize window if required
+	// Treat window
 #ifdef _WIN32 // Windows
-	if (!setup::FULLSCREEN && setup::MAXIMIZE_WINDOW)
-	{
-		// Fetch handle to window from GLFW
-		auto Hwnd = glfwGetWin32Window(_pWindow);
 
-		/*
+	// Fetch handle to window from GLFW
+	auto Hwnd = glfwGetWin32Window(_pWindow);
+
+	// Remove window decoration
+	if (!setup::FULLSCREEN && setup::REMOVE_WINDOW_DECORATION)
+	{
 		// Remove frame from window
 		LONG lStyle = GetWindowLong(Hwnd, GWL_STYLE);
 		lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
@@ -426,11 +547,15 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		LONG lExStyle = GetWindowLong(Hwnd, GWL_EXSTYLE);
 		lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
 		SetWindowLong(Hwnd, GWL_EXSTYLE, lExStyle);
-		*/
+	}
 
+	// Maximize window
+	if (!setup::FULLSCREEN && setup::MAXIMIZE_WINDOW)
+	{
 		// Maximize window
 		SendMessage(Hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
 	}
+
 #endif
 
     // Time
@@ -442,6 +567,9 @@ Master::~Master()
     // Manual destruction of Web. Otherwise there are errors in CEF at shutdown (TODO: understand why)
     _upWeb.reset();
 
+	// Wait for all async jobs to finish
+	UpdateAsyncJobs(true);
+
     // Terminate eyeGUI
     eyegui::terminateGUI(_pSuperGUI);
     eyegui::terminateGUI(_pGUI);
@@ -450,9 +578,24 @@ Master::~Master()
     glfwTerminate();
 }
 
-void Master::Run()
+bool Master::Run()
 {
     this->Loop();
+	return _shouldShutdownAtExit;
+}
+
+int Master::GetScreenWidth() const
+{
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+	return mode->width;
+}
+
+int Master::GetScreenHeight() const
+{
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+	return mode->height;
 }
 
 double Master::GetTime() const
@@ -460,16 +603,100 @@ double Master::GetTime() const
     return glfwGetTime();
 }
 
-void Master::Exit()
+void Master::Exit(bool shutdown)
 {
-	// Close all tabs
-	_upWeb->RemoveAllTabs();
-
 	// Stop update loop
 	_exit = true;
 
-	// Let CEF do a last message loop to be able to clean up
-	_pCefMediator->DoMessageLoopWork();
+	// Persist drift grid
+	PersistDriftGrid(PersistDriftGridReason::EXIT);
+
+	// Should shutdown after exit
+	_shouldShutdownAtExit = shutdown;
+}
+
+void Master::SetDataTransfer(bool dataTransfer)
+{
+	// Store value
+	_dataTransfer = dataTransfer;
+
+	// Take actions
+	if (_dataTransfer)
+	{
+		// Gaze data recording
+		_upEyeInput->ContinueLabStream();
+
+		// FirebaseMailer
+		FirebaseMailer::Instance().Continue();
+
+		// Tabs (doing social records, history, etc.)
+		_upWeb->SetDataTransfer(true);
+
+		// Visualization
+		_upWeb->SetWebPanelMode(WebPanelMode::STANDARD);
+		PushNotificationByKey("notification:data_transfer_continued", Type::NEUTRAL, true);
+
+		// Marker in LabStream
+		LabStreamMailer::instance().Send("Data transfer continued");
+
+		// Sensor recording
+		_sensorRecorder.Start();
+	}
+	else
+	{
+		// Gaze data recording
+		_upEyeInput->PauseLabStream();
+
+		// FirebaseMailer
+		FirebaseMailer::Instance().Pause();
+
+		// Tabs (doing no social records, history, etc.)
+		_upWeb->SetDataTransfer(false);
+
+		// Visualization
+		_upWeb->SetWebPanelMode(WebPanelMode::NO_DATA_TRANSFER);
+		PushNotificationByKey("notification:data_transfer_paused", Type::NEUTRAL, true);
+
+		// Marker in LabStream
+		LabStreamMailer::instance().Send("Data transfer paused");
+
+		// Sensor recording
+		_sensorRecorder.Stop();
+	}
+}
+
+std::weak_ptr<CustomTransformationInterface> Master::GetCustomTransformationInterface()
+{
+	return _upEyeInput->GetCustomTransformationInterface();
+}
+
+void Master::PushBackAsyncJob(std::function<bool()> job)
+{
+	// Delegate job into thread
+	_asyncJobs.push_back(std::async(
+		std::launch::async, // do it asynchronously
+		job));
+}
+
+void Master::SimplePushBackAsyncJob(FirebaseIntegerKey countKey, FirebaseJSONKey recordKey, nlohmann::json record)
+{
+	// Add data to record
+	record.emplace("startIndex", FirebaseMailer::Instance().GetStartIndex()); // start index
+	record.emplace("date", GetDate()); // add date
+	record.emplace("timestamp", GetTimestamp()); // add timestamp
+
+	// Push back the job
+	PushBackAsyncJob(
+		[countKey, recordKey, record]() // copy of date, start index and success
+	{
+		// Persist record
+		std::promise<int> promise; auto future = promise.get_future(); // future provides index
+		bool pushedBack = FirebaseMailer::Instance().PushBack_Transform(countKey, 1, &promise); // adds one to the count
+		if (pushedBack) { pushedBack = FirebaseMailer::Instance().PushBack_Put(recordKey, record, std::to_string(future.get() - 1)); } // send JSON to database
+
+		// Return some value (not used)
+		return true;
+	});
 }
 
 eyegui::Layout* Master::AddLayout(std::string filepath, int layer, bool visible)
@@ -498,6 +725,11 @@ void Master::SetStyleTreePropertyValue(std::string styleClass, eyegui::property:
 void Master::SetStyleTreePropertyValue(std::string styleClass, eyegui::property::Color type, std::string value)
 {
 	eyegui::setStyleTreePropertyValue(_pGUI, styleClass, type, value);
+}
+
+void Master::NotifyClick(std::string tag, std::string id, float x, float y)
+{
+	_upWeb->NotifyClick(tag, id, x, y);
 }
 
 void Master::PushNotification(std::u16string content, Type type, bool overridable)
@@ -531,15 +763,24 @@ void Master::threadsafe_NotifyEyeTrackerStatus(EyeTrackerStatus status, EyeTrack
 	_threadJobsMutex.unlock();
 }
 
+bool Master::threadsafe_MayTransferData()
+{
+	// No job necessary, just reading bool
+	return _dataTransfer;
+}
+
 void Master::Loop()
 {
 	while (!_exit)
 	{
+		// Update the async computations
+		UpdateAsyncJobs(false); // do not wait until finished
+
 		// Call exit when window should close
 		if (glfwWindowShouldClose(_pWindow))
 		{
 			Exit();
-			continue; // or break because _exit is set by Exit()
+			continue;
 		}
 
 		// Time per frame
@@ -565,11 +806,9 @@ void Master::Loop()
 		// Update lab streaming layer mailer to get incoming messages
 		LabStreamMailer::instance().Update();
 
-		// Poll CefMediator
-		_pCefMediator->Poll(tpf);
-
 		// Notification handling
-		if (_notificationTime <= 0 || _notificationOverridable)
+		if (_notificationTime <= 0 // time for the current notification is over
+			|| (_notificationOverridable && !_notificationStack.empty())) // go to next notification if current is overridable and stack not empty
 		{
 			// Show next notification
 			if (!_notificationStack.empty())
@@ -580,7 +819,7 @@ void Master::Loop()
 
 				// Set content
 				eyegui::setContentOfTextBlock(
-					_pSuperLayout,
+					_pSuperNotificationLayout,
 					"notification",
 					notification.message);
 
@@ -606,7 +845,7 @@ void Master::Loop()
 				_notificationOverridable = notification.overridable;
 
 				// Make floating frame visible
-				eyegui::setVisibilityOFloatingFrame(_pSuperLayout, _notificationFrameIndex, true, false, true);
+				eyegui::setVisibilityOFloatingFrame(_pSuperNotificationLayout, _notificationFrameIndex, true, false, true);
 
 				// Reset time
 				_notificationTime = NOTIFICATION_DISPLAY_DURATION;
@@ -617,10 +856,10 @@ void Master::Loop()
 					eyegui::playSound(_pGUI, notification.sound);
 				}
 			}
-			else if(_notificationTime <= 0) // hide notification, if empty and time is over
+			else
 			{
 				// Hide notification display
-				eyegui::setVisibilityOFloatingFrame(_pSuperLayout, _notificationFrameIndex, false, false, true);
+				eyegui::setVisibilityOFloatingFrame(_pSuperNotificationLayout, _notificationFrameIndex, false, false, true);
 			}
 		}
 		else
@@ -635,30 +874,107 @@ void Master::Loop()
         glfwGetCursorPos(_pWindow, &currentMouseX, &currentMouseY);
 
 		// Update eye input
+		int focused = glfwGetWindowAttrib(_pWindow, GLFW_FOCUSED);
 		int windowX = 0;
 		int windowY = 0;
 		glfwGetWindowPos(_pWindow, &windowX, &windowY);
 		auto spInput = _upEyeInput->Update(
+			focused > 0,
 			tpf,
 			currentMouseX,
 			currentMouseY,
 			windowX,
 			windowY,
 			_width,
-			_height); // returns whether gaze was used (or emulated by mouse)
+			_height,
+			_monitorWidth,
+			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
+
+		// Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
+		auto voice_input = _upVoiceInput->Update(tpf);
+
+		// Record how long super calibration layout has been visible
+		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
+		{
+			_recalibrationLayoutTime += tpf;
+		}
 
 		// If last gaze sample age is too high, perform recalibration
 		if (
-			!eyegui::isLayoutVisible(_pSuperCalibrationLayout) // only proceed when layout is not already visible
+			!setup::DEMO_MODE // do not do it in DEMO mode
+			&& !eyegui::isLayoutVisible(_pSuperCalibrationLayout) // only proceed when layout is not already visible
 			&& !spInput->gazeEmulated // only think about calibration if gaze is not emulated
 			&& spInput->gazeAge > setup::DURATION_BEFORE_SUPER_CALIBRATION // also only when for given time no samples received
 			&& _upEyeInput->SamplesReceived()) // and it should not performed when there were no samples so far
 		{
-			// Display layout to recalibrate
-			eyegui::setVisibilityOfLayout(_pSuperCalibrationLayout, true, true, true);
+			// Show super calibration layout
+			ShowSuperCalibrationLayout();
+			_recalibrationLayoutTime = 0.0;
+		}
 
-			// Notify user via sound
-			eyegui::playSound(_pGUI, "sounds/GameAudio/FlourishSpacey-1.ogg");
+		// Call exit when the system has been in super calibration state for a long amount of time
+		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout) // if super calibration layout visible
+			&& _recalibrationLayoutTime >= setup::INACTIVITY_SHUTDOWN_TIME // when layout visible longer than certain amount of time
+			&& spInput->gazeAge > setup::DURATION_BEFORE_SUPER_CALIBRATION) // and right now no gaze is going on
+		{
+			// Do shutdown the system
+			Exit(true);
+		}
+
+		// Update super calibration layout with trackbox information
+		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
+		{
+			// Coordinate of display in layout TODO: ask eyeGUI for the dimensions
+			const float trackboxDisplayX = 0.04f;
+			const float trackboxDisplayY = 0.60f;
+			const float trackboxDisplayWidth = 0.35f;
+			const float trackboxDisplayHeight = 0.25f;
+			const float trackboxPointSize = 0.1f;
+
+			// Get trackbox info
+			auto trackboxInfo = _upEyeInput->GetTrackboxInfo();
+
+			// Function to transform eye
+			auto transformTrackboxEye = [&](
+				const float x, const float y, const float z, // input
+				float& rX, float& rY, float& rSize) // output
+			{
+				// Size
+				rSize = 1.f - glm::abs(z);
+				rSize = rSize * trackboxPointSize;
+
+				// Position
+				rX = ((x + 1.f) * 0.5f) - (rSize * 0.5f);
+				rY = (1.f - ((y + 1.f) * 0.5f)) - (rSize * 0.5f);
+				rX = (rX * trackboxDisplayWidth) + trackboxDisplayX;
+				rY = (rY * trackboxDisplayHeight) + trackboxDisplayY;
+			};
+
+			// Visualization of the left eye
+			float leftSize = 0;
+			float leftX = 0;
+			float leftY = 0;
+			if (trackboxInfo.leftTracked)
+			{
+				transformTrackboxEye(
+					trackboxInfo.leftX, trackboxInfo.leftY, trackboxInfo.leftZ, // input
+					leftX, leftY, leftSize); // output
+			}
+			eyegui::setPositionOfFloatingFrame(_pSuperCalibrationLayout, _trackboxLeftFrameIndex, leftX, leftY);
+			eyegui::setSizeOfFloatingFrame(_pSuperCalibrationLayout, _trackboxLeftFrameIndex, leftSize, leftSize);
+
+			// Visualization of the right eye
+			float rightSize = 0;
+			float rightX = 0;
+			float rightY = 0;
+			if (trackboxInfo.rightTracked)
+			{
+				transformTrackboxEye(
+					trackboxInfo.rightX, trackboxInfo.rightY, trackboxInfo.rightZ, // input
+					rightX, rightY, rightSize); // output
+			}
+			eyegui::setPositionOfFloatingFrame(_pSuperCalibrationLayout, _trackboxRightFrameIndex, rightX, rightY);
+			eyegui::setSizeOfFloatingFrame(_pSuperCalibrationLayout, _trackboxRightFrameIndex, rightSize, rightSize);
 		}
 
         // Update cursor with original mouse input
@@ -684,8 +1000,7 @@ void Master::Loop()
             RGBAToHexString(glm::vec4(0, 0, 0, MASTER_PAUSE_ALPHA * _pausedDimming.getValue())));
 
 		// Check whether input is desired
-		int focused = glfwGetWindowAttrib(_pWindow, GLFW_FOCUSED);
-		if ((focused <= 0) // window not focused
+		if ((!spInput->windowFocused) // window not focused
 			|| (_timeUntilInput > 0) // do not use input, yet
 			|| (!spInput->gazeEmulated && spInput->gazeAge > setup::MAX_AGE_OF_USED_GAZE)) // do not use gaze that is too old
 		{
@@ -712,11 +1027,14 @@ void Master::Loop()
 		eyeGUIInput = eyegui::updateGUI(_pGUI, tpf, eyeGUIInput); // update GUI
 
         // Do message loop of CEF
-        _pCefMediator->DoMessageLoopWork();
+        _pCefMediator->DoMessageLoopWork(); // TODO: Breaks randomly after sometime in debug mode?
 
         // Update our input structure
 		spInput->gazeUponGUI = eyeGUIInput.gazeUsed;
 		spInput->instantInteraction = eyeGUIInput.instantInteraction;
+
+		// eyeGUI returns drift corrected gaze (if DriftMap is activated).
+		// However, this is not used here. Instead, we ask for drift correction where required.
 
         // Bind framebuffer
         _upFramebuffer->Bind();
@@ -770,6 +1088,28 @@ void Master::Loop()
             _currentState = nextState;
         }
 
+		// If demo mode reset, just reset to Web
+		if (_demoModeReset)
+		{
+			// deactivate current state
+			switch (_currentState)
+			{
+			case StateType::WEB:
+				_upWeb->Deactivate();
+				break;
+			case StateType::SETTINGS:
+				_upSettings->Deactivate();
+				break;
+			}
+
+			// Activate Web state
+			_upWeb->Activate();
+			_currentState = StateType::WEB;
+
+			// Remember to have it performed
+			_demoModeReset = false;
+		}
+
 		// Enable depth test again
 		glEnable(GL_DEPTH_TEST);
 
@@ -810,7 +1150,99 @@ void Master::Loop()
     }
 }
 
-#include <iostream>
+void Master::UpdateAsyncJobs(bool wait)
+{
+	// Check asynchronous jobs
+	int startIndex = _asyncJobs.size() - 1;
+	for (int i = startIndex; i >= 0; i--) // do it from the back
+	{
+		// Retrieve whether asynchronous call is done
+		bool remove = false;
+		if (wait)
+		{
+			_asyncJobs.at(i).wait();
+			remove = true; // waited until it is done, so remove it
+		}
+		else
+		{
+			// We have no time, so wait for nothing and just check
+			if (std::future_status::ready == _asyncJobs.at(i).wait_for(std::chrono::seconds(0)))
+			{
+				remove = true; // done by now, so remove it
+			}
+		}
+
+		// Remove future from list when job is done
+		if (remove)
+		{
+			_asyncJobs.erase(_asyncJobs.begin() + i);
+		}
+	}
+}
+
+void Master::ShowSuperCalibrationLayout()
+{
+	// Display layout to recalibrate
+	eyegui::setVisibilityOfLayout(_pSuperCalibrationLayout, true, true, true);
+
+	// Notify user via sound
+	eyegui::playSound(_pGUI, "sounds/GameAudio/FlourishSpacey-1.ogg");
+}
+
+void Master::PersistDriftGrid(PersistDriftGridReason reason)
+{
+	// Attempt persisting only if drift map is actually used
+	if (_useDriftMap)
+	{
+		// Decide on reason for persisting
+		std::string strReason = "";
+		switch (reason)
+		{
+		case PersistDriftGridReason::EXIT:
+			strReason = "exit";
+			break;
+		case PersistDriftGridReason::RECALIBRATION:
+			strReason = "recalibration";
+			break;
+		case PersistDriftGridReason::MANUAL:
+			strReason = "manual";
+			break;
+		}
+
+		// Store grid cells in Firebase
+		eyegui::DriftGrid grid = eyegui::getCurrentDriftMap(_pGUI);
+		std::vector<float> driftX; driftX.reserve(grid.RES_X);
+		std::vector<float> driftY; driftY.reserve(grid.RES_Y);
+		for (int x = 0; x < grid.RES_X; x++)
+		{
+			for (int y = 0; y < grid.RES_Y; y++)
+			{
+				driftX.push_back(grid.cells[x][y].first);
+				driftY.push_back(grid.cells[x][y].second);
+			}
+		}
+		nlohmann::json gridJSON =
+		{
+			{ "startIndex", FirebaseMailer::Instance().GetStartIndex() }, // start index
+			{ "date", GetDate() }, // add date
+			{ "storeTimestamp", GetTimestamp() }, // add timestamp when the drift grid has been stored
+			{ "initTimestamp", grid.initTimestamp }, // add timestamp when the drift grid had been initialized
+			{ "reason", strReason }, // reason for persisting
+			{ "resX", grid.RES_X },
+			{ "resY", grid.RES_Y },
+			{ "driftX", driftX },
+			{ "driftY", driftY }
+		};
+		PushBackAsyncJob(
+			[gridJSON]() // provide copy of data
+		{
+			std::promise<int> promise; auto future = promise.get_future(); // future provides index
+			bool pushedBack = FirebaseMailer::Instance().PushBack_Transform(FirebaseIntegerKey::GENERAL_DRIFT_GRID_COUNT, 1, &promise); // adds one to the count
+			if (pushedBack) { FirebaseMailer::Instance().PushBack_Put(FirebaseJSONKey::GENERAL_DRIFT_GRID, gridJSON, std::to_string(future.get() - 1)); } // send JSON to database
+			return true; // give the future some value
+		});
+	}
+}
 
 void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 {
@@ -818,25 +1250,39 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
     {
         switch (key)
         {
-            case GLFW_KEY_ESCAPE: { Exit(); break; }
+			case GLFW_KEY_ESCAPE: { if (!setup::DEMO_MODE) { Exit();} break; }
             case GLFW_KEY_TAB:  { eyegui::hitButton(_pSuperLayout, "pause"); break; }
             case GLFW_KEY_ENTER: { _enterKeyPressed = true; break; }
-			case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
-			case GLFW_KEY_C: { eyegui::setVisibilityOfLayout(_pSuperCalibrationLayout, true, true, true); eyegui::playSound(_pGUI, "sounds/GameAudio/FlourishSpacey-1.ogg");  break; } // TODO: trigger directly calibration
-			case GLFW_KEY_0: { _pCefMediator->ShowDevTools(); break; }
-			case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
-			case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::ZOOM); break; }
-			case GLFW_KEY_8: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::DRIFT_CORRECTION); break; }
-			case GLFW_KEY_9: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::DYNAMIC_DRIFT_CORRECTION); break; }
-			case GLFW_KEY_SPACE: { _upVoiceInput->StartAudioRecording(); }
+			case GLFW_KEY_SPACE: { _enterKeyPressed = true; break; }
+			// case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
+			case GLFW_KEY_R: { ShowSuperCalibrationLayout(); break; } // just show the super calibration layout
+			// case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
+			// case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
+			// case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
+			case GLFW_KEY_0: { if (!setup::DEPLOYMENT && !setup::DEMO_MODE) { _pCefMediator->ShowDevTools(); } break; }
+			// case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
+			case GLFW_KEY_D: {
+				if (mods & GLFW_MOD_CONTROL)
+				{
+					if (setup::DEMO_MODE)
+					{
+						_upWeb->DemoModeReset();
+						_demoModeReset = true;
+						eyegui::buttonDown(_pSuperLayout, "pause");
+						PushNotification(u"Demo Mode Reset", MasterNotificationInterface::Type::SUCCESS, false);
+						LogInfo("Demo Mode Reset");
+					}
+				}
+				break; }
         }
     }
 	else if (action == GLFW_RELEASE)
 	{
+		/*
 		switch (key)
 		{
-			case GLFW_KEY_SPACE: { auto action = _upVoiceInput->EndAndProcessAudioRecording(); LogInfo("Retrieved VoiceAction: ", static_cast<int>(action)); }
 		}
+		*/
 	}
 }
 
@@ -893,6 +1339,7 @@ void Master::MasterButtonListener::down(eyegui::Layout* pLayout, std::string id)
     {
         _pMaster->_paused = true;
         eyegui::setDescriptionVisibility(_pMaster->_pGUI, eyegui::DescriptionVisibility::VISIBLE);
+		_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_PAUSE_COUNT, FirebaseJSONKey::GENERAL_PAUSE);
     }
 	else if (pLayout == _pMaster->_pSuperCalibrationLayout)
 	{
@@ -904,18 +1351,93 @@ void Master::MasterButtonListener::down(eyegui::Layout* pLayout, std::string id)
 		else if (id == "recalibration")
 		{
 			// Perform calibration
-			bool success = _pMaster->_upEyeInput->Calibrate();
-			if (success)
+			bool success = false;
+			std::shared_ptr<CalibrationInfo> spCalibrationInfo = std::make_shared<CalibrationInfo>();
+			CalibrationResult result = _pMaster->_upEyeInput->Calibrate(spCalibrationInfo);
+			switch (result)
 			{
+			case CALIBRATION_OK:
 				_pMaster->PushNotificationByKey("notification:calibration_success", MasterNotificationInterface::Type::SUCCESS, false);
+				_pMaster->PersistDriftGrid(Master::PersistDriftGridReason::RECALIBRATION); // before reset
+				eyegui::resetDriftMap(_pMaster->_pGUI); // reset drift map of GUI
+				success = true;
+				eyegui::setElementActivity(_pMaster->_pSuperCalibrationLayout, "continue", true, true); // allow user to continue
+				break;
+			case CALIBRATION_BAD:
+				// TODO: provide hints how to improve calibration
+				_pMaster->PushNotificationByKey("notification:calibration_bad", MasterNotificationInterface::Type::WARNING, false);
+				_pMaster->PersistDriftGrid(Master::PersistDriftGridReason::RECALIBRATION); // before reset
+				eyegui::resetDriftMap(_pMaster->_pGUI); // reset drift map of GUI
+				success = true;
+				eyegui::setElementActivity(_pMaster->_pSuperCalibrationLayout, "continue", true, true); // allow user to continue
+				break;
+			case CALIBRATION_FAILED:
+				_pMaster->PushNotificationByKey("notification:calibration_failure", MasterNotificationInterface::Type::WARNING, false);
+				eyegui::setElementActivity(_pMaster->_pSuperCalibrationLayout, "continue", false, true); // force user to do calibration
+				break;
+			case CALIBRATION_NOT_SUPPORTED:
+				_pMaster->PushNotificationByKey("notification:calibration_failure", MasterNotificationInterface::Type::WARNING, false);
+				eyegui::setElementActivity(_pMaster->_pSuperCalibrationLayout, "continue", true, true); // allow user to continue
+				break;
+			}
+
+			// Store this recalibration in Firebase
+			nlohmann::json record = { { "success", success } };
+			_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_RECALIBRATION_COUNT, FirebaseJSONKey::GENERAL_RECALIBRATION, record);
+
+			// Remove points of last calibration
+			for (const auto& index : _pMaster->_lastCalibrationPointsFrameIndices)
+			{
+				eyegui::removeFloatingFrame(_pMaster->_pSuperCalibrationLayout, index, false);
+			}
+			_pMaster->_lastCalibrationPointsFrameIndices.clear();
+
+			// Decide what to display
+			if (spCalibrationInfo->empty())
+			{
+				// Show message
+				eyegui::setContentOfTextBlock(_pMaster->_pSuperCalibrationLayout, "calibration_display_message", eyegui::fetchLocalization(_pMaster->_pSuperGUI, "super_calibration:calibration_display_message"));
 			}
 			else
 			{
-				_pMaster->PushNotificationByKey("notification:calibration_failure", MasterNotificationInterface::Type::WARNING, false);
-			}
+				// Hide message
+				eyegui::setContentOfTextBlock(_pMaster->_pSuperCalibrationLayout, "calibration_display_message", "");
 
-			// Hide layout after calibration
-			eyegui::setVisibilityOfLayout(_pMaster->_pSuperCalibrationLayout, false, false, true);
+				// Show points of this calibration TODO: ask eyeGUI for the dimensions
+				const float calibrationDisplayX = 0.04f;
+				const float calibrationDisplayY = 0.16f;
+				const float calibrationDisplayWidth = 0.35f;
+				const float calibrationDisplayHeight = 0.25f;
+				const float calibrationPointSize = 0.1f;
+				for (const auto& rPoint : *spCalibrationInfo.get())
+				{
+					// Decide on point visualization
+					std::string brickFilepath = "bricks/CalibrationDisplayOkPoint.beyegui";
+					switch (rPoint.result)
+					{
+					case CALIBRATION_POINT_OK:
+						brickFilepath = "bricks/CalibrationDisplayOkPoint.beyegui";
+						break;
+					case CALIBRATION_POINT_BAD:
+						brickFilepath = "bricks/CalibrationDisplayBadPoint.beyegui";
+						break;
+					case CALIBRATION_POINT_FAILED:
+						brickFilepath = "bricks/CalibrationDisplayFailedPoint.beyegui";
+						break;
+					}
+
+					// Decide on position TODO: this has assumption that calibration is fullscreen on primary display
+					float relPointX = (float)rPoint.positionX / _pMaster->GetScreenWidth();
+					float relPointY = (float)rPoint.positionY / _pMaster->GetScreenHeight();
+					float x = calibrationDisplayX + (relPointX * calibrationDisplayWidth);
+					x -= calibrationPointSize / 2.f;
+					float y = calibrationDisplayY + (relPointY * calibrationDisplayHeight);
+					y -= calibrationPointSize / 2.f;
+
+					// Add point visualization
+					_pMaster->_lastCalibrationPointsFrameIndices.push_back(eyegui::addFloatingFrameWithBrick(_pMaster->_pSuperCalibrationLayout, brickFilepath, x, y, calibrationPointSize, calibrationPointSize, true, false));
+				}
+			}
 		}
 	}
 }
@@ -926,6 +1448,7 @@ void Master::MasterButtonListener::up(eyegui::Layout* pLayout, std::string id)
     {
         _pMaster->_paused = false;
         eyegui::setDescriptionVisibility(_pMaster->_pGUI, eyegui::DescriptionVisibility::ON_PENETRATION); // TODO look up in Settings for set value
+		_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_UNPAUSE_COUNT, FirebaseJSONKey::GENERAL_UNPAUSE);
     }
 }
 
@@ -955,6 +1478,9 @@ void Master::PushEyetrackerStatusThreadJob::Execute()
 			break;
 		case EyeTrackerDevice::TOBII_EYEX:
 			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected_tobii_eyex", MasterNotificationInterface::Type::SUCCESS, false);
+			break;
+		case EyeTrackerDevice::TOBII_PRO:
+			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected_tobii_pro", MasterNotificationInterface::Type::SUCCESS, false);
 			break;
 		default:
 			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected", MasterNotificationInterface::Type::SUCCESS, false);

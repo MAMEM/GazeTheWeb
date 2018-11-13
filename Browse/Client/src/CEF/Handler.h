@@ -11,6 +11,8 @@
 #include "src/CEF/JSCode.h"
 #include "include/cef_client.h"
 #include "src/CEF/MessageRouter.h"
+#include "src/CEF/ImageDownload.h"
+#include "src/CEF/RequestHandler.h"
 #include <list>
 #include <set>
 
@@ -22,12 +24,19 @@ class Handler : public CefClient,
                 public CefDisplayHandler,
                 public CefLifeSpanHandler,
                 public CefLoadHandler,
-				public CefJSDialogHandler
+				public CefJSDialogHandler,
+				public HandlerImageInterface,
+				public CefKeyboardHandler
 {
 public:
 
     Handler(Mediator* pMediator, CefRefPtr<Renderer> renderer);
     ~Handler();
+
+	// TODO: Not called?
+	bool OnKeyEvent(CefRefPtr<CefBrowser> browser,
+		const CefKeyEvent& event,
+		CefEventHandle os_event) OVERRIDE; 
 
     // Request that all existing browser windows close
     void CloseAllBrowsers(bool forceClose);
@@ -120,7 +129,10 @@ public:
     void EmulateMouseCursor(CefRefPtr<CefBrowser> browser, double x, double y, bool leftButtonPressed);
     void EmulateLeftMouseButtonClick(CefRefPtr<CefBrowser> browser, double x, double y);
     void EmulateMouseWheelScrolling(CefRefPtr<CefBrowser> browser, double deltaX, double deltaY);
-
+	void EmulateKeyboardKey(CefRefPtr<CefBrowser> browser, int key, int scancode, int mods, bool send_char_keyevent=true);
+	void EmulateKeyboardStrokes(CefRefPtr<CefBrowser> browser, std::string input);
+	void EmulateEnterKey(CefRefPtr<CefBrowser> browser);
+	void EmulateSelectAll(CefRefPtr<CefBrowser> browser);
     
     void ResetMainFramesScrolling(CefRefPtr<CefBrowser> browser);
 
@@ -128,7 +140,7 @@ public:
     void SetZoomLevel(CefRefPtr<CefBrowser> browser, bool definitelyChanged = true);
 
     // Write page resolution to V8 variables, read them and update Tab
-    void UpdatePageResolution(CefRefPtr<CefBrowser> browser);
+	void UpdatePageResolution(CefRefPtr<CefBrowser> browser);				// TODO: <--- Needs refactoring!
 
     // EXPERIMENTAL: Request coordinates of fixed elements (like bars on top of pages)
     void GetFixedElements(CefRefPtr<CefBrowser> browser);
@@ -139,8 +151,6 @@ public:
 	void OnTitleChange(CefRefPtr<CefBrowser> browser,
 		const CefString& title) OVERRIDE;
 
-
-
 	void RegisterJavascriptCallback(std::string prefix, std::function<void(std::string)> callbackFunction)
 	{
 		_msgRouter->RegisterJavascriptCallback(prefix, callbackFunction);
@@ -148,6 +158,14 @@ public:
 
 	// Send log data to LoggingMediator instance in each browser context
 	void SendToJSLoggingMediator(std::string message);
+
+	// Check if favicon was already loaded, if not download it
+	bool StartFaviconImageDownload(CefRefPtr<CefBrowser> browser, CefString img_url);
+	// HandlerImageDownload interface methods
+	bool ForwardFaviconBytes(CefRefPtr<CefBrowser> browser, CefRefPtr<CefImage> img);
+
+	// Decide whether to block ads
+	void BlockAds(bool blockAds) { _requestHandler->BlockAds(blockAds); }
 
 private:
 
@@ -174,7 +192,7 @@ private:
 	CefRefPtr<MessageRouter> _msgRouter;
 
 	// Used for adblocking
-	CefRefPtr<CefRequestHandler> _requestHandler;
+	CefRefPtr<RequestHandler> _requestHandler;
 
     // JavaScript code as Strings
     const std::string _js_remove_css_scrollbar = GetJSCode(REMOVE_CSS_SCROLLBAR);

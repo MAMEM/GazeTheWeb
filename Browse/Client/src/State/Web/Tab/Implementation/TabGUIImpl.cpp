@@ -5,11 +5,12 @@
 //============================================================================
 
 #include "src/State/Web/Tab/Tab.h"
-#include "src/State/Web/Tab/Pipelines/ZoomClickPipeline.h"
+#include "src/State/Web/Tab/Pipelines/ClickPipeline.h"
 #include "src/State/Web/Tab/Pipelines/PivotMenuPipeline.h"
 #include "src/State/Web/Tab/Pipelines/TextSelectionPipeline.h"
 #include "src/CEF/Mediator.h"
 #include "src/Utils/MakeUnique.h"
+#include "src/Master/Master.h"
 
 void Tab::TabButtonListener::down(eyegui::Layout* pLayout, std::string id)
 {
@@ -18,7 +19,7 @@ void Tab::TabButtonListener::down(eyegui::Layout* pLayout, std::string id)
 		// ### Tab layout ###
 		if (id == "click_mode")
 		{
-			_pTab->PushBackPipeline(std::move(std::unique_ptr<ZoomClickPipeline>(new ZoomClickPipeline(_pTab))));
+			_pTab->PushBackPipeline(std::move(std::unique_ptr<ClickPipeline>(new ClickPipeline(_pTab))));
 		}
 		else if (id == "auto_scrolling")
 		{
@@ -30,10 +31,20 @@ void Tab::TabButtonListener::down(eyegui::Layout* pLayout, std::string id)
 		}
 		else if (id == "zoom")
 		{
-			_pTab->_zoomLevel = 1.3;
+			_pTab->_zoomLevel = 1.5;
 
 			// Trigger zooming in CefMediator
 			_pTab->_pCefMediator->SetZoomLevel(_pTab);
+		}
+		else if (id == "dashboard")
+		{
+			auto parameters = _pTab->_pMaster->GetDashboardParameters();
+			std::string URL(setup::DASHBOARD_URL + "/?");
+			URL += "email=" + parameters.email + "&";
+			URL += "pass=" + parameters.password + "&";
+			URL += "api_key=" + parameters.APIKey + "&";
+			URL += "project_id=" + parameters.projectId;
+			_pTab->OpenURL(URL);
 		}
 		/*
         else if (id == "gaze_mouse")
@@ -58,12 +69,84 @@ void Tab::TabButtonListener::down(eyegui::Layout* pLayout, std::string id)
 		}
 		*/
 	}
-	else
+	else if(pLayout == _pTab->_pPipelineAbortLayout)
 	{
 		// ### Pipeline abort layout ###
 		if (id == "abort")
 		{
 			_pTab->AbortAndClearPipelines();
+		}
+	}
+	else if (pLayout == _pTab->_pVideoModeLayout)
+	{
+		// ### Vide mode layout ###
+		if (id == "play")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->SetPlaying(true);
+				eyegui::setVisibilityOfLayout(_pTab->_pVideoModePauseOverlayLayout, false, false, true); // hide pause overlay
+			}
+		}
+		else if (id == "pause")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->SetPlaying(false);
+				eyegui::setVisibilityOfLayout(_pTab->_pVideoModePauseOverlayLayout, true, true, true); // show pause overlay
+			}
+		}
+		else if (id == "volume_up")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->SetMuted(false);
+				iter->second->ChangeVolume(0.25f);
+			}
+		}
+		else if (id == "volume_down")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->SetMuted(false);
+				iter->second->ChangeVolume(-0.25f);
+			}
+		}
+		else if (id == "mute")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->ToggleMuted();
+			}
+		}
+		else if (id == "exit")
+		{
+			_pTab->ExitVideoMode();
+		}
+	}
+	else
+	{
+		// ### Vide mode pause overlay layout ###
+		if (id == "skip-10")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->SkipSeconds(-10);
+			}
+		}
+		if (id == "skip+30")
+		{
+			auto iter = _pTab->_VideoMap.find(_pTab->_videoModeId);
+			if (iter != _pTab->_VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+			{
+				iter->second->SkipSeconds(30);
+			}
 		}
 	}
 }
@@ -127,6 +210,17 @@ void Tab::TabOverlayButtonListener::up(eyegui::Layout* pLayout, std::string id)
 	// Search for id in map
 	auto iter = _pTab->_overlayButtonUpCallbacks.find(id);
 	if (iter != _pTab->_overlayButtonUpCallbacks.end())
+	{
+		// Execute callback
+		iter->second();
+	}
+}
+
+void Tab::TabOverlayButtonListener::selected(eyegui::Layout* pLayout, std::string id)
+{
+	// Search for id in map
+	auto iter = _pTab->_overlayButtonSelectedCallbacks.find(id);
+	if (iter != _pTab->_overlayButtonSelectedCallbacks.end())
 	{
 		// Execute callback
 		iter->second();

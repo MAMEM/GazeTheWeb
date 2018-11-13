@@ -64,7 +64,8 @@ void OnGazeDataEvent(TX_HANDLE hGazeDataBehavior)
 				SampleDataCoordinateSystem::SCREEN_PIXELS,
 				duration_cast<milliseconds>(
 					system_clock::now().time_since_epoch() // timestamp
-					)
+					),
+				true // EyeX only delivers valid samples
 			)
 		);
 
@@ -126,7 +127,6 @@ void TX_CALLCONVENTION OnEngineConnectionStateChanged(TX_CONNECTIONSTATE connect
 	}
 }
 
-
 // Intialization of global interactor snapshot with unfiltered gaze
 bool InitializeGlobalInteractorSnapshot(TX_CONTEXTHANDLE hContext)
 {
@@ -143,19 +143,21 @@ bool InitializeGlobalInteractorSnapshot(TX_CONTEXTHANDLE hContext)
 	return success;
 }
 
-bool Connect()
+EyetrackerInfo Connect(EyetrackerGeometry geometry)
 {
+	EyetrackerInfo info;
+
 	// Check for EyeX engine
 	TX_EYEXAVAILABILITY availability;
 	if (txGetEyeXAvailability(&availability) == TX_RESULT_OK)
 	{
 		if (availability == TX_EYEXAVAILABILITY_NOTAVAILABLE)
 		{
-			return false;
+			return info;
 		}
 		else if (availability == TX_EYEXAVAILABILITY_NOTRUNNING)
 		{
-			return false;
+			return info;
 		}
 	}
 
@@ -170,8 +172,15 @@ bool Connect()
 	success &= txRegisterEventHandler(Context, &EventHandlerTicket, HandleEvent, NULL) == TX_RESULT_OK; // register handler for events
 	success &= txEnableConnection(Context) == TX_RESULT_OK; // do connect to EyeX engine
 
+	// Info about eye tracker
+	if (success)
+	{
+		info.connected = true;
+		info.samplerate = 90; // 60 for EyeX and 90 for 4C
+	}
+
 	// Return success
-	return success;
+	return info;
 }
 
 bool IsTracking()
@@ -198,8 +207,23 @@ void FetchSamples(SampleQueue& rspSamples)
 	eyetracker_global::FetchSamples(rspSamples);
 }
 
-bool Calibrate()
+CalibrationResult Calibrate(std::shared_ptr<CalibrationInfo>& rspInfo)
 {
 	// Not supported
-	return false;
+	return CALIBRATION_NOT_SUPPORTED;
+}
+
+TrackboxInfo GetTrackboxInfo()
+{
+	return TrackboxInfo();
+}
+
+void ContinueLabStream()
+{
+	eyetracker_global::ContinueLabStream();
+}
+
+void PauseLabStream()
+{
+	eyetracker_global::PauseLabStream();
 }

@@ -9,6 +9,12 @@
 // Forward declaration of common main
 int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory);
 
+// Platform specific shutdown
+void shutdown()
+{
+	system("poweroff");
+}
+
 // Following taken partly out of CefSimple example of Chromium Embedded Framework!
 
 // Entry point function for all processes.

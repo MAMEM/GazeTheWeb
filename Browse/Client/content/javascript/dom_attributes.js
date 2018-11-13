@@ -5,10 +5,8 @@
 
 ConsolePrint("Starting to import dom_attributes.js ...");
 
-
+// Filled using C++
 window.attrStrToInt = new Map();
-
-// TODO: Call in CEF Renderer OnContextInitialized
 function AddDOMAttribute(attrStr, attrInt)
 {
     if(typeof(attrStr) !== "string" || typeof(attrInt) !== "number")
@@ -29,6 +27,9 @@ function GetAttributeCode(attrStr)
 }
 
 
+/**
+ * Fetch attribute, named |attrStr|, data by calling |domObj|s getter domObj['get'+|attr|]();
+ */
 function SendAttributeChangesToCEF(attrStr, domObj)
 {
     if (typeof(domObj.getType) !== "function")
@@ -36,6 +37,9 @@ function SendAttributeChangesToCEF(attrStr, domObj)
 
     if(typeof(domObj.isCppReady) !== "function" || !domObj.isCppReady())
         return "Node not yet ready on C++ side!";
+
+    if(domObj.getCefHidden())
+        return "Given domObj with id: "+domObj.getId()+" & type: "+domObj.getType()+" is CefHidden!";
     
     var attrCode = GetAttributeCode(attrStr);
     if(attrCode === undefined)
@@ -52,7 +56,7 @@ function SendAttributeChangesToCEF(attrStr, domObj)
 
     ConsolePrint(msg);
     // console.log("AttrChanges: "+msg);
-    return msg;
+    return "Success, sent: "+msg;
 }
 
 
@@ -60,6 +64,7 @@ function SendAttributeChangesToCEF(attrStr, domObj)
 window.attrStrToEncodingFunc = new Map();
 var simpleReturn = (data) => { return data; };
 var listReturn = (data) => { return data.reduce( (i,j) => {return i+";"+j; })};
+var bitmaskReturn = (data) => {return data.reduce( (i,j) => {return i+j;}, "" )};
 
 window.attrStrToEncodingFunc.set("Rects", (data) => {
     if(data.length === 0)
@@ -77,6 +82,10 @@ window.attrStrToEncodingFunc.set("Url", simpleReturn);
 window.attrStrToEncodingFunc.set("Options", listReturn);
 window.attrStrToEncodingFunc.set("MaxScrolling", listReturn);
 window.attrStrToEncodingFunc.set("CurrentScrolling", listReturn);
+window.attrStrToEncodingFunc.set("OccBitmask", bitmaskReturn);
+window.attrStrToEncodingFunc.set("HTMLId", simpleReturn);
+window.attrStrToEncodingFunc.set("HTMLClass", simpleReturn);
+window.attrStrToEncodingFunc.set("Checked", simpleReturn);
 
 function FetchAndEncodeAttribute(domObj, attrStr)
 {
@@ -90,7 +99,7 @@ function FetchAndEncodeAttribute(domObj, attrStr)
     // Definition: Each getter should be called getAttrStr for simplicity
     if(typeof(domObj["get"+attrStr]) !== "function")
     {
-        console.log("Error in FetchAndEncodeAttribute: Could not find function 'get"+attrStr+"' in given DOM object!");
+        console.log("Error in FetchAndEncodeAttribute: Could not find function 'get"+attrStr+"' in given DOM object!", domObj);
         return undefined;     
     }
 

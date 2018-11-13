@@ -75,6 +75,12 @@ bool BookmarkManager::IsBookmark(std::string URL) const
 	return _bookmarks.find(URL) != _bookmarks.end();
 }
 
+void BookmarkManager::ClearBookmarksAndDeleteFile()
+{
+	_bookmarks.clear();
+	std::remove(_fullpathBookmarks.c_str());
+}
+
 bool BookmarkManager::SaveBoomarks() const
 {
 	// Create document

@@ -53,7 +53,7 @@ protected:
 	const float DIMMING_DURATION = 0.5f; // seconds until it is dimmed
 
 	// Dimming value
-	const float DIMMING_VALUE = 0.3f;
+	const float DIMMING_VALUE = 0.4f;
 
 	// Deviation fading duration (how many seconds until full deviation is back to zero)
 	const float DEVIATION_FADING_DURATION = 1.0f;
@@ -71,10 +71,10 @@ protected:
 	const float ZOOM_SPEED = 0.25f;
 
 	// Maximum log zoom level of orientation phase
-	const float MAX_ORIENTATION_LOG_ZOOM = 0.75f;
+	const float MAX_ORIENTATION_LOG_ZOOM = 0.5f;
 
 	// Drift correction zoom level (must be lower than MAX_LOG_ZOOM)
-	const float MAX_DRIFT_CORRECTION_LOG_ZOOM = 0.5f;
+	const float MAX_DRIFT_CORRECTION_LOG_ZOOM = 0.3f;
 
     // Coordinate of center of zooming in relative page coordinates (not WebView, page!)
     glm::vec2 _relativeZoomCoordinate; // aka zoom coordinate
@@ -106,7 +106,7 @@ protected:
 	SampleData _sampleData;
 
 	// Time after zooming to wait for gaze to calm down
-	float _gazeCalmDownTime = 0.1f;
+	float _gazeCalmDownTime = 0.15f;
 
 	// State of action
 	State _state = State::ORIENTATE;

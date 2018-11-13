@@ -8,20 +8,26 @@
 #ifndef DOMNODEINTERACTION_H_
 #define DOMNODEINTERACTION_H_
 
+#include "src/State/Web/Tab/Interface/TabDOMNodeInterface.h"
 #include "include/cef_browser.h"
+#include "src/CEF/Data/DOMAttribute.h"
+#include "src/Utils/Logger.h"
 #include <functional>
+#include <memory>
 
-class Tab;	// Forward declaration
-
-typedef std::function<bool(CefRefPtr<CefProcessMessage>)> SendRenderMessage;
-
-class DOMBaseInterface
+// TODO: Strange place (this header file) for BaseInterface?
+class DOMBaseInterface : std::enable_shared_from_this<DOMBaseInterface>
 {
 public:
 
 	// Required in order to being able to access corresponding JS DOM object
 	virtual int GetId() = 0;
 	virtual int GetType() = 0;
+
+	std::shared_ptr<DOMBaseInterface> getBasePtr() { return shared_from_this(); }
+
+	// Enable accessing attribute data while running the program
+	virtual bool PrintAttribute(DOMAttribute attr) = 0;
 };
 
 /*
@@ -33,19 +39,11 @@ class DOMJavascriptCommunication  : public virtual DOMBaseInterface
 public:
 
 	// Constructor
-	DOMJavascriptCommunication(SendRenderMessage sendRenderMessage) :
-        _sendRenderMessage(sendRenderMessage) {}
+	DOMJavascriptCommunication(TabDOMNodeInterface* tab) :
+        _pTab(tab) {}
 
-	// Sending message to renderer
-	bool SendProcessMessageToRenderer(CefRefPtr<CefProcessMessage> msg);
+	TabDOMNodeInterface* _pTab;
 
-	// Helper
-	CefRefPtr<CefProcessMessage> SetupExecuteFunctionMessage(
-		std::string func_name,
-		CefRefPtr<CefListValue> param);
-
-	// Member
-	SendRenderMessage _sendRenderMessage;
 
 private:
 
@@ -58,6 +56,8 @@ private:
     friend class DOMTextInputInteraction;
     friend class DOMOverflowElementInteraction;
     friend class DOMSelectFieldInteraction;
+	friend class DOMVideoInteraction;
+	friend class DOMCheckboxInteraction;
 
 };
 
@@ -83,7 +83,10 @@ public:
 
 	// TODO taking gaze, should take scrolling offset
 	// Send IPC message to JS in order to execute scrolling function
-	void Scroll(int x, int y, std::vector<int> fixedIds = {});
+	void Scroll(int x, int y, std::vector<int> fixedIds = {}) 
+	{
+		_pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "scroll", x, y, fixedIds); 
+	}
 };
 
 // Interaction with select field
@@ -95,7 +98,37 @@ public:
     DOMSelectFieldInteraction() {}
 
 	// Send IPC message to JS in order to execute JS function
-	void SetSelectionIndex(int idx);
+	void SetSelectionIndex(int idx) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "setSelectionIdx", idx); }
 };
+
+// Interaction with videos
+class DOMVideoInteraction : public virtual DOMJavascriptCommunication
+{
+public:
+
+	// Constructor
+	DOMVideoInteraction() {}
+
+	// Send IPC message to JS in order to execute JS function
+	void JumpToSecond(float sec = 0.f) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "jumpToSecond", sec); }
+	void SkipSeconds(float sec = 0.f) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "skipSeconds", sec); }
+	void SetPlaying(bool playing = true) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "setPlaying", playing); }
+	void SetMuted(bool muted = true) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "setMuted", muted); }
+	void SetVolume(float volume) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "setVolume", volume); }
+	void ShowControls(bool show = true) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "showControls", show); }
+	void SetFullscreen(bool fullscreen = true) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "setFullscreen", fullscreen); }
+	void ToggleMuted() { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "toggleMuted"); }
+	void TogglePlayPause() { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "togglePlayPause"); }
+	void ChangeVolume(float delta) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "changeVolume", delta); }
+};
+
+class DOMCheckboxInteraction : public virtual DOMJavascriptCommunication
+{
+public:
+	DOMCheckboxInteraction() {}
+
+	void SetChecked(bool state) { _pTab->ExecuteCorrespondingJavascriptFunction(getBasePtr(), "setChecked", state); }
+};
+
 
 #endif // DOMNODEINTERACTION_H_

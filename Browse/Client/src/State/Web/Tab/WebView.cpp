@@ -52,6 +52,7 @@ const std::string webpageFragmentShaderSource =
 "uniform float dim;\n"
 "void main() {\n"
 "	vec4 color = texture(tex, uv);\n"
+"   color.rgb = (color.a * color.rgb) + (1.0 - color.a);" // white background
 "   fragColor = vec4(color.rgb * (1.0 - dim), 1.0);\n"
 "}\n";
 
@@ -66,6 +67,7 @@ const std::string highlightFragmentShaderSource =
 "uniform float aspectRatio;\n"
 "void main() {\n"
 "	vec4 color = texture(tex, uv);\n"
+"   color.rgb = (color.a * color.rgb) + (1.0 - color.a);" // white background
 "	vec2 circle = vec2(0.015, 0.015);\n" // inner circle to display
 "	circle.y *= aspectRatio;\n" // aspect ratio correction
 "   circle /= size;\n" // realtive size of circle within mesh

@@ -15,7 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="Pause.svg">
+   sodipodi:docname="Pause.svg"
+   inkscape:export-filename="C:\Users\Raphael\Git\GazeTheWeb\Browse\Client\content\icons\Pause.png"
+   inkscape:export-xdpi="97.535995"
+   inkscape:export-ydpi="97.535995">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -25,9 +28,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1"
-     inkscape:cx="-11.35997"
-     inkscape:cy="195.98867"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="-62.469649"
+     inkscape:cy="230.74267"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -38,11 +41,11 @@
      inkscape:bbox-nodes="true"
      inkscape:snap-bbox-edge-midpoints="true"
      inkscape:snap-bbox-midpoints="true"
-     inkscape:window-width="1184"
-     inkscape:window-height="900"
-     inkscape:window-x="324"
-     inkscape:window-y="121"
-     inkscape:window-maximized="0"
+     inkscape:window-width="1600"
+     inkscape:window-height="847"
+     inkscape:window-x="572"
+     inkscape:window-y="1432"
+     inkscape:window-maximized="1"
      inkscape:snap-object-midpoints="true"
      inkscape:snap-center="true"
      inkscape:snap-to-guides="false"
@@ -73,10 +76,16 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-698.03155)">
-    <path
-       style="opacity:1;fill:#b4b4b4;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="m 107.16535,775.19689 c -5.54,0 -9.999996,4.46 -9.999996,10 l 0,180 c 0,5.54 4.459996,10 9.999996,10 l 40,0 c 5.54,0 10,-4.46 10,-10 l 0,-180 c 0,-5.54 -4.46,-10 -10,-10 l -40,0 z m 100,0 c -5.54,0 -10,4.46 -10,10 l 0,180 c 0,5.54 4.46,10 10,10 l 40,0 c 5.54,0 10,-4.46 10,-10 l 0,-180 c 0,-5.54 -4.46,-10 -10,-10 l -40,0 z"
-       id="rect4135"
-       inkscape:connector-curvature="0" />
+    <g
+       id="layer1-5"
+       inkscape:label="Layer 1"
+       transform="matrix(1.2,0,0,1.2,-35.433068,-175.03938)"
+       style="fill:#f2f2f2;fill-opacity:1">
+      <path
+         inkscape:connector-curvature="0"
+         id="rect4135"
+         d="m 107.16535,775.19689 c -5.54,0 -9.999996,4.46 -9.999996,10 l 0,180 c 0,5.54 4.459996,10 9.999996,10 l 40,0 c 5.54,0 10,-4.46 10,-10 l 0,-180 c 0,-5.54 -4.46,-10 -10,-10 l -40,0 z m 100,0 c -5.54,0 -10,4.46 -10,10 l 0,180 c 0,5.54 4.46,10 10,10 l 40,0 c 5.54,0 10,-4.46 10,-10 l 0,-180 c 0,-5.54 -4.46,-10 -10,-10 l -40,0 z"
+         style="opacity:1;fill:#f2f2f2;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+    </g>
   </g>
 </svg>

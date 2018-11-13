@@ -36,9 +36,9 @@ Since the CEF3 binaries for Windows and Linux do not like each other, one has to
  * README.txt
  * LICENSE.txt
  * **DO NOT** overwrite the provided CMakeLists.txt and the content of cmake folder.
-5. Folder structure should look like this screenshot:
+4. Folder structure should look like this screenshot:
  * ![Folder structure](media/Folder.png)
-5. If prototype should be built too, one has to include its subdirectory in the main CMakeLists, line 532.
+5. If prototype (probably not) should be built too, one has to include its subdirectory in the main CMakeLists, line 532.
 6. Create a build folder somewhere and execute CMake to generate a project, which can be compiled.
 7. Compile the project (with Visual Studio under Windows and make under Linux)
 

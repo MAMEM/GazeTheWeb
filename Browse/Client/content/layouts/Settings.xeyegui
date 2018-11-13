@@ -40,10 +40,10 @@
 										<block/>
 									</column>
 									<column size="70%">
-										<textblock alignment="left" verticalalignment="center" fontsize="medium" key="settings:privacy"/>
+										<textblock alignment="left" verticalalignment="center" fontsize="medium" key="settings:ad_blocking"/>
 									</column>
 									<column size="20%">
-										<boxbutton icon="icons/Select.png" id="privacy"/>
+										<boxbutton icon="icons/Select.png" id="ad_blocking"/>
 									</column>
 								</row>
 							</grid>
@@ -91,10 +91,10 @@
 										<block/>
 									</column>
 									<column size="70%">
-										<textblock alignment="left" verticalalignment="center" fontsize="medium" key="settings:exit"/>
+										<textblock alignment="left" verticalalignment="center" fontsize="medium" key="settings:shutdown"/>
 									</column>
 									<column size="20%">
-										<boxbutton icon="icons/Select.png" id="exit"/>
+										<boxbutton icon="icons/Select.png" id="shutdown" style="dangerous"/>
 									</column>
 								</row>
 							</grid>

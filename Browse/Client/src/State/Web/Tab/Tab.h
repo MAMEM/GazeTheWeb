@@ -22,12 +22,14 @@
 
 #include "src/State/Web/Tab/Interface/TabInteractionInterface.h"
 #include "src/State/Web/Tab/Interface/TabCEFInterface.h"
+#include "src/State/Web/Tab/Interface/TabDOMNodeInterface.h"
 #include "src/State/Web/WebTabInterface.h"
 #include "src/CEF/Data/DOMNode.h"
 #include "src/State/Web/Tab/WebView.h"
 #include "src/State/Web/Tab/Pipelines/Pipeline.h"
 #include "src/State/Web/Tab/Triggers/TextInputTrigger.h"
 #include "src/State/Web/Tab/Triggers/SelectFieldTrigger.h"
+#include "src/State/Web/Tab/Triggers/VideoModeTrigger.h"
 #include "src/Utils/glmWrapper.h"
 #include "src/Input/Input.h"
 #include "src/Global.h"
@@ -39,13 +41,18 @@
 #include <string>
 #include <map>
 #include <set>
+#include <future>
 
 // Forward declaration
 class Master;
 class Mediator;
+class SocialRecord;
+enum class SocialPlatform;
 
 // Class
-class Tab : public TabInteractionInterface, public TabCEFInterface
+class Tab : public TabInteractionInterface, 
+			public TabCEFInterface,
+			public TabDOMNodeInterface
 {
 public:
 
@@ -54,7 +61,8 @@ public:
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     // Constructor
-    Tab(Master* pMaster, Mediator* pCefMediator, WebTabInterface* pWeb, std::string url);
+    Tab(Master* pMaster, Mediator* pCefMediator, WebTabInterface* pWeb, std::string url, bool dataTransfer, 
+	CefRefPtr<CefRequestContext> request_context = nullptr);
 
     // Destructor
     virtual ~Tab();
@@ -96,6 +104,42 @@ public:
 	// Get last time per frame
 	float GetLastTimePerFrame() const { return _lastTimePerFrame; }
 
+	// Pause data transfer
+	void SetDataTransfer(bool active);
+
+	// Notify about click
+	void NotifyClick(std::string tag, std::string id, float x, float y);
+
+	// Trigger text input trigger
+	void ScheduleTextInputTrigger(int id);
+
+	// Trigger select field trigger
+	void ScheduleSelectFieldTrigger(int id);
+
+	// Trigger video trigger
+	void ScheduleVideoModeTrigger(int id);
+
+	// Retrieve all text links, their id and rects
+	struct DOMLinkInfo
+	{
+		DOMLinkInfo(std::vector<Rect> rects, std::string text) : rects(rects), text(text) {}
+		std::vector<Rect> rects;
+		std::string text;
+	};
+	std::vector<DOMLinkInfo> RetrieveDOMLinkInfos() const;
+
+	// Getter for URL
+	std::string GetURL() const { return _url; }
+
+	// Getter for title
+	std::string GetTitle() const { return _title; }
+
+	// Get color accent
+	glm::vec4 GetColorAccent() const { return _targetColorAccent; }
+
+	// Update award icon
+	void SetAwardIcon(Award award); 
+
     // #################################
     // ### TAB INTERACTIVE INTERFACE ###
     // #################################
@@ -133,6 +177,12 @@ public:
         float relativePositionX,
         float relativePositionY);
 
+	// Size floating frame in overlay
+	virtual void SetSizeOfFloatingFrameInOverlay(
+		int index,
+		float relativeWidth,
+		float relativeHeight);
+
     // Set visibility of floating frame in overlay
     virtual void SetVisibilityOfFloatingFrameInOverlay(int index, bool visible);
 
@@ -140,10 +190,13 @@ public:
     virtual void RemoveFloatingFrameFromOverlay(int index);
 
     // Register button listener in overlay
-    virtual void RegisterButtonListenerInOverlay(std::string id, std::function<void(void)> downCallback, std::function<void(void)> upCallback);
+    virtual void RegisterButtonListenerInOverlay(std::string id, std::function<void(void)> downCallback, std::function<void(void)> upCallback, std::function<void(void)> selectedCallback);
 
     // Unregister button listener callback in overlay
     virtual void UnregisterButtonListenerInOverlay(std::string id);
+
+	// Classify button hit
+	virtual void ClassifyButton(std::string id, bool accept);
 
     // Register keyboard listener in overlay
     virtual void RegisterKeyboardListenerInOverlay(std::string id, std::function<void(std::string)> selectCallback, std::function<void(std::u16string)> pressCallback);
@@ -228,6 +281,9 @@ public:
 	virtual int GetWindowWidth() const;
 	virtual int GetWindowHeight() const;
 
+	// Use eyeGUI drift map to perform drift correction. Does nothing if USE_EYEGUI_DRIFT_MAP is false
+	virtual void ApplyGazeDriftCorrection(float& rPixelX, float& rPixelY) const;
+
     // ############################
     // ### TAB ACTION INTERFACE ###
     // ############################
@@ -239,7 +295,7 @@ public:
     virtual void PushBackPipeline(std::unique_ptr<Pipeline> upPipeline);
 
 	// Emulate click in tab. Optionally converts WebViewPixel position to CEFpixel position before calling CEF method
-	virtual void EmulateLeftMouseButtonClick(double x, double y, bool visualize = true, bool isWebViewPixelCoordinate = true);
+	virtual void EmulateLeftMouseButtonClick(double x, double y, bool visualize = true, bool isWebViewPixelCoordinate = true, bool userTriggered = false);
 
 	// Emulate mouse cursor in tab. Optionally converts WebViewPixel position to CEFpixel position before calling CEF method. Optional offset in rendered pixels
 	virtual void EmulateMouseCursor(double x, double y, bool leftButtonPressed = false, bool isWebViewPixelCoordinate = true, double xOffset = 0, double yOffset = 0) ;
@@ -271,11 +327,29 @@ public:
 	// Reply JavaScript dialog callback
 	virtual void ReplyJSDialog(bool clickedOk, std::string userInput);
 
+	// Play sound
+	virtual void PlaySound(std::string filepath);
+
+	// Get interface for custom transformations of input
+	virtual std::weak_ptr<CustomTransformationInterface> GetCustomTransformationInterface() const;
+
+	// Notify about text input
+	virtual void NotifyTextInput(std::string tag, std::string id, int charCount, int charDistance, float x, float y, float duration);
+
 	// Set WebViewParameters for WebView
 	virtual void SetWebViewParameters(WebViewParameters parameters) { _webViewParameters = parameters; }
 
-	// Play sound
-	virtual void PlaySound(std::string filepath);
+	// ###############################
+	// ### TAB DOM NODE INTERFACE ###
+	// ###############################
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	// >>> Implemented in TabDOMNodeImpl.cpp >>>
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	// Emulate keyboard strokes for given Tab and string
+	virtual bool EmulateKeyboardStrokes(std::string text);
+	virtual bool EmulateSelectAll();
+	virtual bool EmulateEnterKey();
 
     // #########################
     // ### TAB CEF INTERFACE ###
@@ -290,6 +364,7 @@ public:
     // Getter and setter for favicon URL
     virtual std::string GetFavIconURL() const { return _favIconUrl; }
     virtual void SetFavIconURL(std::string url) { _favIconUrl = url; }
+	virtual bool IsFaviconAlreadyAvailable(std::string img_url);
 
     // Setter of URL. Does not load it. Should be called by CefMediator only
 	virtual void SetURL(std::string URL);
@@ -306,27 +381,30 @@ public:
     virtual std::weak_ptr<Texture> GetWebViewTexture() { return _upWebView->GetTexture(); }
 
     // Add, remove and update Tab's current DOMNodes
-	virtual void AddDOMTextInput(CefRefPtr<CefBrowser> browser, int id);
-	virtual void AddDOMLink(CefRefPtr<CefBrowser> browser, int id);
-	virtual void AddDOMSelectField(CefRefPtr<CefBrowser> browser, int id);
-	virtual void AddDOMOverflowElement(CefRefPtr<CefBrowser> browser, int id);
+	virtual void AddDOMTextInput(int id);
+	virtual void AddDOMLink(int id);
+	virtual void AddDOMSelectField(int id);
+	virtual void AddDOMOverflowElement(int id);
+	virtual void AddDOMVideo(int id);
+	virtual void AddDOMCheckbox(int id);
 
 	virtual std::weak_ptr<DOMTextInput> GetDOMTextInput(int id);
 	virtual std::weak_ptr<DOMLink> GetDOMLink(int id);
 	virtual std::weak_ptr<DOMSelectField> GetDOMSelectField(int id);
 	virtual std::weak_ptr<DOMOverflowElement> GetDOMOverflowElement(int id);
+	virtual std::weak_ptr<DOMVideo> GetDOMVideo(int id);
+	virtual std::weak_ptr<DOMCheckbox> GetDOMCheckbox(int id);
 
 	virtual void RemoveDOMTextInput(int id);
 	virtual void RemoveDOMLink(int id);
 	virtual void RemoveDOMSelectField(int id);
 	virtual void RemoveDOMOverflowElement(int id);
+	virtual void RemoveDOMVideo(int id);
+	virtual void RemoveDOMCheckbox(int id);
 	virtual void ClearDOMNodes();
 
     // Receive callbacks from CefMediator upon scrolling offset changes
     virtual void SetScrollingOffset(double x, double y);
-
-    // Getter for URL
-    virtual std::string GetURL() const { return _url; }
 
     // Getter for current zoom level of corresponding browser
     virtual double GetZoomLevel() const { return _zoomLevel; }
@@ -338,13 +416,15 @@ public:
     virtual void RemoveFixedElement(int id);
 
     // Set Tab's title text
-	virtual void SetTitle(std::string title) { _title = title; }
+	virtual void SetTitle(std::string title);
+
+	virtual void SetMetaKeywords(std::string content);
 
     // Add new Tab after that one
-	virtual void AddTabAfter(std::string URL) { _pWeb->PushAddTabAfterJob(this, URL); }
+	virtual void AddTabAfter(std::string URL, CefRefPtr<CefRequestContext> request_context) { _pWeb->PushAddTabAfterJob(this, URL, request_context); }
 
 	// Receive current loading status of each frame
-	virtual void SetLoadingStatus(int64 frameID, bool isMain, bool isLoading);
+	virtual void SetLoadingStatus(bool isLoading, bool isMainFrame);
 	
 	// Tell about JavaScript dialog
 	virtual void RequestJSDialog(JavaScriptDialogType type, std::string message);
@@ -394,6 +474,7 @@ private:
         virtual void hit(eyegui::Layout* pLayout, std::string id) {}
         virtual void down(eyegui::Layout* pLayout, std::string id);
         virtual void up(eyegui::Layout* pLayout, std::string id);
+		virtual void selected(eyegui::Layout* pLayout, std::string id) {}
 
     private:
 
@@ -420,6 +501,7 @@ private:
         virtual void hit(eyegui::Layout* pLayout, std::string id) {}
         virtual void down(eyegui::Layout* pLayout, std::string id);
         virtual void up(eyegui::Layout* pLayout, std::string id);
+		virtual void selected(eyegui::Layout* pLayout, std::string id);
 
     private:
 
@@ -468,6 +550,18 @@ private:
     // Set pipeline activity (indicates whether there is some pipeline to work on)
     void SetPipelineActivity(bool active);
 
+	// Enter video mode
+	void EnterVideoMode(int id); // id of video node
+
+	// Exit video mode
+	void ExitVideoMode(bool immediately = false);
+
+	// Start social record
+	void StartSocialRecord(std::string URL, SocialPlatform platform);
+
+	// End social record and send to database
+	void EndSocialRecord();
+
     // Method to update and pipe accent color to eyeGUI
     void UpdateAccentColor(float tpf);
 
@@ -476,6 +570,13 @@ private:
 
 	// Unique name for favicon which is stored in eyeGUI
 	std::string GetFaviconIdentifier() const;
+
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	// >>> Implemented in TabDOMNodeImpl.cpp >>>
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	// Used by TabDOMInterface in order to be able to execute node functions in Javascript
+	bool SendProcessMessageToRenderer(CefRefPtr<CefProcessMessage> msg);
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	// >>> Implemented in TabDebuggingImpl.cpp >>>
@@ -497,6 +598,7 @@ private:
     // Maps of triggers. Remember to add clearing in "ClearDOMNodes"
 	std::map<int, std::unique_ptr<TextInputTrigger> >_textInputTriggers;
 	std::map<int, std::unique_ptr<SelectFieldTrigger> >_selectFieldTriggers;
+	std::map<int, std::unique_ptr<VideoModeTrigger> >_videoModeTriggers;
 	
 	// Collection of all triggers
 	std::vector<Trigger*> _triggers;
@@ -506,6 +608,8 @@ private:
 	std::map<int, std::shared_ptr<DOMTextInput> > _TextInputMap;
 	std::map<int, std::shared_ptr<DOMSelectField> > _SelectFieldMap;
 	std::map<int, std::shared_ptr<DOMOverflowElement> > _OverflowElementMap;
+	std::map<int, std::shared_ptr<DOMVideo> > _VideoMap;
+	std::map<int, std::shared_ptr<DOMCheckbox> > _CheckboxMap;
 
     // Web view in which website is rendered and displayed
     std::unique_ptr<WebView> _upWebView;
@@ -521,11 +625,13 @@ private:
 
     // Layouts
     eyegui::Layout* _pPanelLayout;
+	eyegui::Layout* _pVideoModeLayout;
+	eyegui::Layout* _pVideoModePauseOverlayLayout;
     eyegui::Layout* _pPipelineAbortLayout;
     eyegui::Layout* _pOverlayLayout;
     eyegui::Layout* _pScrollingOverlayLayout;
     eyegui::Layout* _pDebugLayout;
-
+	
     // Parameters for WebView
     WebViewParameters _webViewParameters;
 
@@ -533,6 +639,9 @@ private:
     glm::vec4 _targetColorAccent = TAB_DEFAULT_COLOR_ACCENT;
     glm::vec4 _currentColorAccent = TAB_DEFAULT_COLOR_ACCENT;
     float _colorInterpolation = 1.f;
+
+	// Bool to indicate whether tab is active
+	bool _active = false;
 
     // Bool to indicate whether some pipeline is active
     bool _pipelineActive = false;
@@ -542,7 +651,7 @@ private:
     float _autoScrollingValue = 0; // [-1..1]
 
     // Gaze mouse
-    bool _gazeMouse = true;
+    bool _gazeMouse = false;
 
     // Level of zooming
     double _zoomLevel = 1;
@@ -567,6 +676,7 @@ private:
     // Ids of elements in overlay (added / removed by triggers or actions)
     std::map<std::string, std::function<void(void)> > _overlayButtonDownCallbacks;
     std::map<std::string, std::function<void(void)> > _overlayButtonUpCallbacks;
+	std::map<std::string, std::function<void(void)> > _overlayButtonSelectedCallbacks;
 	std::map<std::string, std::function<void(std::string)> > _overlayKeyboardSelectCallbacks;
     std::map<std::string, std::function<void(std::u16string)> > _overlayKeyboardPressCallbacks;
     std::map<std::string, std::function<void(std::u16string)> > _overlayWordSuggestCallbacks;
@@ -597,6 +707,9 @@ private:
     // Title of current website
     std::string _title;
 
+	// Current site's meta keywords
+	std::string _metaKeywords;
+
 	// Used for current loading status
 	std::set<int64> _loadingFrames;
 
@@ -614,6 +727,31 @@ private:
 
 	// Last time per frame
 	float _lastTimePerFrame = 1.f; // initialize with something that is not zero, as may be used for divisions
+
+	// Active social record
+	std::shared_ptr<SocialRecord> _spSocialRecord = nullptr; // can be nullptr when currently not browsing a social page
+
+	// Social record helpers
+	std::string _prevURL = ""; // for determining URL change
+	double _prevScrolling = 0; // for determining scrolling delta
+
+	// Data transfer (indicates whether social record is allowed or not, also controls whether history is filled or not)
+	bool _dataTransfer = false;
+
+	// Time until next polling
+	float _timeUntilPolling = 0.f;
+
+	// Id of DOMVideo in map that is currently shown in video mode
+	int _videoModeId = -1; // -1 is indicator that currently no video mode active
+
+	// Marker for next received click to be triggered by user (used for social records)
+	bool _userTriggeredClick = false;
+
+	// Current history entry
+	std::shared_ptr<HistoryManager::Page> _spHistoryPage = nullptr;
+
+	// Polling partition index
+	int _pollingPartitionIndex = 0;
 };
 
 #endif // TAB_H_

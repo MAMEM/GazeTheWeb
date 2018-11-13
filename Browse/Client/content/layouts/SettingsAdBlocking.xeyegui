@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<layout style="default">
+	<grid showbackground="true" style="panel">
+		<row size="100%">
+			<column size="15%">
+				<stack style="dark_panel" showbackground="true">
+					<circlebutton icon="icons/Deselect.png" desckey="settings:back_to_settings" id="back" border="15%"/>
+				</stack>
+			</column>
+			<column size="85%">
+				<grid innerborder="10%">
+					<row size="15%">
+						<column size="100%">
+							<textblock style="default_noback" alignment="center" verticalalignment="top" fontsize="tall" key="settings:ad_blocking"/>
+						</column>
+					</row>
+					<row size="85%">
+						<column size="100%">
+							<stack innerborder="20%">
+								<grid>
+									<row size="80%">
+										<column size="100%">
+											<circlebutton icon="icons/Circle.png" id="toggle_ad_blocking" border="20%" switch="true"/>
+										</column>
+									</row>
+									<row size="20%">
+										<column size="100%">
+											<textblock style="default_noback" alignment="center" verticalalignment="top" fontsize="medium" key="settings:toggle_ad_blocking"/>
+										</column>
+									</row>
+								</grid>
+							</stack>
+						</column>
+					</row>
+				</grid>
+			</column>
+		</row>
+	</grid>
+</layout>

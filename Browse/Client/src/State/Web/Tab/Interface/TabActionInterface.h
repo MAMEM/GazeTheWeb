@@ -8,6 +8,7 @@
 #define TABACTIONINTERFACE_H_
 
 #include "src/State/Web/Tab/WebViewParameters.h"
+#include "src/Input/Filters/CustomTransformationInteface.h"
 #include "src/Typedefs.h"
 #include <memory>
 #include <string>
@@ -24,7 +25,7 @@ public:
     virtual void PushBackPipeline(std::unique_ptr<Pipeline> upPipeline) = 0;
 
     // Emulate click in tab. Optionally converts WebViewPixel position to CEFpixel position before calling CEF method
-    virtual void EmulateLeftMouseButtonClick(double x, double y, bool visualize = true, bool isWebViewPixelCoordinate = true) = 0;
+    virtual void EmulateLeftMouseButtonClick(double x, double y, bool visualize = true, bool isWebViewPixelCoordinate = true, bool userTriggered = false) = 0;
 
 	// Emulate mouse cursor in tab. Optionally converts WebViewPixel position to CEFpixel position before calling CEF method. Optional offset in rendered pixels
 	virtual void EmulateMouseCursor(double x, double y, bool leftButtonPressed = false, bool isWebViewPixelCoordinate = true, double xOffset = 0, double yOffset = 0) = 0;
@@ -56,6 +57,15 @@ public:
 	// Reply JavaScript dialog callback
 	virtual void ReplyJSDialog(bool clickedOk, std::string userInput) = 0;
 
+	// Play sound
+	virtual void PlaySound(std::string filepath) = 0;
+
+	// Get interface for custom transformations of input
+	virtual std::weak_ptr<CustomTransformationInterface> GetCustomTransformationInterface() const = 0;
+
+	// Notify about text input
+	virtual void NotifyTextInput(std::string tag, std::string id, int charCount, int charDistance, float x, float y, float duration) = 0;
+
     // ### METHODS WHICH SET PARAMETERS THAT MUST BE RESET WHEN NO PIPELINE / ACTION IS ACTIVE ###
 
     // Reset method (called by pipeline at destruction, finish and abort)
@@ -66,9 +76,6 @@ public:
 
     // Set WebViewParameters for web view
     virtual void SetWebViewParameters(WebViewParameters parameters) = 0;
-
-	// Play sound
-	virtual void PlaySound(std::string filepath) = 0;
 
 protected:
 

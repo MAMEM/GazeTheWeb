@@ -10,9 +10,7 @@
 			</column>
 		</row>
 		<row size="20%">
-			<column size="100%">
-				<textblock alignment="center" id="version"/> 
-			</column>
+			<column size="100%"/>
 		</row>
 	</grid>
 </layout>

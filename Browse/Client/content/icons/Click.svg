@@ -15,7 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="Click.svg">
+   sodipodi:docname="Click.svg"
+   inkscape:export-filename="C:\Users\Raphael\Git\GazeTheWeb\Browse\Client\content\icons\Click.png"
+   inkscape:export-xdpi="97.535995"
+   inkscape:export-ydpi="97.535995">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -25,12 +28,12 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="131.73276"
-     inkscape:cy="195.34258"
+     inkscape:zoom="0.70710678"
+     inkscape:cx="117.71739"
+     inkscape:cy="155.10345"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="true"
+     showgrid="false"
      units="cm"
      inkscape:snap-bbox="true"
      inkscape:bbox-paths="true"
@@ -40,8 +43,8 @@
      inkscape:snap-bbox-midpoints="true"
      inkscape:window-width="1184"
      inkscape:window-height="900"
-     inkscape:window-x="457"
-     inkscape:window-y="72"
+     inkscape:window-x="424"
+     inkscape:window-y="48"
      inkscape:window-maximized="0"
      inkscape:snap-object-midpoints="true"
      inkscape:snap-center="true"
@@ -51,7 +54,8 @@
      inkscape:object-nodes="true"
      inkscape:snap-smooth-nodes="true"
      inkscape:snap-midpoints="false"
-     inkscape:snap-grids="false">
+     inkscape:snap-grids="false"
+     inkscape:snap-global="false">
     <inkscape:grid
        type="xygrid"
        id="grid4686" />
@@ -76,15 +80,27 @@
     <path
        style="fill:#f2f2f2;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 133.49805,94.835938 c -0.92172,0.04221 -1.851,0.18395 -2.77539,0.43164 -7.39514,1.98153 -11.62818,9.995162 -9.49219,17.966802 L 150,194.33008 134.37891,179.60547 c -4.59388,-4.33079 -11.1415,-4.73686 -15.29688,-0.29688 -4.15538,4.43999 -4.02478,11.71992 0.29492,16.32422 26.45238,27.1685 48.76696,73.24625 92.16211,66.17383 43.39515,-7.07242 40.19047,-101.82631 12.64844,-102.66343 -1.94063,0.002 -3.83875,0.56868 -5.46289,1.63086 -1.51097,-5.39844 -6.43121,-9.13073 -12.03711,-9.13086 -3.00938,0.005 -5.91582,1.09622 -8.18555,3.07226 -1.94005,-6.27952 -7.74208,-10.56474 -14.31445,-10.57226 -6.42246,0.008 -12.12697,4.10456 -14.1875,10.1875 -7.81486,-14.0381 -17.22829,-32.25245 -22.07227,-48.25063 -1.869,-6.975187 -7.97765,-11.539602 -14.42968,-11.244142 z"
-       transform="translate(0,698.03153)"
        id="rect4135"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="sscccsczcccccccs" />
+       sodipodi:nodetypes="sscccsczcccccccs"
+       transform="translate(0,698.03153)" />
     <ellipse
        r="15"
        cy="857.36224"
        cx="185"
        id="ellipse4137"
        style="opacity:0.5;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       transform="translate(0,698.03153)"
+       sodipodi:nodetypes="sscccsczcccccccs"
+       inkscape:connector-curvature="0"
+       id="path4138"
+       d="m 133.49805,94.835938 c -0.92172,0.04221 -1.851,0.18395 -2.77539,0.43164 -7.39514,1.98153 -11.62818,9.995162 -9.49219,17.966802 L 150,194.33008 134.37891,179.60547 c -4.59388,-4.33079 -11.1415,-4.73686 -15.29688,-0.29688 -4.15538,4.43999 -4.02478,11.71992 0.29492,16.32422 26.45238,27.1685 48.76696,73.24625 92.16211,66.17383 43.39515,-7.07242 40.19047,-101.82631 12.64844,-102.66343 -1.94063,0.002 -3.83875,0.56868 -5.46289,1.63086 -1.51097,-5.39844 -6.43121,-9.13073 -12.03711,-9.13086 -3.00938,0.005 -5.91582,1.09622 -8.18555,3.07226 -1.94005,-6.27952 -7.74208,-10.56474 -14.31445,-10.57226 -6.42246,0.008 -12.12697,4.10456 -14.1875,10.1875 -7.81486,-14.0381 -17.22829,-32.25245 -22.07227,-48.25063 -1.869,-6.975187 -7.97765,-11.539602 -14.42968,-11.244142 z"
+       style="fill:#f2f2f2;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:#505659;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 221.67773 219.29688 A 46.0028 59.601727 75 0 0 204.13281 221.87109 A 46.0028 59.601727 75 0 0 165.71094 247.54297 C 178.47311 258.20327 193.09881 264.81198 211.53906 261.80664 C 229.1372 258.93854 239.07059 241.64918 242.82617 222.05273 A 46.0028 59.601727 75 0 0 221.67773 219.29688 z "
+       transform="translate(0,698.03153)"
+       id="path4142" />
   </g>
 </svg>

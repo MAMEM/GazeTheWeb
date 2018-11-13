@@ -15,7 +15,7 @@ enum class EyeTrackerStatus
 // Enumeration about available eye trackers
 enum class EyeTrackerDevice
 {
-	OPEN_GAZE, SMI_REDN, VI_MYGAZE, TOBII_EYEX, NONE
+	OPEN_GAZE, SMI_REDN, VI_MYGAZE, TOBII_EYEX, TOBII_PRO, NONE
 };
 
 #endif EYETRACKERSTATUS_H_

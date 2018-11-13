@@ -11,10 +11,10 @@
 				<grid>
 					<row size="10%">
 						<column size="100%">
-							<blank/>
+							<textblock id="title" key="url_input:title" alignment="center" verticalalignment="center" fontsize="medium"/>
 						</column>
 					</row>
-					<row size="20%">
+					<row size="22.5%">
 						<column size="100">
 							<grid showbackground="true" style="default">
 								<row size="100">
@@ -25,7 +25,7 @@
 										<circlebutton id="delete" desckey="url_input:delete" icon="icons/DeleteCharacter.png" border="10%"/>
 									</column>
 									<column size="64%">
-										<textblock id="text_block" alignment="center" verticalalignment="center" fontsize="tall"/>
+										<textblock id="url_display" alignment="center" verticalalignment="center" fontsize="tall"/>
 									</column>
 									<column size="12%">
 										<circlebutton id="complete" desckey="url_input:complete" icon="icons/Select.png" border="10%"/>
@@ -34,9 +34,32 @@
 							</grid>
 						</column>
 					</row>
-					<row size="70%">>
+					<row size="55%">
 						<column size="100%">
-							<keyboard id="keyboard" instantpress="true" layout="US_ENGLISH"/>
+							<keyboard id="keyboard" instantpress="true"/>
+						</column>
+					</row>
+					<row size="12.5%">
+						<column size="100%">
+							<stack orientation="horizontal" separator="0.1">
+								<boxbutton icon="icons/domain_com.png" id="com"/>
+								<boxbutton icon="icons/domain_org.png" id="org"/>
+								<boxbutton icon="icons/domain_net.png" id="net"/>
+								<!-- <boxbutton icon="icons/domain_eu.png" id="eu"/> -->
+								<boxbutton icon="icons/Space.png" desckey="url_input:space" id="space"/>
+								<boxbutton icon="icons/domain_gr.png" id="gr"/>
+								<boxbutton icon="icons/domain_co_il.png" id="co_il"/>
+								<!-- <boxbutton icon="icons/domain_de.png" id="de"/> -->
+								<dropbutton icon="icons/Layout.png" id="layout" desckey="url_input:layout" space="75%">
+									<stack separator="0.25%">
+										<boxbutton icon="icons/LayoutUSEnglish.png" id="layout_us_english" desckey="url_input:layout_us_english"/>
+										<boxbutton icon="icons/LayoutGermanyGerman.png" id="layout_germany_german" desckey="url_input:layout_germany_german"/>
+										<boxbutton icon="icons/LayoutIsraelHebrew.png" id="layout_israel_hebrew" desckey="url_input:layout_israel_hebrew"/>
+										<boxbutton icon="icons/LayoutGreeceGreek.png" id="layout_greece_greek" desckey="url_input:layout_greece_greek"/>
+									</stack>
+								</dropbutton>
+								<boxbutton switch="true" icon="icons/ExtraKeys.png" id="extra_keys" desckey="action_keyboard:extra_keys" relativescale="75%"/> <!-- TODO: Replace desckey!-->
+							</stack>
 						</column>
 					</row>
 				</grid>

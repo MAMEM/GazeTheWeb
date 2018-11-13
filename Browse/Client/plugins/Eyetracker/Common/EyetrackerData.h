@@ -9,10 +9,15 @@
 #define EYETRACKERDATA_H_
 
 #include "plugins/Eyetracker/Interface/EyetrackerSample.h"
+#include "common/LabStream/LabStream.h"
 #include <vector>
 
 namespace eyetracker_global
 {
+	void SetupLabStream(lsl::stream_info streamInfo); // must be called before data can be send to lab streaming layer
+	void TerminateLabStream();
+	void ContinueLabStream();
+	void PauseLabStream();
 	void PushBackSample(SampleData sample);
 	void FetchSamples(SampleQueue& rupSamples);
 }

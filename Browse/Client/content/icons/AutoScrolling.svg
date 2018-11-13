@@ -15,7 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="AutoScrolling.svg">
+   sodipodi:docname="AutoScrolling.svg"
+   inkscape:export-filename="C:\Users\Raphael\Git\GazeTheWeb\Browse\Client\content\icons\AutoScrolling.png"
+   inkscape:export-xdpi="97.535995"
+   inkscape:export-ydpi="97.535995">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -26,8 +29,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.4"
-     inkscape:cx="165.9006"
-     inkscape:cy="214.30368"
+     inkscape:cx="209.82917"
+     inkscape:cy="138.58939"
      inkscape:document-units="px"
      inkscape:current-layer="g4211"
      showgrid="true"
@@ -40,8 +43,8 @@
      inkscape:snap-bbox-midpoints="true"
      inkscape:window-width="1515"
      inkscape:window-height="1018"
-     inkscape:window-x="777"
-     inkscape:window-y="33"
+     inkscape:window-x="351"
+     inkscape:window-y="0"
      inkscape:window-maximized="0"
      inkscape:snap-object-midpoints="true"
      inkscape:snap-center="true"
@@ -84,8 +87,13 @@
            id="g4211"
            transform="matrix(0.72983196,0,0,0.72983196,48.943133,293.23627)">
           <path
+             style="fill:#505659;fill-rule:evenodd;stroke:none;stroke-width:1.02763391px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
+             d="m 127.67713,831.69829 51.3817,82.21071 71.93437,-82.21071 -61.65803,-71.93438 z"
+             id="path4138"
+             inkscape:connector-curvature="0" />
+          <path
              style="opacity:1;fill:#f2f2f2;fill-opacity:1;stroke:none;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-             d="m 186.42287,734.1026 c -20.47052,30.60501 -43.82826,60.25416 -63.93007,90.91433 l -0.0382,0.0548 0.006,0 c -0.40054,0.73291 -0.60831,1.52534 -0.61016,2.32638 0,0.0344 0.005,0.0677 0.006,0.10201 l -0.006,0 0,14.22315 0.006,0 c -7.5e-4,0.0343 -0.006,0.0676 -0.006,0.10201 0.003,0.96731 0.30577,1.91785 0.88112,2.76638 l -0.008,0 63.69925,90.52762 c 20.4705,-30.60501 43.82623,-60.25416 63.92806,-90.91433 l 0.0401,-0.0548 -0.008,0 c 0.40054,-0.73291 0.6083,-1.52382 0.61016,-2.32486 0,-0.0344 -0.005,-0.0677 -0.006,-0.10201 l 0.006,0 0,-14.22315 -0.006,0 c 7.3e-4,-0.0343 0.006,-0.0676 0.006,-0.10201 -0.003,-0.9673 -0.30577,-1.91937 -0.88112,-2.7679 l 0.008,0 -63.69724,-90.52762 z m -0.002,57.63409 35.96718,42.87502 -35.96718,42.87196 -35.9672,-42.87196 35.9672,-42.87502 z"
+             d="m 186.42304,718.1069 c -23.72836,35.47574 -50.80344,69.84349 -74.10441,105.38316 l -0.0443,0.0635 0.007,0 c -0.46429,0.84956 -0.70512,1.7681 -0.70727,2.69662 0,0.0399 0.006,0.0785 0.007,0.11825 l -0.007,0 0,16.48673 0.007,0 c -8.7e-4,0.0398 -0.007,0.0784 -0.007,0.11825 0.003,1.12125 0.35443,2.22307 1.02135,3.20664 l -0.009,0 73.83685,104.93491 c 23.72834,-35.47574 50.80109,-69.84349 74.10208,-105.38316 l 0.0465,-0.0635 -0.009,0 c 0.46429,-0.84956 0.70511,-1.76634 0.70727,-2.69486 0,-0.0399 -0.006,-0.0785 -0.007,-0.11825 l 0.007,0 0,-16.48673 -0.007,0 c 8.5e-4,-0.0398 0.007,-0.0784 0.007,-0.11825 -0.003,-1.12124 -0.35443,-2.22483 -1.02135,-3.2084 l 0.009,0 -73.83452,-104.93491 z m -0.002,66.80644 41.69129,49.69849 -41.69129,49.69495 -41.6913,-49.69495 41.6913,-49.69849 z"
              id="rect4209"
              inkscape:connector-curvature="0" />
         </g>

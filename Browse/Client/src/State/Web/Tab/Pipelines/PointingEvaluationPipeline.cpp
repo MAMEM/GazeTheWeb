@@ -5,6 +5,7 @@
 
 #include "PointingEvaluationPipeline.h"
 #include "src/State/Web/Tab/Pipelines/Actions/CoordinateActions/MagnificationCoordinateAction.h"
+#include "src/State/Web/Tab/Pipelines/Actions/CoordinateActions/FutureCoordinateAction.h"
 #include "src/State/Web/Tab/Pipelines/Actions/CoordinateActions/ZoomCoordinateAction.h"
 #include "src/State/Web/Tab/Pipelines/Actions/CoordinateActions/DriftCorrectionAction.h"
 #include "src/State/Web/Tab/Pipelines/Actions/CoordinateActions/DynamicDriftCorrectionAction.h"
@@ -22,6 +23,12 @@ PointingEvaluationPipeline::PointingEvaluationPipeline(TabInteractionInterface* 
 	{
 		spPointingAction = std::make_shared<MagnificationCoordinateAction>(_pTab);
 		LogInfo("Pointing Approach: Magnification");
+		break;
+	}
+	case PointingApproach::FUTURE:
+	{
+		spPointingAction = std::make_shared<FutureCoordinateAction>(_pTab);
+		LogInfo("Pointing Approach: Future");
 		break;
 	}
 	case PointingApproach::ZOOM:

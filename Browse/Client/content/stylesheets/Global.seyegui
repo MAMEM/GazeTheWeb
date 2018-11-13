@@ -1,5 +1,15 @@
 default
 {
+	// Important threshold values
+	KeyboardKeySelectionDuration = 1.0
+	KeyboardZoomSpeedMultiplier = 1.0
+	SensorPenetrationIncreaseDuration = 4
+	SensorPenetrationDecreaseDuration = 0.5
+	ButtonThresholdIncreaseDuration = 1
+	ButtonThresholdDecreaseDuration = 2
+	FlowSpeedMultiplier = 0.75
+	
+	// Colors
 	FontColor = 0xFFFFFFFF
 	Color = 0x607d8bFF
 	DimColor = 0xFFFFFF77
@@ -8,11 +18,9 @@ default
 	ThresholdColor = 0x00FFFFFF
 	MarkColor = 0xFFFFFF33
 	// GazeVisualizationColor = 0xFF820080
+	
+	// Misc
 	AnimationDuration = 0.125
-	SensorPenetrationIncreaseDuration = 4
-	SensorPenetrationDecreaseDuration = 0.5
-	ButtonThresholdIncreaseDuration = 1
-	ButtonThresholdDecreaseDuration = 2
 	ButtonPressingDuration = 0.3
 	ButtonHitSound=sounds/GameAudio/ClickWooden-1.ogg
 	KeyPressSound=sounds/GameAudio/ClickWooden-2.ogg
@@ -33,6 +41,12 @@ panel : default
 	BackgroundColor = 0x1e2021FF
 }
 
+web_panel : default
+{
+	Color = 0x607d8bFF
+	BackgroundColor = 0x1e2021FF
+}
+
 dark_panel : default
 {
 	BackgroundColor = 0x0D0E0EFF
@@ -41,6 +55,18 @@ dark_panel : default
 bright_panel : default
 {
 	BackgroundColor = 0x50BAA6FF
+}
+
+standard_text : default
+{
+	BackgroundColor = 0xFFFFFFFF
+	FontColor = 0x000000FF
+}
+
+tab_overview_page_title: default
+{
+	BackgroundColor = 0xFFFFFFFF
+	FontColor = 0x000000FF
 }
 
 // Placeholders for tab overview
@@ -88,8 +114,8 @@ tab_overlay_panel : panel
 
 tab_debug : default
 {
-	BackgroundColor = 0x000000FF
-	FontColor = 0x00FF00FF
+	BackgroundColor = 0x00000060
+	FontColor = 0x00FF00A0
 }
 
 pause : default
@@ -98,21 +124,31 @@ pause : default
 	ButtonHitSound=sounds/GameAudio/PingBing.ogg
 }
 
-pause_background
+pause_background : default
 {
 	BackgroundColor = 0x00000000
 }
 
-super_calibration_background
+super_calibration_background: default
 {
 	BackgroundColor = 0x000000DD
 }
 
-recalibration
+recalibration : default
 {
 	Color = 0xD64400FF
 	ButtonThresholdIncreaseDuration = 3
 	ButtonThresholdDecreaseDuration = 5
+}
+
+super_calibration_info_border : default
+{
+	BackgroundColor = 0x607d8bFF
+}
+
+super_calibration_info_background : default
+{
+	BackgroundColor = 0x393E40FF
 }
 
 invisible_but_icon : default
@@ -129,4 +165,12 @@ notification : default
 dangerous
 {
 	ButtonThresholdIncreaseDuration = 2
+	ThresholdColor = 0xCC1100FF
+}
+
+dashboard : default
+{
+	Color = 0x1e2021FF
+	ButtonThresholdIncreaseDuration = 2
+	ThresholdColor = 0xFFFFFFA0
 }

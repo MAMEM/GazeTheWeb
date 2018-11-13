@@ -14,8 +14,9 @@
 #include "src/Master/Master.h"
 #include "src/Utils/Logger.h"
 
+
 // Execute function to have Master object on stack which might be faster than on heap
-void Execute(CefRefPtr<MainCefApp> app, std::string userDirectory)
+bool Execute(CefRefPtr<MainCefApp> app, std::string userDirectory) // returns whether system should shut down
 {
     // Initialize master
     Master master(app.get(), userDirectory);
@@ -24,7 +25,7 @@ void Execute(CefRefPtr<MainCefApp> app, std::string userDirectory)
 	app->SetMaster(&master);
 
     // Run master which communicates with CEF over mediator
-    master.Run();
+    return master.Run();
 
     // Destructor of master is called implicity
 }
@@ -33,22 +34,22 @@ void Execute(CefRefPtr<MainCefApp> app, std::string userDirectory)
 int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory)
 {
 
-#ifdef DEPLOYMENT
+#ifdef CLIENT_DEPLOYMENT
 
 	// Disable logging of CEF
 	settings.log_severity = LOGSEVERITY_DISABLE;
 
-#else
+#else // if no deployment, open console
 
-	// Open Windows console for debugging purposes
+	// Open Windows console for debugging purposes (even when deployed)
 #ifdef _WIN32
-    AllocConsole();
-    freopen("conin$", "r", stdin);
-    freopen("conout$", "w", stdout);
-    freopen("conout$", "w", stderr);
-#endif
+	AllocConsole();
+	freopen("conin$", "r", stdin);
+	freopen("conout$", "w", stdout);
+	freopen("conout$", "w", stderr);
+#endif // _WIN32
 
-#endif
+#endif // CLIENT_DEPLOYMENT
 
 	// Set path for CEF data: cache, user data and debug.log
 	CefString(&settings.cache_path).FromASCII(std::string(userDirectory + "cache").c_str());
@@ -61,7 +62,7 @@ int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefA
 	// Say hello
 	LogInfo("####################################################");
 	LogInfo("Welcome to GazeTheWeb - Browse!");
-	LogInfo("Version: ", std::to_string(CLIENT_VERSION));
+	LogInfo("Version: ", CLIENT_VERSION);
 	LogInfo("Personal files are saved in: ", userDirectory);
 
 	// Turn on offscreen rendering.
@@ -74,7 +75,7 @@ int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefA
     LogInfo("..done.");
 
     // Execute our code
-    Execute(app, userDirectory);
+    bool shutdownOnExit = Execute(app, userDirectory);
 
     // Shutdown CEF
     LogInfo("Shutdown CEF...");
@@ -84,5 +85,13 @@ int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefA
     // Return zero
     LogInfo("Successful termination of program.");
     LogInfo("####################################################");
+
+	// Tell computer to shut down
+	if (shutdownOnExit)
+	{
+		shutdown();
+	}
+
+	// Exit
     return 0;
 }

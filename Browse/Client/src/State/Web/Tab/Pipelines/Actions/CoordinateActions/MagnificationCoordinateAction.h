@@ -44,19 +44,25 @@ protected:
 	const float DIMMING_VALUE = 0.3f;
 
 	// Level of magnification
-	const float MAGNIFICATION = 0.5f;
+	const float MAGNIFICATION = 0.2f;
 
 	// Fixation duration taken as "perceived" fixation to trigger something
-	const float FIXATION_DURATION = 0.5f;
+	const float FIXATION_DURATION = 0.75f;
+
+	// Duration of magnification process
+	const float MAGNIFICATION_ANIMATION_DURATION = 0.5f;
 
 	// Time to wait before checking for fixation after activation and magnification
 	float fixationWaitTime = FIXATION_DURATION; // to avoid instant selection of coordinate after actiation and magnification
 
 	// Magnfication center. In relative page space
-	glm::vec2 _relativeMagnificationCenter;
+	glm::vec2 _relativeMagnificationCenter = glm::vec2(0.f,0.f);
+
+	// Variable to indicate how much magnified (0 if not and 1 if completely magnified)
+	float _magnification = 0.f; // [0..1]
 
 	// Variable to indicate whether magnified or not
-	bool _magnified = false;
+	bool _magnify = false;
 
 	// Dimming
 	float _dimming = 0.f;

@@ -4,20 +4,76 @@
 //============================================================================
 ConsolePrint("Starting to import dom_mutationobserver.js ...");
 
-window.appendedSubtreeRoots = new Set();
+// Log which type of HTML element was clicked
+document.onclick = function(e){
+	console.log("Javascript realized click! Event available as var last_click_event");
+	window.last_click_event = e;
+
+	if (e && e.target && e.target.tagName)
+	{
+	    SendDataMessage(e.target.tagName.toLowerCase() + "," + e.target.id + "," + e.pageX + "," + e.pageY);
+	}
+}
+
+document.addEventListener("auth.statusChange", (e) => {
+	console.log("Noticed auth.statusChange event!");	
+	ConsolePrint("Noticed auth.statusChange event!");	
+}, false);
+// window.appendedSubtreeRoots = new Set();
 
 // Trigger DOM data update on changing document loading status
 document.onreadystatechange = function()
 {
-	if(document.readyState == 'interactive' || document.readyState == 'complete')
+	console.log("document.readyState == "+document.readyState);
+	ConsolePrint("document.readyState == "+document.readyState);
+
+	// TODO: First change of OccBitmask isn't recognized by CEF!
+	if(document.readyState === "loading" || document.readyState === "complete")
 	{
-		// GMail fix
+		window.domNodes.forEach((list) => {
+			// Force send message about attribute changes
+			list.forEach((o) => { SendAttributeChangesToCEF("OccBitmask", o); });
+		});
+	}
+
+	if(document.readyState === "complete")
+	{
 		ForEveryChild(document.documentElement, AnalyzeNode);
 
-		UpdateDOMRects();
+		var keywords = document.querySelector("meta[name='keywords']");
+		if(keywords && keywords.content)
+		{
+			SendToMsgRouter("#meta#keywords#"+keywords.content+"#");
+		}
+		else
+		{
+			SendToMsgRouter("#meta#keywords##");
+		}
 	}
+
+	// BUGFIX
+	// if (document.readyState === "complete")
+	// 	ForEveryChild(document.documentElement, AnalyzeNode);
+
+	// domOverflowElements.forEach(
+	// 	(o) => { o.checkIfOverflown(); }
+	// );
+
+	// if(document.readyState === "complete")
+	// {
+	// 	console.log("Marking all available nodes...");
+	// 	ForEveryChild(document.documentElement, (n) => {n.seen = true; })
+	// }
+
+	// INFO: Not analyzed nodes are more commenly added after page load completion!
+	//if(document.readyState === "complete")
+		// CountAnalyzedNodes();
 }
 
+window.onwebkitfullscreenchange = function()
+{
+	UpdateDOMRects("onwebkitfullscreenchange");
+}
 
 window.onresize = function()
 {
@@ -26,9 +82,6 @@ window.onresize = function()
 	ConsolePrint("Javascript detected window resize, update of fixed element Rects.");
 }
 
-
-// DEBUG
-window.te = []
 
 // Update rects if CSS transition took place (TODO: Needed if parent's rects didn't change?)
 document.addEventListener('transitionend', function(event){
@@ -96,134 +149,288 @@ document.addEventListener('transitionend', function(event){
 
 
 var docFrags = [];
+var debug_nodes = [];
 
-
+var appended_nodes = new Set();
 /* Modify appendChild in order to get notifications when this function is called */
 var originalAppendChild = Element.prototype.appendChild;
 Element.prototype.appendChild = function(child){
 	// appendChild extension: Check if root is already part of DOM tree
-    if(this.nodeType == 1 || this.nodeType > 8)
-    {
-		var subtreeRoot = this;
+	var previous_root = this.getRootNode();
 
-		// Stop going up the tree when parentNode is documentElement or doesn't exist (null or undefined)
-		while(subtreeRoot !== document.documentElement && subtreeRoot.parentNode && subtreeRoot.parentNode !== undefined)
-			subtreeRoot = subtreeRoot.parentNode;
+	// BUGFIX
+	// Check which nodes where appended and which will trigger childList mutation, some won't.
+	// Current approach: Analyze those in CefPoll function
+	appended_nodes.add(appended_nodes); 
+	
+	// DEBUG
+	// if(this.nodeType === 11)
+	// 	console.log("Appending child to document fragment (idx: "+document_fragments.indexOf(this)+")")
+	// if(child.nodeType === 11)
+	// 	console.log("Appending document fragment to parent (idx: "+document_fragments.indexOf(this)+")")
+	// if(arguments[0].nodeType === 11)
+	// 	console.log("!!! Appending document fragment to parent (idx: "+document_fragments.indexOf(this)+")")
+		
+	// if(arguments[0].first_root === undefined)
+	// {
+	// 	arguments[0].first_root = previous_root;
+	// 	// debug_nodes.push(arguments[0]);
+	// }
 
-		// Register subtree roots, whose children have to be checked outside of MutationObserver
-        if(subtreeRoot !== document.documentElement) 
-		{
-
-			// When DocumentFragments get appended to DOM, they "lose" all their children and only their children are added to DOM
-			if(subtreeRoot.nodeType == 11) // 11 == DocumentFragment
-			{
-				// Mark all 1st generation child nodes of DocumentFragments as subtree roots
-				for(var i = 0, n = subtreeRoot.childNodes.length; i < n; i++)
-					window.appendedSubtreeRoots.add(subtreeRoot.childNodes[i]);
-			}
-			else 
-			{	
-				// Add subtree root to Set of subtree roots
-				window.appendedSubtreeRoots.add(subtreeRoot);	
-
-				// Remove children of this subtree root from subtree root set --> prevent double-checking of branches
-				ForEveryChild(subtreeRoot, (child) => {window.appendedSubtreeRoots.delete(child); });
-			} 
-		}
-    }  
-
-	// DocumentFragment as parent: children disappear when fragment is appended to DOM tree
-	if(child.nodeType === 11)
+	var was_document_fragment = (child.nodeType === 11);
+	var skip_nodes = [];
+	if(was_document_fragment)
 	{
-		for(var i = 0, n = child.childNodes.length; i < n; i++)
-		{
-			ForEveryChild(child.childNodes[i], 
-				(childNode) => { window.appendedSubtreeRoots.delete(childNode); }
-			);
+		// DEBUG
+		//console.log("Document fragment (idx: "+document_fragments.indexOf(child)+") gets appended to ", this);		
+		
+		skip_nodes.concat(child.childNodes);
+	}
 
-			window.appendedSubtreeRoots.add(child.childNodes[i]);
+	// Execute real appendChild
+    var return_value = originalAppendChild.apply(this, arguments);
+
+	/* ### ANALYZE APPENDED SUBTREE AFTER DOCUMENT FRAGMENT DISPERSES ### */
+	// if(child.nodeType === 11 && child.getRootNode().nodeType !== 11) //  && subtreeRoot !== document)
+	var new_root = this.getRootNode();
+	// if(previous_root !== new_root && new_root === document)
+	// if(was_document_fragment && new_root === document) //  && previous_root !== document)
+	if(new_root !== previous_root )//&& new_root === document)
+	{
+		console.log("previous root: ", previous_root, "\nnew root: ", new_root, "\nnew parent: ", this);
+		for(var i = 0, n = this.childNodes.length; i < n; i++)
+		{
+			var node = this.childNodes[i];
+			if(node in skip_nodes)
+				continue;
+		
+			AnalyzeNode(node);
+			// Also, check its whole subtree
+			ForEveryChild(node, AnalyzeNode);
 		}
 	}
 
-	// Finally: Execute appendChild
-    return originalAppendChild.apply(this, arguments); // Doesn't work with child, why?? Where does arguments come from?
+	return return_value;
+
 };
+
+var document_fragments = [];
 
 Document.prototype.createDocumentFragment = function() {
 	var fragment = new DocumentFragment();
 
-	// TODO: childList in config not needed? Or later for children, added to DOM, relevant?
-	if(window.observer !== undefined)
-	{
-		var config = { attributes: true, childList: true, characterData: true, subtree: true, characterDataOldValue: false, attributeOldValue: true};
-		window.observer.observe(fragment, config);
-	}
-	else
-		console.log("Custom createDocumentFragment: MutationObserver doesn't seem to have been set up properly.");
+	// DEBUG
+	// console.log("Document fragment got created, access with index "+document_fragments.length+" in array document fragments.");
+
+	document_fragments.push(fragment);
+
+	window.observer.observe(fragment, window.observer_config);
 
 	return fragment;
 };
 
+// DEBUGGING
+var analyzed_nodes = [], not_analyzed_nodes = [];
+var not_analyzed_roots = new Set();
+function CountAnalyzedNodes(root=document.documentElement, print_nodes=false){
+	var count = 0;
+	analyzed_nodes = [];
+	not_analyzed_nodes = [];
+	times_analyzed_histogram = [];
+	ForEveryChild(root, (n) => {
+		count++;
+		if(n.analyzed)
+		{
+			analyzed_nodes.push(n);
+			if(times_analyzed_histogram[n.times_analyzed] === undefined)
+				times_analyzed_histogram[n.times_analyzed] = 1;
+			else
+				times_analyzed_histogram[n.times_analyzed]++;
+		}
+		else
+		{
+			not_analyzed_nodes.push(n);
+			if(n.parentNode && n.parentNode.analyzed)
+			{
+				not_analyzed_roots.add(n.parentNode);
+			}
+			if(print_nodes)
+				console.log(n);
+		}
+	});
+	times_analyzed_histogram[0] = not_analyzed_nodes.length;
 
-
+	if(root === document.documentElement)
+	{
+		ConsolePrint("Found "+analyzed_nodes.length+" analyzed and "+not_analyzed_nodes.length+" not analyzed of "+count+" nodes"
+			+" | percentage not analyzed: "+not_analyzed_nodes.length/count*100+"%");
+		ConsolePrint("Found "+not_analyzed_roots.size+" not analyzed root nodes.");
+	}
+	return {"analyzed" : analyzed_nodes, 
+		"not_analyzed" : not_analyzed_nodes, 
+		"not_analyzed_roots" : not_analyzed_roots,
+		"times_analyzed_histogram" : times_analyzed_histogram};
+}
 
 function AnalyzeNode(node)
 {
-	if( (node.nodeType == 1 || node.nodeType > 8) && (node.hasAttribute && !node.hasAttribute("nodeType")) && (node !== window)) // 1 == ELEMENT_NODE
+	// DEBUG
+	if(!node.analyzed)
 	{
+		node.analyzed = true;
+		node.times_analyzed = 0;
+	}
+	node.times_analyzed++;
+	
 
-		// If node is possible DocFrag subtree root node, remove it from set and analyze its subtree too
-		if(window.appendedSubtreeRoots.delete(node))
-			ForEveryChild(node, AnalyzeNode);
+	//if( (node.nodeType == 1 || node.nodeType > 8) && (node.hasAttribute && !node.hasAttribute("nodeType")) && (node !== window)) // 1 == ELEMENT_NODE
+	if(typeof(node.hasAttribute) === "function")
+	{
+		// /* ### HANDLING APPENDED### */
+		// // If node is possible DocFrag subtree root node, remove it from set and analyze its subtree too
+		// if(window.appendedSubtreeRoots.delete(node))
+		// {
+		// 	// console.log("Found document fragment child, whose subtree still has to be analyzed. Performing now.");
+		// 	ForEveryChild(node, AnalyzeNode);
+		// }
 
 		var computedStyle = window.getComputedStyle(node, null);
+		if(!computedStyle)
+		{
+			console.log("AnalyzeNode: computedStyle is null.");
+		}
 
 		// Identify fixed elements on appending them to DOM tree
-		if(computedStyle.getPropertyValue('position') == 'fixed') 
+		if(computedStyle && computedStyle.getPropertyValue('position') == 'fixed') 
 		{
 			// Returns true if new FixedElement was added; false if already linked to FixedElement Object
 			if(AddFixedElement(node))
-				UpdateDOMRects();
+				UpdateChildNodesRects(node.parent);
+				// UpdateDOMRects("AnalyzeNode -- AddFixedElement "+node.className);
 		}
 
+		if(node.tagName === "IFRAME")
+		{
 
+		    try
+		    {
+		        if(node.contentDocument && node.contentDocument.children.length > 0)
+		        {
+		            console.log("iframe added, now also observing:", node.contentDocument.children[0]);
+		            window.observer.observe(node.contentDocument.children[0], window.observer_config);
+		        }
+		    }
+		    catch(e)
+		    {
+		        console.log("Caught exception: ", e);
+		    }
+		}
+
+	    // Fix for Facebook's in-site messenger
+	    // --> Added wrong elements as text inputs?!
+	    // if(node.tagName == "DIV" && node.hasAttribute("data-offset-key"))
+	    // {
+	    // 	CreateDOMTextInput(node);
+	    // 	console.log("Found possible text area on Facebook? ", node);
+	    // }
+
+	    // Find high res favicons
+	    // TODO: Loading of smaller resolutions could be prevented
+		if(node.tagName == "LINK")
+		{
+		    if(node.rel && node.rel.includes("apple-touch-icon"))
+		    {
+		        SendFaviconURLtoCEF(node.href);
+		    }
+		    if(node.href && node.href.includes("favicon") && node.href.includes(".png"))
+		    {
+		        SendFaviconURLtoCEF(node.href);
+		    }
+		}
+		if(node.tagName == "META")
+		{
+		    if(prop = node.getAttribute("property"))
+		    {
+		        if(prop.includes("og:image"))
+		        {
+		            SendFaviconURLtoCEF(node.content);
+		        }
+		    }
+		    if(name = node.getAttribute("name"))
+		    {
+		        if(name.includes("msapplication-TileImage"))
+		        {
+		            SendFaviconURLtoCEF(node.content);
+		        }
+		    }
+			
+		}
+
+	    // A
+		if(node.tagName == 'A')
+		{
+		    CreateDOMLink(node);
+		}
+
+	    // INPUT TODO: Handle other kinds of <input> elements
+		if(node.tagName === 'INPUT')
+		{
+		    // Text Input
+		    if(!node.hasAttribute('type') || node.type == 'text' || node.type == 'search' || node.type == 'email' || node.type == 'password')
+		    {
+		        CreateDOMTextInput(node);
+		    }
+
+		    // Checkbox
+		    if(node.type === "checkbox")
+		    {
+		        CreateDOMCheckbox(node);
+		    }
+
+		    // Link
+		    if(node.type === 'button' || node.type === 'submit' || node.type === 'reset')
+		    {
+		        // TODO: CreateDOMButton!
+		        CreateDOMLink(node);
+		    }
+		}
+
+	    // DIV
+		if(node.tagName === 'DIV' && node.hasAttribute('role'))
+		{
+		    var role = node.getAttribute('role').toLowerCase();
+		    if(role === "combobox" || role === "textbox")
+		    {
+		        CreateDOMTextInput(node);
+		    }
+		    if(role === "button")
+		    {
+                CreateDOMLink(node);
+		    }
+		}
+ 
+	    // BUTTON
+		if(node.tagName === "BUTTON")
+		{
+		    CreateDOMLink(node);
+		}
+
+	    // TEXTAREA
+		if(node.tagName === 'TEXTAREA')
+		{
+		    CreateDOMTextInput(node);
+		}
+
+        // SELECT FIELD
 		if(node.tagName === "SELECT")
 		{
 			CreateDOMSelectField(node);
 		}
 
-
-		// Find text links
-		if(node.tagName == 'A' )
+	    // VIDEO
+		if(node.tagName === "VIDEO")
 		{
-			CreateDOMLink(node);
-		}
-
-		if(node.tagName == 'INPUT' || node.tagName == "BUTTON") // Fun fact: There exists the combination of tag "BUTTON" and type "submit"
-		{
-			// Identify text input fields
-			if(node.type == 'text' || node.type == 'search' || node.type == 'email' || node.type == 'password')
-			{
-				CreateDOMTextInput(node);
-			}
-
-			// TODO: Handle other kinds of <input> elements
-			if(node.type == 'button' || node.type == 'submit' || node.type == 'reset' || !node.hasAttribute('type'))
-			{
-				// TODO: CreateDOMButton!
-				CreateDOMLink(node);
-			}
-		}
-		// textareas or DIVs, who are treated as text fields
-		if(node.tagName == 'TEXTAREA' || (node.tagName == 'DIV' && node.getAttribute('role') == 'textbox'))
-		{
-			CreateDOMTextInput(node);
-		}
-
-		// NEW: Buttons
-		if(node.tagName == 'DIV' && node.getAttribute('role') == 'button')
-		{
-			CreateDOMLink(node);
+		    CreateDOMVideo(node);
 		}
 
 		// GMail
@@ -255,7 +462,7 @@ function AnalyzeNode(node)
 		var rect = node.getBoundingClientRect();
 
 		// Detect scrollable elements inside of webpage
-		if((node.tagName === "DIV" || node.tagName === "P") && rect.width > 0 && rect.height > 0)
+		if(computedStyle && (node.tagName === "DIV" || node.tagName === "P"))// && rect.width > 0 && rect.height > 0)
 		{
 			var overflow = computedStyle.getPropertyValue("overflow");
 			var valid_overflow = ["scroll", "auto", "hidden"];
@@ -263,20 +470,12 @@ function AnalyzeNode(node)
 			{
 				CreateDOMOverflowElement(node);
 			}
-			// else if (overflow === "auto")
-			// {
-			// 	// TODO: Element size might change over time! Keep node as potential overflow in mind?
-			// 	// OR add it anyway and only scroll if height and scroll height aren't the same?
-			// 	if(node.scrollHeight !== rect.height || node.scrollWidth !== rect.width)
-			// 	{
-			// 		CreateDOMOverflowElement(node);
-			// 	}
-			// }
 			else
 			{
 				var overflowX = computedStyle.getPropertyValue("overflow-x");
 				var overflowY = computedStyle.getPropertyValue("overflow-y");
-				if(overflowX === "auto" || overflowX === "scroll" || overflowY === "auto" || overflowY === "scroll")
+				if(valid_overflow.indexOf(overflowX) !== -1 || valid_overflow.indexOf(overflowY) !== -1)
+				//if(overflowX === "auto" || overflowX === "scroll" || overflowY === "auto" || overflowY === "scroll")
 				{
 					CreateDOMOverflowElement(node);
 				}
@@ -286,12 +485,16 @@ function AnalyzeNode(node)
 
 		// Update whole <form> if transition happens in form's subtree
 		// (For shifting elements in form (e.g. Google Login) )
-		if(node.tagName == 'FORM')
-		{
+		// if(node.tagName == 'FORM')
+		// {
 
-			node.addEventListener('webkitTransitionEnd', function(event){
-				// ConsolePrint("FORM transition event detected"); //DEBUG
+		// NOTE: Do this for every node, not only forms
+		node.addEventListener('webkitTransitionEnd', function(event){
+				console.log("Recognized webkitTransitionEnd for node: ", node);
+
 				ForEveryChild(node, function(child){
+					if(!child.analyzed)
+						AnalyzeNode(child);
 					if(child.nodeType == 1)
 					{
 						var nodeType = child.getAttribute('nodeType');
@@ -305,10 +508,9 @@ function AnalyzeNode(node)
 							}
 						}
 					}
-					
-				});
-			}, false);
-		}
+				
+			});
+		}, false);
 
 
 	}
@@ -322,22 +524,14 @@ function MutationObserverInit()
 	ConsolePrint('Initializing Mutation Observer ... ');
 
 	window.observer = new MutationObserver(
-		function(mutations) {
+		function(mutations) 
+		{
 		  	mutations.forEach(
 		  		function(mutation)
 		  		{
-					// TODO: Refactoring:
-					// When attributes changed:
-					// 		- Fetch corresponding DOMNode object at the beginning, if it exists
-					// 		- Pipe attribute type to object and get corresponding setter, if it exists
-					// 		- Call setter with given (updated) data
-					// Recognition of needed rect updates:
-					// 		- As before
-					// Adding & removal of nodes:
-					// 		- Try to access existing DOMNode object, first
 
 					if(debug)
-					console.log(mutation.type, "\t", mutation.attributeName, "\t", mutation.oldValue, "\t", mutation.target);
+						console.log(mutation.type, "\t", mutation.attributeName, "\t", mutation.oldValue, "\t", mutation.target);
 					
 					var working_time_start = Date.now();
 
@@ -354,65 +548,55 @@ function MutationObserverInit()
 		  					attr = mutation.attributeName;
 
 							// ### FIXED HIERARCHY HANDLING ###
-							// 1.) Cascading copy of current childFixedId for whole subtree
-							// 2.) Update of fixObj in each DOM object in this subtree
+							// Created FixedElement adds attribute childFixedId with its id as value to all
+							// its direct child nodes. Rest of the tree cascade down by using MutationObserver
+							// as follows:
+							// 1.) Set equivalently valued childFixedId attribute in each direct child node
+							// 2.) Check if corresponding domObj exists and add fixObj with childFixedId as id
 							if(attr === "childfixedid")
 							{
 								var id = node.getAttribute(attr);
 
 								// Set childFixedId for each child of altered node
-								// Works also with fixObj === undefined
-								var fixObj = GetFixedElementById(id);
 
 								node.childNodes.forEach((child) => {
 									// Extend node by given attribute
 									if(typeof(child.setAttribute) === "function")
+									{
 										child.setAttribute("childFixedId", id);
-										// Update fixObj in DOMObject
-										var domObj = GetCorrespondingDOMObject(child);
-										if(domObj !== undefined)
-											domObj.setFixObj(fixObj);	// fixObj may be undefined
+									}
 								});
-							}
-
-
-
-							// ### OVERFLOW HIERARCHY HANDLING ###
-							// Set childrens' overflowIds when node gets tagged as part of overflow subtree 
-							if(attr == "overflowid")
-							{
-								var id = node.getAttribute("overflowid");
+								
+								// Update fixObj in DOMObject
+								var fixObj = GetFixedElementById(id);
 								var domObj = GetCorrespondingDOMObject(node);
-								var skip_subtree = false;
 								if(domObj !== undefined)
 								{
-								// id of null or -1 will reset overflow object in domObj
-									domObj.setOverflowViaId(id);
-
-									if(domObj.Class === "DOMOverflowElement")
-										skip_subtree = true;
+									domObj.setFixObj(fixObj);	// fixObj may be undefined
+									domObj.updateRects();
 								}
-								// TODO: This node should automatically get an overflowId (on Overflow test site), but it doesn't --> DocFrag!
-								// if(node.className === "scroll-wrapper scrollbar-inner")
-								// 	console.log("overflowId changed to: "+id);
+							}
+
+							if(attr === "scrollWidth" || attr === "scrollHeight")
+								console.log("### Detected changes in attr "+attr+" ###");
+
+							// ### OVERFLOW HIERARCHY HANDLING ###
+							// node's overflowid attribute was set (changed): Set childrens' overflowIds when node gets tagged as part of overflow subtree 
+							if(attr == "overflowid")
+							{
+								// console.log(attr, "changed for ", node);
+								var id = node.getAttribute("overflowid");
+								var domObj = SetOverflowObjectViaId(node, id);
+								if(domObj === undefined)
+									var skip_subtree = false;
+								else 
+									var skip_subtree = (domObj.Class === "DOMOverflowElement");
 
 								if(!skip_subtree)
 								{
 									for(var i = 0, n = node.childNodes.length; i < n; i++)
 									{			
-										var child = node.childNodes[i];	
-
-										if(child === undefined || typeof(child.setAttribute) !== "function")
-										{			
-											// console.log(i+"/"+n+": Skipped.");
-											continue;
-										}
-										// console.log(i+"/"+n+": "+child.className);
-
-										if(id !== null)
-											child.setAttribute("overflowId", id);
-										else
-											child.removeAttribute("overflowid");	// TODO: Search for hierachically higher overflows!
+										SetOverflowId(node.childNodes[i], id);
 									}
 								}
 							}
@@ -426,7 +610,8 @@ function MutationObserverInit()
 								{
 									if(AddFixedElement(node))
 										// Update every Rect, just in case anything changed due to an additional fixed element
-										UpdateDOMRects();
+										// UpdateDOMRects("AddFixedElement");
+										UpdateChildNodesRects(node.parent);
 								}
 								else 
 								{
@@ -446,11 +631,31 @@ function MutationObserverInit()
 
 							}
 
+
+							if(attr == "id")
+							{
+								var domObj = GetCorrespondingDOMObject(node);
+								if(domObj !== undefined && domObj.Class === "DOMTextInput")
+									SendAttributeChangesToCEF("HTMLId", domObj);
+							}
+
 						
 							if(attr == 'class')
-							{
-								// Update (if it exists) DOM object's rects if node's class changed
+							{	
 								var domObj = GetCorrespondingDOMObject(node);
+								if(domObj !== undefined && domObj.Class === "DOMTextInput")
+									SendAttributeChangesToCEF("HTMLClass", domObj);
+							
+								// Node might get fixed or un-fixed if class changes
+								if(typeof(node.getAttribute) === "function" && 
+									window.getComputedStyle(node, null).getPropertyValue("position") === "fixed")
+								{
+									AddFixedElement(node);
+								}
+								// TODO: Remove corresponding fixed element if node gets unfixed
+
+								// Update (if existant) DOM object's rects if node's class changed
+								// var domObj = GetCorrespondingDOMObject(node);
 								if(domObj !== undefined)
 									domObj.updateRects();
 
@@ -511,19 +716,27 @@ function MutationObserverInit()
 							if(node === undefined)
 								return;
 
-							// Mark child nodes of DocumentFragment, in order to being able to analyze their subtrees later
-							if(mutation.target.nodeType === 11)
-							{
-								// Add node as possible root, which might not be recognized when DocFrag disappears
-								window.appendedSubtreeRoots.add(node);
-								// Remove knowledge about every possible root due to a DocFrag in whole subtree
-								ForEveryChild(node, function(child){ window.appendedSubtreeRoots.delete(child); });
-							}
+							// Child was appended AND triggers childlist mutation, as expected!
+							// Fix for those, which don't: Analyze them with CefPoll
+							appended_nodes.delete(node);
+
+							// // Never executed!
+							// if(node.nodeType === 11)
+							// {
+							// 	console.log("Realized that document fragment was appended to DOM tree!");
+							// }
+							// // TODO: This is already done in appendChild method!
+							// // Mark child nodes of DocumentFragment, in order to being able to analyze their subtrees later
+							// if(mutation.target.nodeType === 11)
+							// {
+							// 	// Add node as possible root, which might not be recognized when DocFrag disappears
+							// 	window.appendedSubtreeRoots.add(node);
+							// 	// Remove knowledge about every possible root due to a DocFrag in whole subtree
+							// 	ForEveryChild(node, function(child){ window.appendedSubtreeRoots.delete(child); });
+							// }
 
 							// DEBUG
-							if(node.className === "scroll-wrapper scrollbar-inner")
-								console.log("Target node added to dom tree!");
-							
+							// console.log("childList mutation: ", node);							
 							
 							// Set children (and their subtree) to fixed, if parent is also fixed
 							if(parent !== undefined && parent.nodeType === 1 && node.nodeType === 1)
@@ -542,13 +755,20 @@ function MutationObserverInit()
 							}
 
 							// If parent is contained in overflow element, then child will also be
-							if(parent !== undefined && typeof(parent.getAttribute) === "function" && typeof(node.setAttribute) === "function")
+							if(parent !== undefined && typeof(parent.getAttribute) === "function") 
 							{
-								var overflowId = parent.getAttribute("overflowid");
-								if(overflowId !== null)
-									node.setAttribute("overflowid", overflowId);
-							}
+								var parentDomObj = GetCorrespondingDOMObject(parent);
+								
+								// If parent is overflow element, use its id instead
+								if(parentDomObj !== undefined && parentDomObj.Class === "DOMOverflowElement")
+									var overflowId = parentDomObj.getId();
+								else
+									var overflowId = parent.getAttribute("overflowid");
+								
+								SetOverflowId(node, overflowId);
 
+							}
+						
 			  				AnalyzeNode(node);
 						}); // END of forEach
 
@@ -574,13 +794,15 @@ function MutationObserverInit()
 			  				if(node !== undefined && node.nodeType === 1)
 			  				{
 								RemoveFixedElement(node, false);
-
+								
+								/* Don't remove Overflow if only a child was removed!
 								var overflowId = node.getAttribute("overflowId");
 								if(overflowId !== null)
 								{
-									RemoveDOMOverflowElement(overflowId);
+									console.log("Nope. ", overflowId, node);
+									// RemoveDOMOverflowElement(overflowId);
 								}
-
+								*/	
 			  				}
 
 							UpdateNodesRect(node);
@@ -597,7 +819,10 @@ function MutationObserverInit()
 		  		} // END forEach mutation
 
 
-		 	);    
+			 );    
+			 
+			 // Empty records
+			 window.observer.takeRecords();
 		}
 	);
 
@@ -615,10 +840,10 @@ function MutationObserverInit()
 	ConsolePrint('Trying to start observing... ');
 		
 	// Konfiguration des Observers: alles melden - Änderungen an Daten, Kindelementen und Attributen
-	var config = { attributes: true, childList: true, characterData: true, subtree: true, characterDataOldValue: false, attributeOldValue: true};
+	window.observer_config = { attributes: true, childList: true, characterData: true, subtree: true, characterDataOldValue: false, attributeOldValue: true};
 
 	// eigentliche Observierung starten und Zielnode und Konfiguration übergeben
-	window.observer.observe(window.document, config);
+	window.observer.observe(window.document, observer_config);
 
 	ConsolePrint('MutationObserver was told what to observe.');
 

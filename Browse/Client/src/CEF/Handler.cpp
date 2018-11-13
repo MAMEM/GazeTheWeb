@@ -6,7 +6,6 @@
 
 #include "src/CEF/Handler.h"
 #include "src/CEF/Mediator.h"
-#include "src/CEF/RequestHandler.h"
 #include "src/Utils/Logger.h"
 #include "src/Singletons/JSMailer.h"
 #include "include/base/cef_bind.h"
@@ -17,6 +16,9 @@
 #include <string>
 #include <cmath>
 #include "src/CEF/Data/DOMNode.h"
+// For keyboard emulation
+#include "submodules/glfw/include/GLFW/glfw3.h"
+#include "submodules/eyeGUI/include/eyeGUI.h"
 
 Handler::Handler(Mediator* pMediator, CefRefPtr<Renderer> renderer) : _isClosing(false)
 {
@@ -115,24 +117,13 @@ void Handler::OnLoadError(
 
 void Handler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
 {
-	// TODO CEF UPDATE: what is transition_type
-
 	// Set loading status of each in Tab to loading in order to display loading icon and status
-	_pMediator->SetLoadingStatus(browser, frame->GetIdentifier(), frame->IsMain(), true);
-
-	// DEBUG: golem.de
-	//LogDebug("OnLoadStart: frameId=", frame->GetIdentifier(), ", isMain?=", frame->IsMain());
-	//frame->ExecuteJavaScript("document.onreadystatechange = function(){console.log('" + std::to_string(frame->GetIdentifier())
-	//	+ ": '+document.readyState)}", "", 0);
+	_pMediator->SetLoadingStatus(browser, true, frame->IsMain());
 
     if (frame->IsMain())
     {
+		_pMediator->ResetFavicon(browser);
 		//LogDebug("Handler: Started loading frame id = ", frame->GetIdentifier(), " (main = ", frame->IsMain(), "), browserID = ", browser->GetIdentifier());
-
-		//frame->ExecuteJavaScript("StartPageLoadingTimer();", "", 0);
-
-        // Set Tab's URL when page is loading
-        _pMediator->SetURL(browser);
 
         // Set zoom level according to Tab's settings
         SetZoomLevel(browser, false);
@@ -141,16 +132,22 @@ void Handler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> fra
         frame->ExecuteJavaScript(_js_remove_css_scrollbar, frame->GetURL(), 0);
 
     }
+	else
+	{
+		// EXPERIMENTAL
+		//frame->ExecuteJavaScript(
+		//	"window.addEventListener('message', (event) => {"
+		//	"console.log('Window object',window,'received message from',event.source);"
+		//	"event.source.postMessage('Answering event source...', event);"
+		//	"});", "", 0);
+	}
 
 }
 
 void Handler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
 {
 	// Set loading status of each frame in Tab to load finished in order to display loading icon and status
-	_pMediator->SetLoadingStatus(browser, frame->GetIdentifier(), frame->IsMain(), false);
-
-	// DEBUG: golem.de
-	//LogDebug("OnLoadEnd: frameId=", frame->GetIdentifier(), ", isMain?=", frame->IsMain());
+	_pMediator->SetLoadingStatus(browser, false, frame->IsMain());
 
     if (frame->IsMain())
     {
@@ -172,8 +169,9 @@ void Handler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
     bool canGoBack,
     bool canGoForward)
 {
+	// Fetch main frame's url and set it in Tab, if it changed
+	_pMediator->SetURL(browser);
 
-    // TODO: There might be a more performant way to set those values not as regularly as with every callback
     _pMediator->SetCanGoBack(browser, canGoBack);
     _pMediator->SetCanGoForward(browser, canGoForward);
 
@@ -229,51 +227,47 @@ bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 {
     const std::string& msgName = msg->GetName().ToString();
 
+	if (msgName == "EmulateSelectAll")
+	{
+		EmulateSelectAll(browser);
+		return true;
+	}
 	if (msgName == "EmulateEnterKey")
 	{
-		// Emulate left mouse click where 'Enter' should be pressed
+		if (msg->GetArgumentList()->GetSize() > 1)
+		{
+			// Emulate left mouse click where 'Enter' should be pressed
+			double x = msg->GetArgumentList()->GetDouble(0);
+			double y = msg->GetArgumentList()->GetDouble(1);
+
+			LogDebug("Handler: Emulating a click (", x, ",", y, ") and 'Enter' being pressed.");
+
+			EmulateLeftMouseButtonClick(browser, x, y);
+		}
+		EmulateEnterKey(browser);
+		return true;
+	}
+	if (msgName == "EmulateKeyboardStrokes")
+	{
+		const auto input = msg->GetArgumentList()->GetString(0).ToString();
+		EmulateKeyboardStrokes(browser, input);
+		return true;
+	}
+	if (msgName == "EmulateMouseClick")
+	{
 		double x = msg->GetArgumentList()->GetDouble(0);
 		double y = msg->GetArgumentList()->GetDouble(1);
 
-		LogDebug("Handler: Emulating a click (",x,",",y,") and 'Enter' being pressed.");
+		LogDebug("Handler: Emulating a click (", x, ",", y, ").");
 
 		EmulateLeftMouseButtonClick(browser, x, y);
-
-		// Emulate pressing 'Enter' down, pressed and up
-		CefKeyEvent event;
-		event.is_system_key = false;
-		event.modifiers = 0;
-
-		// Enter key. Everywhere
-		event.windows_key_code = 13;
-		event.native_key_code = 13;
-		event.character = event.unmodified_character = 13;
-
-		// Down
-		event.type = KEYEVENT_RAWKEYDOWN;
-		browser->GetHost()->SendKeyEvent(event);
-
-		// Character
-		event.type = KEYEVENT_CHAR;
-		browser->GetHost()->SendKeyEvent(event);
-
-		// Up
-		event.type = KEYEVENT_KEYUP;
-		browser->GetHost()->SendKeyEvent(event);
-
-
+		return true;
 	}
 
     if (msgName == "ReceiveFavIconBytes")
-    {
-        _pMediator->ReceiveIPCMessageforFavIcon(browser, msg);
-		return true;
-    }
-    if (msgName == "ReceivePageResolution")
-    {
-        _pMediator->ReceivePageResolution(browser, msg);
-		return true;
-    }
+ 		LogDebug("Handler: Received depricated ", msgName, " IPC message!");
+ 
+
     if (msgName == "ReceiveFixedElements")
     {
         _pMediator->ReceiveFixedElements(browser, msg);
@@ -328,6 +322,16 @@ bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 		if (type == "OverflowElement")
 		{
 			const auto& wpNode = _pMediator->GetDOMOverflowElement(browser, id);
+			if (const auto& node = wpNode.lock())
+			{
+				node->Initialize(msg);
+			}
+			return true;
+		}
+		// TODO: Refactor this.
+		if (type == "Checkbox")
+		{
+			const auto& wpNode = _pMediator->GetDOMCheckbox(browser, id);
 			if (const auto& node = wpNode.lock())
 			{
 				node->Initialize(msg);
@@ -486,7 +490,7 @@ void Handler::ReplyJSDialog(CefRefPtr<CefBrowser> browser, bool clicked_ok, std:
 
 void Handler::ResetMainFramesScrolling(CefRefPtr<CefBrowser> browser)
 {
-    const std::string resetScrolling = "document.body.scrollTop=0; document.body.scrollLeft=0;";
+    const std::string resetScrolling = "window.scrollTo(0, 0);";
     browser->GetMainFrame()->ExecuteJavaScript(resetScrolling, browser->GetMainFrame()->GetURL(), 0);
 }
 
@@ -510,24 +514,9 @@ void Handler::SetZoomLevel(CefRefPtr<CefBrowser> browser, bool definitelyChanged
 
 void Handler::UpdatePageResolution(CefRefPtr<CefBrowser> browser)
 {
-	// TODO: Return these values by calling a function (in Renderer Process), get rid of these window variables
-
-    // Javascript code for receiving the current page width & height
-	const std::string getPageResolution = "\
-            if(document.documentElement && document.body !== null && document.body !== undefined)\
-			{\
-			window._pageWidth = document.body.scrollWidth;\
-            window._pageHeight = document.body.scrollHeight;\
-			}\
-			else\
-				console.log('Handler::UpdatePageResolution: Could not access document.documentElement or document.body!');\
-            ";
-
-    browser->GetMainFrame()->ExecuteJavaScript(getPageResolution, browser->GetMainFrame()->GetURL(), 0);
-
-    // Tell renderer process to get V8 values, where page sizes were written to
-    CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("GetPageResolution");
-    browser->SendProcessMessage(PID_RENDERER, msg);
+	// Execute Javascript function which will send page resolution to MessageRouter
+	browser->GetMainFrame()->ExecuteJavaScript(
+		"if(typeof(CefGetPageResolution) === 'function'){ CefGetPageResolution(); }", browser->GetMainFrame()->GetURL(), 0);
 }
 
 void Handler::IPCLogRenderer(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg)
@@ -550,67 +539,8 @@ void Handler::IPCLogRenderer(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcess
 void Handler::OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
     const std::vector<CefString>& icon_urls)
 {
-    std::string highResURL;
-    int currentRes = 0;
-    std::string icoURL;
-
-    for (int i = 0; i < (int)icon_urls.size(); i++)
-    {
-        std::string url = icon_urls[i].ToString();
-        std::string format = "", res = "";
-
-        // Read out file ending
-        for (int j = url.size() - 1; j >= (int)url.size() - 7; j--)
-        {
-            if (url[j] == '.')
-            {
-                break;
-            }
-            format = url[j] + format;
-        }
-
-        if (format == "ico")
-        {
-            icoURL = url;
-            continue;
-        }
-
-        // Try to read parts of resolution like "160x160" from URL's end
-        for (int j = url.size() - format.size() - 7; j < (int)(url.size() - format.size()) - 1; j++)
-        {
-            res += url[j];
-        }
-
-        int height = 0;
-        for (int j = res.size()-1; j >= 0; j--)
-        {
-            // char is a digit?
-            if (digits.find(res[j]) != digits.end())
-            {
-                height += ((res[j]-'0') * pow(10, res.size()-1-j));
-            }
-            else
-            {
-                // break, when 'x' is reached
-                break;
-            }
-        }
-
-        if (height > currentRes)
-        {
-            highResURL = url;
-            currentRes = height;
-        }
-    }
-
-    const std::string iconURL = (currentRes > 0) ? highResURL : icoURL;
-
-    // Trigger favIconImg.onload function by setting image src
-    const std::string jscode = "favIconImg.src = '" + iconURL + "';";
-    browser->GetMainFrame()->ExecuteJavaScript(jscode, "", 0); 
-
-    // New image incoming, delete the last one
-    _pMediator->ResetFavicon(browser);
+	for (auto url : icon_urls)
+		StartFaviconImageDownload(browser, url);
 }
 
 void Handler::OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -632,8 +562,8 @@ bool Handler::OnBeforePopup(CefRefPtr<CefBrowser> browser,
 	bool* no_javascript_access)
 {
 	LogInfo("Handler: Suppressed popup from opening a new window");
-
-	_pMediator->OpenPopupTab(browser, target_url);
+	
+	_pMediator->OpenPopupTab(browser, target_url, !(*no_javascript_access));
 
 	return true;
 }
@@ -649,4 +579,96 @@ void Handler::SendToJSLoggingMediator(std::string message)
 		browser->SendProcessMessage(PID_RENDERER, msg);
 	}
 	
+}
+
+bool Handler::ForwardFaviconBytes(CefRefPtr<CefBrowser> browser, CefRefPtr<CefImage> img)
+{
+	return _pMediator->ForwardFaviconBytes(browser, img);
+}
+
+bool Handler::StartFaviconImageDownload(CefRefPtr<CefBrowser> browser, CefString img_url)
+{
+	if (!_pMediator->IsFaviconAlreadyAvailable(browser, img_url))
+		return false;
+	StartImageDownload(browser, img_url);
+	return true;
+}
+
+void Handler::EmulateKeyboardKey(CefRefPtr<CefBrowser> browser, int key, int scancode, int mods, bool send_char_keyevent)
+{
+	// Emulate pressing 'Enter' down, pressed and up
+	CefKeyEvent event;
+	event.is_system_key = false;
+	event.modifiers = mods;
+
+	event.windows_key_code = key;
+	event.native_key_code = scancode;
+	event.character = event.unmodified_character = key;
+
+	// Down
+	event.type = KEYEVENT_RAWKEYDOWN;
+	browser->GetHost()->SendKeyEvent(event);
+
+	if (send_char_keyevent)
+	{
+		// Character
+		event.type = KEYEVENT_CHAR;
+		browser->GetHost()->SendKeyEvent(event);
+	}
+
+	// Up
+	event.type = KEYEVENT_KEYUP;
+	browser->GetHost()->SendKeyEvent(event);
+}
+
+void Handler::EmulateKeyboardStrokes(CefRefPtr<CefBrowser> browser, std::string input)
+{
+	// Convert UTF8 to UTF16 (right now over eyeGUI functions, should be available through Chromium)
+	std::u16string input16;
+	eyegui_helper::convertUTF8ToUTF16(input, input16);
+
+	for (int i = 0; i < input16.length(); i++)
+	{
+		char16 key = input16.at(i);
+		uint32 mods = 0;
+		if (key == u'\n')
+		{
+			key = 13;
+			mods = EVENTFLAG_SHIFT_DOWN;
+		}
+
+		CefKeyEvent event;
+		event.character = key;
+		
+		event.is_system_key = false;
+		event.modifiers = mods;
+
+		event.windows_key_code = key;
+		//event.native_key_code = scancode;
+		event.unmodified_character = key;
+		event.focus_on_editable_field = true;
+
+		// Character
+		event.type = KEYEVENT_CHAR;
+		browser->GetHost()->SendKeyEvent(event);
+	}
+}
+
+void Handler::EmulateSelectAll(CefRefPtr<CefBrowser> browser)
+{
+	EmulateKeyboardKey(browser, 'A', 'A', EVENTFLAG_CONTROL_DOWN, false);
+}
+
+void Handler::EmulateEnterKey(CefRefPtr<CefBrowser> browser)
+{
+	EmulateKeyboardKey(browser, 13, 13, 0);
+}
+
+bool Handler::OnKeyEvent(CefRefPtr<CefBrowser> browser,
+	const CefKeyEvent& event,
+	CefEventHandle os_event)
+{
+	LogInfo("key character: ", event.character);
+	
+	return true;
 }

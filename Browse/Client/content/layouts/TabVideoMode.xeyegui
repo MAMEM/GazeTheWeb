@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<layout style="default">
+    <grid style="dark_panel">
+    	<row size="100%">
+    		<column size="9.375%">
+    			<blank/> <!-- reserved for Web -->
+    		</column>
+    		<column size="90.625%">
+    			<grid>
+    				<row size="100%">
+	    				<column size="90%">
+	    					<blank id="web_view"/> <!-- reserved for WebView rendering -->
+    					</column>
+    					<column size="10%">
+    						<stack showbackground="true" consumeinput="true">
+									<block style="default_noback" relativescale="5%"/>
+									<stack showbackground="false" separator="0.1%" style="tab_panel">
+										<boxbutton icon="icons/Play.png" id="play" desckey="video_mode:play"/>
+										<boxbutton icon="icons/Pause.png" id="pause" desckey="video_mode:pause"/>
+										<boxbutton icon="icons/VolumeUp.png" id="volume_up" desckey="video_mode:volume_up"/>
+										<boxbutton icon="icons/VolumeDown.png" id="volume_down" desckey="video_mode:volume_down"/>
+										<boxbutton icon="icons/Mute.png" id="mute" desckey="video_mode:mute"/>
+										<boxbutton icon="icons/Cross.png" id="exit" desckey="video_mode:exit"/>
+									</stack>
+		  						<block style="default_noback" relativescale="5%"/>
+  							</stack>
+    					</column>
+    				</row>
+    			</grid>
+    		</column>
+    	</row>
+    </grid>
+</layout>

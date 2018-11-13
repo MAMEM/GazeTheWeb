@@ -12,6 +12,7 @@
 #include "src/State/Web/Tab/Interface/TabCEFInterface.h"
 #include "src/CEF/Data/DOMNode.h"
 #include "src/Utils/Logger.h"
+#include "src/Global.h"
 #include "include/cef_app.h"
 #include "include/wrapper/cef_helpers.h"
 
@@ -21,7 +22,7 @@ void Mediator::SetMaster(MasterNotificationInterface* pMaster)
 	_pMaster = pMaster;
 }
 
-void Mediator::RegisterTab(TabCEFInterface* pTab)
+void Mediator::RegisterTab(TabCEFInterface* pTab, std::string URL, CefRefPtr<CefRequestContext> request_context)
 {
     CEF_REQUIRE_UI_THREAD();
 
@@ -49,23 +50,20 @@ void Mediator::RegisterTab(TabCEFInterface* pTab)
 
     _pendingTab = pTab;
 
+	// Decide on url
+	if (URL.empty()) { URL = BLANK_PAGE_URL; }
+
     LogDebug("Mediator: Creating new CefBrowser at Tab registration.");
     // Create new CefBrowser with given information
     CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(
-        window_info, _handler.get(), "about:blank", browser_settings, NULL);
+        window_info, _handler.get(), URL, browser_settings, request_context);
+
+	LogDebug("Mediator::RegisterTab: request_context == nullptr? ", request_context == nullptr);
 
     // Fill maps with correlating Tab and CefBrowsre
     _browsers.emplace(pTab, browser);
     _tabs.emplace(browser->GetIdentifier(), pTab);
     _pendingTab = NULL;
-
-	RefreshTab(pTab);
-
-	// TODO: MutationObserver observes wrong document object if browser is created by CreateBrowserSync with an URL,
-	// thus no mutations will be recognized on startup
-	// We are currently preventing this by creating the browser with "about:blank" and calling RefreshTab afterwards
-	// in order to load the 'real' URL. Then, MutationObserver observes the 'right' document
-	// But why does this scenario exist? Might be interesting to investigate in the future ;)
 }
 
 void Mediator::UnregisterTab(TabCEFInterface* pTab)
@@ -83,12 +81,12 @@ void Mediator::UnregisterTab(TabCEFInterface* pTab)
     }
 }
 
-void Mediator::RefreshTab(TabCEFInterface * pTab)
+void Mediator::LoadURLInTab(TabCEFInterface * pTab, std::string URL)
 {
     if (CefRefPtr<CefBrowser> browser = GetBrowser(pTab))
     {
         // Get Tab object and load Tab's URL in CefBrowser
-        _handler->LoadPage(_browsers.at(pTab), pTab->GetURL());
+        _handler->LoadPage(_browsers.at(pTab), URL);
     }
 }
 
@@ -164,59 +162,6 @@ void Mediator::EmulateMouseWheelScrolling(TabCEFInterface * pTab, double deltaX,
     }
 }
 
-void Mediator::ReceiveIPCMessageforFavIcon(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg)
-{
-    const std::string& msgName = msg->GetName().ToString();
-
-    if (msgName == "ReceiveFavIconBytes")
-    {
-		LogDebug("Mediator: Received Favicon Bytes...");
-
-        CefRefPtr<CefListValue> args = msg->GetArgumentList();
-        int index = 0;
-        if(TabCEFInterface* pTab = GetTab(browser))
-        {
-            const int width = args->GetInt(index++);
-            const int height = args->GetInt(index++);
-
-            if (width <= 0 || height <= 0)
-            {
-                LogDebug("Mediator: Failure. Received favicon width or height less than zero!");
-
-                if (TabCEFInterface* pInnerTab = GetTab(browser))
-                {
-                    // Inform Tab anyway
-                    pInnerTab->ReceiveFaviconBytes(nullptr, width, height);
-                }
-            }
-            else
-            {
-                LogDebug("Mediator: Success. Copying favicon bytes to Tab... (w= ", width, ", h=", height,")");
-
-                // Extract width, height and byte information
-                std::unique_ptr<std::vector<unsigned char> > upData = std::unique_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>);
-                for (int i = 0; i < height*width; i++)
-                {
-                    int four_bytes = args->GetInt(index++);
-
-                    for (int j = 3; j >= 0; j--)
-                    {
-                        // Read byte for each channel (RGBA) from 4 byte integer value
-                        upData->push_back((four_bytes >> (j*8)) & 0xFF);
-                    }
-                }
-
-                // Pipe extracted information to Tab
-                pTab->ReceiveFaviconBytes(std::move(upData), width, height);
-
-                // Save new favicon URL in Tab
-                //pTab->SetFavIconURL(iconUrl);	// TODO: With favicon callback, saving favicon URL in Tab really neccessary? I don't think so.
-            }
-
-        }
-    }
-}
-
 void Mediator::ResetFavicon(CefRefPtr<CefBrowser> browser)
 {
     if (TabCEFInterface* pTab = GetTab(browser))
@@ -229,7 +174,7 @@ void Mediator::AddDOMTextInput(CefRefPtr<CefBrowser> browser, int id)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
-		pTab->AddDOMTextInput(browser, id);
+		pTab->AddDOMTextInput(id);
 	}
 }
 
@@ -237,7 +182,7 @@ void Mediator::AddDOMLink(CefRefPtr<CefBrowser> browser, int id)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
-		pTab->AddDOMLink(browser, id);
+		pTab->AddDOMLink(id);
 	}
 }
 
@@ -245,7 +190,7 @@ void Mediator::AddDOMSelectField(CefRefPtr<CefBrowser> browser, int id)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
-		pTab->AddDOMSelectField(browser, id);
+		pTab->AddDOMSelectField(id);
 	}
 }
 
@@ -253,9 +198,26 @@ void Mediator::AddDOMOverflowElement(CefRefPtr<CefBrowser> browser, int id)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
-		pTab->AddDOMOverflowElement(browser, id);
+		pTab->AddDOMOverflowElement(id);
 	}
 }
+
+void Mediator::AddDOMVideo(CefRefPtr<CefBrowser> browser, int id)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		pTab->AddDOMVideo(id);
+	}
+}
+
+void Mediator::AddDOMCheckbox(CefRefPtr<CefBrowser> browser, int id)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		pTab->AddDOMCheckbox(id);
+	}
+}
+
 
 void Mediator::ClearDOMNodes(CefRefPtr<CefBrowser> browser)
 {
@@ -263,7 +225,6 @@ void Mediator::ClearDOMNodes(CefRefPtr<CefBrowser> browser)
     {
         // Clear corresponding Tabs DOM Node list (implicitly destroy all DOM Node objects)
         pTab->ClearDOMNodes();
-		//LogDebug("Mediator: ### DISABLED DOM CLEARING FOR LINK TESTING ###");
         LogDebug("Mediator: Clearing Tab's DOM nodes belonging to browserID = ", browser->GetIdentifier());
     }
 }
@@ -289,6 +250,14 @@ void Mediator::RemoveDOMSelectField(CefRefPtr<CefBrowser> browser, int id)
 	if (auto pTab = GetTab(browser))
 	{
 		pTab->RemoveDOMSelectField(id);
+	}
+}
+
+void Mediator::RemoveDOMCheckbox(CefRefPtr<CefBrowser> browser, int id)
+{
+	if (auto pTab = GetTab(browser))
+	{
+		pTab->RemoveDOMCheckbox(id);
 	}
 }
 
@@ -351,18 +320,14 @@ void Mediator::SetActiveTab(TabCEFInterface * pTab)
 
 
 
-bool Mediator::SetLoadingStatus(CefRefPtr<CefBrowser> browser, int64 frameID, bool isMain, bool isLoading)
+bool Mediator::SetLoadingStatus(CefRefPtr<CefBrowser> browser, bool isLoading, bool isMainFrame)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
-		pTab->SetLoadingStatus(frameID, isMain, isLoading);
+		pTab->SetLoadingStatus(isLoading, isMainFrame);
 		return true;
 	}
-	else
-	{
-		return false;
-	}
-	
+	return false;	
 }
 
 std::weak_ptr<DOMOverflowElement> Mediator::GetDOMOverflowElement(CefRefPtr<CefBrowser> browser, int id)
@@ -374,12 +339,77 @@ std::weak_ptr<DOMOverflowElement> Mediator::GetDOMOverflowElement(CefRefPtr<CefB
 	return std::weak_ptr<DOMOverflowElement>();
 }
 
+std::weak_ptr<DOMVideo> Mediator::GetDOMVideo(CefRefPtr<CefBrowser> browser, int id)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		return pTab->GetDOMVideo(id);
+	}
+	return std::weak_ptr<DOMVideo>();
+}
+
+std::weak_ptr<DOMCheckbox> Mediator::GetDOMCheckbox(CefRefPtr<CefBrowser> browser, int id)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		return pTab->GetDOMCheckbox(id);
+	}
+	return std::weak_ptr<DOMCheckbox>();
+}
+
 void Mediator::RemoveDOMOverflowElement(CefRefPtr<CefBrowser> browser, int id)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
 		pTab->RemoveDOMOverflowElement(id);
 	}
+}
+
+void Mediator::RemoveDOMVideo(CefRefPtr<CefBrowser> browser, int id)
+{
+	if (TabCEFInterface* pTab = GetTab(browser))
+	{
+		pTab->RemoveDOMVideo(id);
+	}
+}
+
+void Mediator::EmulateKeyboardKey(int key, int scancode, int action, int mods)
+{
+	for (const auto& kvpair : _tabs)
+	{
+		_handler->EmulateKeyboardKey(GetBrowser(kvpair.second), key, scancode, mods);
+		break;
+	}
+}
+
+bool Mediator::EmulateKeyboardStrokes(TabCEFInterface* pTab, std::string input)
+{
+	if(const auto& browser = GetBrowser(pTab))
+	{
+		_handler->EmulateKeyboardStrokes(browser, input);
+		return true;
+	}
+	return false;
+}
+
+bool Mediator::EmulateEnterKey(TabCEFInterface* pTab)
+{
+	if(const auto& browser = GetBrowser(pTab))
+	{
+		_handler->EmulateEnterKey(browser);
+		return true;
+	}
+	return false;
+}
+
+bool Mediator::EmulateSelectAll(TabCEFInterface* pTab)
+{
+	if (const auto& browser = GetBrowser(pTab))
+	{
+		_handler->EmulateSelectAll(browser);
+		return true;
+	}
+	return false;
 }
 
 void Mediator::ResetScrolling(TabCEFInterface * pTab)
@@ -414,6 +444,65 @@ void Mediator::SetCanGoForward(CefRefPtr<CefBrowser> browser, bool canGoForward)
     }
 }
 
+bool Mediator::ForwardFaviconBytes(CefRefPtr<CefBrowser> browser, CefRefPtr<CefImage> img)
+{
+	if (const auto pTab = GetTab(browser))
+	{
+		if (!img)
+			return true;
+
+		int width, height;
+
+		auto binary_value = img->GetAsBitmap(1.0, CEF_COLOR_TYPE_RGBA_8888, CEF_ALPHA_TYPE_PREMULTIPLIED, width, height);
+		if (!binary_value)
+		{
+			LogInfo("Mediator: Favicon CefImage conversion to bitmap failed.");
+			return true;
+		}
+
+		const size_t byte_size = binary_value->GetSize();
+		if (byte_size == 0)
+		{
+			LogInfo("Mediator: Favicon CefImage conversion failed due to byte stream being empty.");
+			return true;
+		}
+		if (width * height * sizeof(unsigned char) > byte_size)
+		{
+			LogInfo("Mediator: Something went wrong when retrieving image's resolution. Aborting...");
+			return true;
+		}
+
+		// Write image bytes to unique_ptr
+		auto upData = std::unique_ptr< std::vector<unsigned char> >(new std::vector<unsigned char>());
+		upData->resize(byte_size / sizeof(unsigned char));
+		binary_value->GetData(static_cast<void*>(upData->data()), byte_size, 0);
+
+		pTab->ReceiveFaviconBytes(std::move(upData), width, height);
+		return true;
+	}
+	LogInfo("Mediator: Forwarding favicon bytes to Tab failed. It might not exist anymore.");
+	return false;
+}
+
+bool Mediator::IsFaviconAlreadyAvailable(CefRefPtr<CefBrowser> browser, CefString img_url)
+{
+	if (auto pTab = GetTab(browser))
+	{
+		return !pTab->IsFaviconAlreadyAvailable(img_url.ToString());
+	}
+	// Don't load image if Tab isn't available anymore
+	return true;
+}
+
+bool Mediator::SetMetaKeywords(CefRefPtr<CefBrowser> browser, std::string content)
+{
+	if (auto pTab = GetTab(browser))
+	{
+		pTab->SetMetaKeywords(content);
+	}
+	return false;
+}
+
 void Mediator::SetZoomLevel(TabCEFInterface * pTab)
 {
     if (CefRefPtr<CefBrowser> browser = GetBrowser(pTab))
@@ -431,14 +520,11 @@ double Mediator::GetZoomLevel(CefRefPtr<CefBrowser> browser)
     return NAN;
 }
 
-void Mediator::ReceivePageResolution(CefRefPtr<CefBrowser> browser, CefRefPtr<CefProcessMessage> msg)
+void Mediator::ReceivePageResolution(CefRefPtr<CefBrowser> browser, double width, double height)
 {
     if (TabCEFInterface* pTab = GetTab(browser))
-    {
-        CefRefPtr<CefListValue> args = msg->GetArgumentList();
-		double pageWidth = args->GetDouble(0);
-		double pageHeight = args->GetDouble(1);
-        pTab->SetPageResolution(pageWidth, pageHeight);
+	{
+        pTab->SetPageResolution(width, height);
     }
 }
 
@@ -486,24 +572,41 @@ void Mediator::RemoveFixedElement(CefRefPtr<CefBrowser> browser, int id)
     }
 }
 
-void Mediator::Poll(float tpf)
+void Mediator::Poll(TabCEFInterface* pTab, unsigned int numPartitions, unsigned int updatePartition)
 {
-    // TODO Daniel
+	const std::string& polling_code = (numPartitions == 0) ? "CefPoll();" : 
+		"CefPoll(" + std::to_string(numPartitions) + "," + std::to_string(updatePartition) + ");";
+	if (pTab == NULL)
+	{
+		LogInfo("Mediator: Polling every tab...");
+		for (const auto& pair: _browsers)
+		{
+			pair.second->GetMainFrame()->ExecuteJavaScript(polling_code, "CefPolling", 0);
+		}
+		return;
+	}
+
+	if (CefRefPtr<CefBrowser> browser = GetBrowser(pTab))
+	{
+		browser->GetMainFrame()->ExecuteJavaScript(polling_code, "CefPolling", 0);
+	}	
 }
 
 void Mediator::OnTabTitleChange(CefRefPtr<CefBrowser> browser, std::string title)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
+		pTab->SetURL(browser->GetMainFrame()->GetURL()); // guarantees that URL is set before the title
 		pTab->SetTitle(title);
 	}
 }
 
-void Mediator::OpenPopupTab(CefRefPtr<CefBrowser> browser, std::string url)
+void Mediator::OpenPopupTab(CefRefPtr<CefBrowser> browser, std::string url, bool javascript_access)
 {
 	if (TabCEFInterface* pTab = GetTab(browser))
 	{
-        pTab->AddTabAfter(url);
+		CefRefPtr<CefRequestContext> request_context = (javascript_access) ? browser->GetHost()->GetRequestContext() : nullptr;
+        pTab->AddTabAfter(url, request_context);
 	}
 }
 

@@ -3,14 +3,140 @@
 // Author: Daniel Mueller (muellerd@uni-koblenz.de)
 //============================================================================
 
-
 // Helper function for console output
 function ConsolePrint(msg)
 {
-	window.cefQuery({ request: (""+msg), persistent : false, onSuccess : (response) => {}, onFailure : (error_code, error_message) => {} });
+    window.cefQuery({ 
+        request: ("" + msg), 
+        persistent : false, 
+        onSuccess : (response) => {}, 
+        onFailure : (error_code, error_message) => {} 
+    });
+
+    // window.cefQuery({ 
+    //     request: ("DEBUG#" + msg), 
+    //     persistent : false, 
+    //     onSuccess : (response) => {}, 
+    //     onFailure : (error_code, error_message) => {} 
+    // });
+
+}
+
+// TODO: Differentiate between different message types
+function SendToMsgRouter(msg)
+{
+    ConsolePrint(msg);
 }
 
 ConsolePrint("Starting to import helpers.js ...");
+
+
+// TODO: Move CEF callable functions to separate js-file
+function CefPoll(num_partitions, update_partition)
+{
+    var partitioned = (num_partitions !== undefined && update_partition !== undefined);
+    
+    // DISABLED FOR DEBUGGING
+    if(false)
+    {
+        console.log("CefPoll triggerd...");
+        if(partitioned)
+            console.log("Polling "+update_partition+". of "+num_partitions+" partitions.");
+    }
+    var t_start = performance.now();
+
+    // UpdateDOMRects();
+
+    for(var node in appended_nodes)
+    {
+        AnalyzeNode(node);
+        appended_nodes.delete(node);
+        console.log("CefPoll: Analyzed missing node", node);
+    }
+
+    // NOTE: This was for the GMail Login. Works now more efficiently by analyzing not already
+    // analyzed child nodes, when webkit transition ends :)
+    // TODO: Hard to partion, when walking down DOM tree from beginning
+    // ForEveryChild(document.documentElement, AnalyzeNode);
+    
+    // Partitions shouldn't matter for an expected small amount of video nodes
+    domVideos.forEach((n) => { SendAttributeChangesToCEF("Rects", n); });
+
+    window.domNodes.forEach((list) => {
+        if(partitioned)
+        {
+            var partition_size = Math.floor(list.length / num_partitions); 
+            var first =  partition_size * update_partition;
+            // Last partition is 1 element bigger if odd number of elements in list
+            var last = (num_partitions-1 === update_partition) ? list.length-1 : first + partition_size; 
+        }
+        // If partition_size == 0, because list length is too short, don't partition and update all
+        var this_partitioned = (partitioned && partition_size > 0);
+
+        // Force send message about attribute changes
+        list.forEach((o, idx) => { 
+            if(!this_partitioned || (idx >= first && idx <= last) )
+            {
+                if(typeof(o.updateRects()) === "function")
+                    o.updateRects();
+
+                SendAttributeChangesToCEF("OccBitmask", o);
+                SendAttributeChangesToCEF("Rects", o); // For language list on wikipedia.org main page, for example
+            } 
+        });
+    });
+
+
+    // DISABLED FOR DEBUGGING
+    if(!partitioned)
+        console.log("Took ", performance.now() - t_start, "ms.");
+
+
+
+    /* EXPERIMENTAL */
+    /*
+    var t_start = performance.now();
+    var input_selectors = ["input", "div[role='combobox']", "div[role='textbox']", "textarea"];
+    var num_elements = 0;
+    input_selectors.forEach((selector) => {
+        var inputs = document.querySelectorAll(selector);
+        var num_inputs = inputs.length;
+        num_elements += num_inputs;
+        var i = 0;
+        for(; i < num_inputs; i++)
+        {
+            AnalyzeNode(inputs[i]);
+        }
+    });
+    console.log("Analyzing ", num_elements,"nodes with selectors took: ", performance.now() - t_start, "ms");
+
+    // TODO: Bitmask changes not propagated properly?
+    domTextInputs.forEach((o) => { SendAttributeChangesToCEF("OccBitmask", o); });
+    */
+}
+
+var gtwPageHeight = 0.0;
+var gtwPageWidth = 0.0;
+/**
+ * Triggered by ExecuteJavascript call in Handler, whenever page resolution might have changed.
+ * If it did, send changes to MessageRouter
+ */
+function CefGetPageResolution()
+{
+    if(!document || !document.body)
+        return;
+
+    if(gtwPageHeight !== document.body.scrollHeight || gtwPageWidth !== document.body.scrollWidth)
+    {
+        gtwPageHeight = document.body.scrollHeight;
+        gtwPageWidth = document.body.scrollWidth;
+
+        // Bug fix for dynamically added nodes in updating timelines or search result lists
+        ForEveryChild(document.documentElement, AnalyzeNode);
+    
+        ConsolePrint("#resolution#"+gtwPageWidth+"#"+gtwPageHeight+"#");
+    }
+}
 
 if(ClientRectList.prototype.map === undefined)
 {
@@ -27,7 +153,7 @@ if(ClientRectList.prototype.map === undefined)
 
 if(NodeList.prototype.forEach === undefined)
 {
-    ConsolePrint("JS: Extending JS NodeList by own forEach function.")
+    ConsolePrint("JS: Extending JS NodeList by own forEach function.");
 
     NodeList.prototype.forEach = function(f){
         var n = this.length;
@@ -93,7 +219,7 @@ function EqualClientRectsData(r1, r2)
 
 function ForEveryChild(parentNode, applyFunction, abortFunction)
 {
-    if(parentNode === undefined || typeof(applyFunction) !== "function")
+    if(parentNode === null || parentNode === undefined || typeof(applyFunction) !== "function")
         return;
         
 	var childs = parentNode.childNodes;
@@ -104,9 +230,9 @@ function ForEveryChild(parentNode, applyFunction, abortFunction)
 
 	if(childs && applyFunction)
 	{
+		// childs.forEach((child) => {	// TODO: This line needs a Chromium update to work
 		for(var i = 0; i < childs.length; i++)
 		{
-			// childs.forEach((child) => {	// TODO: This line needs a Chromium update to work
 			var child = childs[i];
 			// Execute function of every child node
 			applyFunction(child);
@@ -127,7 +253,7 @@ function GetFixedElementByNode(node)
 
 function GetFixedElementById(id)
 {
-    if(id !== null && id >= 0 && id < window.domFixedElements.length)
+    if(id !== null && id !== undefined && id >= 0 && id < window.domFixedElements.length)
         return window.domFixedElements[id];
     return undefined;
 }
@@ -143,9 +269,13 @@ function DeleteFixedElement(fixId)
     console.log("Removed fixed element with id: "+fixId);
 }
 
-
-function UpdateDOMRects()
+var debug_updateDOMRects_count = 0;
+function UpdateDOMRects(num_partitions)
 {
+
+    // console.log("UpdateDOMRects called because "+why+", "+(++debug_updateDOMRects_count)+" times until now");
+
+    
     window.domNodes.forEach(domList => {
         domList.forEach(obj => {
             if(typeof(obj.updateRects) === "function")
@@ -170,12 +300,25 @@ function UpdateNodesRect(node)
         fixObj.updateRects();
 }
 
+function UpdateChildNodesRects(node)
+{
+    if(node === null || node === undefined)
+        return;
+
+    for(var i = 0, n = node.childNodes.length; i < n; i++)
+        UpdateNodesRect(node.childNodes[i]);
+    for(var i = 0, n = node.childNodes.length; i < n; i++)
+        UpdateChildNodesRects(node.childNodes[i]);
+}
+
 
 
 function CreateDOMTextInput(node) { CreateDOMObject(node, 0); }
 function CreateDOMLink(node){ CreateDOMObject(node, 1); }
 function CreateDOMSelectField(node) { CreateDOMObject(node, 2); }
 function CreateDOMOverflowElement(node) { CreateDOMObject(node, 3); }
+function CreateDOMVideo(node){ CreateDOMObject(node, 4); }
+function CreateDOMCheckbox(node){ CreateDOMObject(node, 5); }
 
 function CreateDOMObject(node, type)
 {
@@ -188,6 +331,8 @@ function CreateDOMObject(node, type)
         case 1: return new DOMLink(node);
         case 2: return new DOMSelectField(node);
         case 3: return new DOMOverflowElement(node);
+        case 4: return new DOMVideo(node);
+        case 5: return new DOMCheckbox(node);
         default: {
             console.log("Warning: Unknown DOM node type: "+type);
             return undefined;
@@ -212,6 +357,8 @@ function GetDOMTextInput(id){ return GetDOMObject(0, id);}
 function GetDOMLink(id){ return GetDOMObject(1, id);}
 function GetDOMSelectField(id){ return GetDOMObject(2, id); }
 function GetDOMOverflowElement(id){ return GetDOMObject(3, id); }
+function GetDOMVideo(id){ return GetDOMObject(4, id); }
+function GetDOMCheckbox(id){ return GetDOMObject(5, id); }
 
 function GetCorrespondingDOMObject(node, expected_type)
 {
@@ -233,13 +380,20 @@ function GetCorrespondingDOMOverflow(node){ return GetCorrespondingDOMObject(nod
 
 function RemoveDOMObject(type, id)
 {
-    console.log("RemoveDOMObject called with parameters type="+type+" and id="+id+"! Doesn't do anything at the moment. TODO!");
+    var domObj = GetDOMObject(type, id);
+    if(domObj)
+    {
+        // Delete object on C++ side
+       SetObjectAvailabilityForCEFto(domObj, false);
+       // and on JS side
+       delete domObj;
+    }
 }
 function RemoveDOMTextInput(id){ return RemoveDOMObject(0, id); }
 function RemoveDOMLink(id){ return RemoveDOMObject(1, id); }
 function RemoveDOMSelectField(id){ return RemoveDOMObject(2, id); }
 function RemoveDOMOverflowElement(id){ return RemoveDOMObject(3, id); }
-
+// TODO: Missing node types.
 
 /**
  * Usage example: Determine what parts of a node's rect are visible when inside an overflowing element
@@ -270,11 +424,17 @@ function CefExecute(header, param)
     var obj = (id === undefined || type === undefined) ? window : GetDOMObject(type, id);
 
     if(obj === undefined || obj[f] === undefined)
+    {
+        if(!obj)
+            console.log("CefExecute: Invalid object for id: "+id+" and type: "+type+" for function named "+f);
+        else
+            console.log("CefExecute: Could not find function called "+f+" in DOM object with id: "+id+
+                " and type: "+type);
         return false; 
-
+    }
     // Execute function with obj as context and parameters given
     // Return value may be e.g. a DOMNodeInteractionResponse
-    return obj[f](a, b, c, d);
+    return obj[f](a, b, c, d); // TODO: Use variadic approach? But sufficient right now
 }
 
 
@@ -317,9 +477,12 @@ function DrawObject(obj)
 	}
 }
 
-
 function SendLSLMessage(msg) {
     window.cefQuery({ request: ("lsl:" + msg), persistent: false, onSuccess: (response) => { }, onFailure: (error_code, error_message) => { } });
+}
+
+function SendDataMessage(msg) {
+    window.cefQuery({ request: ("data:" + msg), persistent: false, onSuccess: (response) => { }, onFailure: (error_code, error_message) => { } });
 }
 
 function LoggingMediator()
@@ -413,5 +576,119 @@ function PrintPerformanceInformation()
             100*Math.round(time_spent_creating_bitmask/window.page_load_time_*1000)/1000 +'% of page load time');
 }
 
+function SendFaviconURLtoCEF(url)
+{
+    console.log("Found favicon url: ", url);
+    ConsolePrint("#FaviconURL#"+url+"#");
+}
+
+
+function CefAttrRequest(domObj, attrStr, compare_with_js=true)
+{
+    if (domObj === undefined)
+        return;
+    var attrCode = GetAttributeCode(attrStr);
+    if (attrCode === undefined)
+    {
+        ConsolePrint("AttrRequest: Couldn't find integer represantion for DOMAttribute with name "+attrStr);
+        return;
+    }
+    
+    if(compare_with_js)
+    {
+        var data, getter = domObj["get"+attrStr];
+        if (getter !== undefined)
+            data = domObj["get"+attrStr](false); 
+        else
+            ConsolePrint("AttrRequest: Didn't find Javascript getter for DOMAttribute "+attrStr);
+
+    }
+    ConsolePrint("DOMAttrReq#"+domObj.getType()+"#"+domObj.getId()+"#"+attrCode+"#");
+
+    if (compare_with_js)
+        ConsolePrint(attrStr+" data:\n\t"+data);
+}
+
+function SetObjectAvailabilityForCEFto(domObj, val)
+{
+    if(typeof(domObj.getType) !== "function")
+    {
+        console.log("Invalid call of SetObjectAvailabilityForCEFto! Aborting.");
+        return;
+    }
+    if(val)
+        ConsolePrint("DOM#add#"+domObj.getType()+"#"+domObj.getId()+"#");
+    else
+        ConsolePrint("DOM#rem#"+domObj.getType()+"#"+domObj.getId()+"#");
+}
+
+function CheckOverflowProperties(node)
+{
+    var cs = window.getComputedStyle(node, null);
+    console.log("overflow: ", cs.getPropertyValue("overflow"));
+    console.log("overflow-x: ", cs.getPropertyValue("overflow-x"));
+    console.log("overflow-y: ", cs.getPropertyValue("overflow-y"));
+}
+
+// ComputedStyle (cs) is optional, because already present in some parts of the code where this function is called
+function SetOverflowId(node, id, cs)
+{
+    // console.log("SetOverflowId called with id ", id, " for ", node);
+    if(node === undefined || typeof(node.setAttribute) !== "function") // Assume, that removeAttribute is also present when setAttribute is
+        return;
+
+    // Remove overflowId
+    if(id === null)
+    {
+	    // TODO: Search for hierachically higher overflows!
+        node.removeAttribute("overflowid");
+        return;
+    }
+
+    // Get ComputedStyle, if not already provided in function call
+    if(!cs)
+        cs = window.getComputedStyle(node, null);
+
+    if(typeof(cs.getPropertyValue) !== "function")
+        return;
+
+    var css_position = cs.getPropertyValue("position");
+    // Absolutely positioned children don't get clipped on overflow parents
+    if(css_position !== "absolute")
+        node.setAttribute("overflowId", id);
+}
+
+// Returns corresponding DOMObject if any exists
+function SetOverflowObjectViaId(node, id)
+{
+    if(id === undefined)
+        console.log("SetOverflowObjectViaId: Second argument 'id' is undefined!");
+
+    // console.log("SetOverflowObjectViaId called with id ",id, " for ", node);
+    var domObj = GetCorrespondingDOMObject(node);
+    if(domObj !== undefined)
+    {
+        // DEBUG
+        //if(domObj.getType() === 3)
+        // console.log("Setting overflow to id: ", id, " for ", domObj);
+
+        // id of null or -1 will reset overflow object in domObj
+        domObj.setOverflowViaId(id);
+        return domObj;
+    }
+    return undefined;
+}
+
+function IsAncestor(child, ancestor, depth=0)
+{
+    if(!child.parentElement || child === document.documentElement)
+        return false;
+    
+    depth++;
+    if(child.parentElement === ancestor)
+        return depth;
+    else
+        return IsAncestor(child.parentElement, ancestor, depth);
+}
 
 ConsolePrint("Successfully imported helpers.js!");

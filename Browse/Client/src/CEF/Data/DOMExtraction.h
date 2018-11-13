@@ -24,6 +24,7 @@ namespace V8ToCefListValue
 	// Lists
 	const CefRefPtr<CefListValue> ListOfStrings(CefRefPtr<CefV8Value> attrData);
 	const CefRefPtr<CefListValue> ListOfIntegers(CefRefPtr<CefV8Value> attrData);
+	const CefRefPtr<CefListValue> ListOfBools(CefRefPtr<CefV8Value> attrData);
 
 	// Primitive types - TODO: There certainly exists a more generic approach for each primitive type!
 	const CefRefPtr<CefListValue> Boolean(CefRefPtr<CefV8Value> attrData);
@@ -40,7 +41,12 @@ namespace V8ToCefListValue
 		{ DOMAttribute::Url,				"getUrl" },
 		{ DOMAttribute::Options,			"getOptions" },
 		{ DOMAttribute::MaxScrolling,		"getMaxScrolling"},
-		{ DOMAttribute::CurrentScrolling,	"getCurrentScrolling"}
+		{ DOMAttribute::CurrentScrolling,	"getCurrentScrolling"},
+		{ DOMAttribute::OccBitmask,			"getOccBitmask"},
+		{ DOMAttribute::HTMLId,				"getHTMLId" },
+		{ DOMAttribute::HTMLClass,			"getHTMLClass" },
+		{ DOMAttribute::CheckedState,		"getCheckedState" }
+	// TODO: Getter in Javascript are uniformly named, so this map is kind of superfluous now ;)
 
 	};
 
@@ -54,7 +60,11 @@ namespace V8ToCefListValue
 		{ DOMAttribute::Url,				&String },
 		{ DOMAttribute::Options,			&ListOfStrings },
 		{ DOMAttribute::MaxScrolling,		&ListOfIntegers },
-		{ DOMAttribute::CurrentScrolling,	&ListOfIntegers }
+		{ DOMAttribute::CurrentScrolling,	&ListOfIntegers },
+		{ DOMAttribute::OccBitmask,			&ListOfBools },
+		{ DOMAttribute::HTMLId,				&String },
+		{ DOMAttribute::HTMLClass,			&String },
+		{DOMAttribute::CheckedState,		&Boolean }
 	
 	};
 
@@ -68,17 +78,23 @@ namespace V8ToCefListValue
 
 namespace StringToCefListValue
 {
+
 	// Nested lists
 	const CefRefPtr<CefListValue> NestedListOfDoubles(std::string attrData);
 
 	// Lists
 	const CefRefPtr<CefListValue> ListOfStrings(std::string attrData);
 	const CefRefPtr<CefListValue> ListOfIntegers(std::string attrData);
+	const CefRefPtr<CefListValue> ListOfBools(std::string attrData);
 
 	// Primitive types
 	const CefRefPtr<CefListValue> Boolean(std::string attrData);
 	const CefRefPtr<CefListValue> Integer(std::string attrData);
 	const CefRefPtr<CefListValue> String(std::string attrData);
+	
+	// Other
+	const CefRefPtr<CefListValue> Bitmask(std::string attrData);
+
 
 	// Mapping from attribute to datatype
 	const std::map<const DOMAttribute, const std::function<CefRefPtr<CefListValue>(std::string)> > AttrConversion =
@@ -91,7 +107,9 @@ namespace StringToCefListValue
 		{DOMAttribute::Url,					&String},
 		{DOMAttribute::Options,				&ListOfStrings},
 		{DOMAttribute::MaxScrolling,		&ListOfIntegers},
-		{DOMAttribute::CurrentScrolling,	&ListOfIntegers}	
+		{DOMAttribute::CurrentScrolling,	&ListOfIntegers},
+		{DOMAttribute::OccBitmask,			&Bitmask},
+		{DOMAttribute::CheckedState,		&Boolean}
 	};
 
 	// Extract attribute data

@@ -228,8 +228,7 @@ bool DriftCorrectionAction::Update(float tpf, const std::shared_ptr<const TabInp
 void DriftCorrectionAction::Draw() const
 {
 	// Do draw some stuff for debugging
-	if (setup::DRAW_DEBUG_OVERLAY)
-	{
+#ifdef CLIENT_DEBUG
 		// WebView pixels
 		glm::vec2 webViewPixels(_pTab->GetWebViewWidth(), _pTab->GetWebViewHeight());
 
@@ -260,7 +259,7 @@ void DriftCorrectionAction::Draw() const
 		glm::vec2 testCoordinate(0.3f, 0.5f);
 		applyZooming(testCoordinate);
 		_pTab->Debug_DrawRectangle(testCoordinate, glm::vec2(5, 5), glm::vec3(0, 0, 1));
-	}
+#endif // CLIENT_DEBUG
 }
 
 void DriftCorrectionAction::Activate()

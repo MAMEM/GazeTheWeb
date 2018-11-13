@@ -4,6 +4,9 @@
 //============================================================================
 // Singleton which sends messages to JavaScript logging mediator.
 
+#ifndef JSMAILER_H_
+#define JSMAILER_H_
+
 #include <string>
 
 // Forward declaration
@@ -34,8 +37,10 @@ private:
 	// Pointer to handler which can call into JavaScript
 	Handler* _pHandler = nullptr;
 
-	// Private copy / asignment constructors
+	// Private copy / assignment constructors
 	JSMailer() {}
 	JSMailer(const JSMailer&) {}
-        JSMailer& operator = (const JSMailer &) { return *this; }
+    JSMailer& operator = (const JSMailer &) { return *this; }
 };
+
+#endif // JSMAILER_H_

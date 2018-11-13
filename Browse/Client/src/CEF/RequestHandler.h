@@ -15,6 +15,9 @@ class RequestHandler : public CefRequestHandler
 {
 public:
 
+	// Set status
+	void BlockAds(bool value) { _blockAds = value; }
+
 	// Called before resource is loaded
 	CefRequestHandler::ReturnValue OnBeforeResourceLoad(
 		CefRefPtr<CefBrowser> browser,
@@ -26,6 +29,8 @@ private:
 
     // Include CEF'S default reference counting implementation
     IMPLEMENT_REFCOUNTING(RequestHandler);
+
+	bool _blockAds = true;
 };
 
 #endif  // REQUESTHANDLER_H_
