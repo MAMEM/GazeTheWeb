@@ -378,7 +378,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	// _upWeb->AddTab("https://developer.mozilla.org/en-US/docs/Web/CSS/overflow");
 	// _upWeb->AddTab("http://html5-demos.appspot.com/static/fullscreen.html");
 	// _upWeb->AddTab(std::string(CONTENT_PATH) + "/websites/test/index.html");
-	// _upWeb->AddTab(_upSettings->GetHomepage());
+	_upWeb->AddTab(_upSettings->GetHomepage());
 
 	if (setup::DEMO_MODE)
 	{
@@ -387,6 +387,8 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	}
 	else
 	{
+		// TODO: make modes as enum: STANDARD; DEMO; MAMEM
+		/*
 		auto parameters = GetDashboardParameters();
 		std::string URL(setup::DASHBOARD_URL + "/?");
 		URL += "email=" + parameters.email + "&";
@@ -394,6 +396,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		URL += "api_key=" + parameters.APIKey + "&";
 		URL += "project_id=" + parameters.projectId;
 		_upWeb->AddTab(URL);
+		*/
 	}
 
     // ### SUPER LAYOUT ###
@@ -444,7 +447,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
 	// ### VOICE INPUT ###
-	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput(_pGUI));
+	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput());
 
     // ### FRAMEBUFFER ###
     _upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
@@ -887,6 +890,9 @@ void Master::Loop()
 			_monitorWidth,
 			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
 
+		// Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
+		auto voice_input = _upVoiceInput->Update(tpf);
+
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
 		{
@@ -1254,7 +1260,6 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 			// case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
 			// case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
 			case GLFW_KEY_0: { if (!setup::DEPLOYMENT && !setup::DEMO_MODE) { _pCefMediator->ShowDevTools(); } break; }
-			// case GLFW_KEY_SPACE: { _upVoiceInput->StartAudioRecording(); break; }
 			// case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
 			case GLFW_KEY_D: {
 				if (mods & GLFW_MOD_CONTROL)
@@ -1273,10 +1278,11 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
     }
 	else if (action == GLFW_RELEASE)
 	{
+		/*
 		switch (key)
 		{
-			// case GLFW_KEY_SPACE: { auto voiceAction = _upVoiceInput->EndAndProcessAudioRecording(); LogInfo("Retrieved VoiceAction: ", static_cast<int>(voiceAction)); }
 		}
+		*/
 	}
 }
 

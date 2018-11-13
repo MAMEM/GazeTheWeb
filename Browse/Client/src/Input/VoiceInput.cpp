@@ -6,48 +6,33 @@
 #include "VoiceInput.h"
 #include "src/Utils/Logger.h"
 
-VoiceInput::VoiceInput(eyegui::GUI* pGUI) : _pGUI(pGUI)
+// Use portaudio library coming with eyeGUI. Bad practice, but eyeGUI would be needed to be linked dynamically otherwise
+#include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
+
+// TODO @ Christopher: Please try to use portaudio only in the CPP not, in the header
+
+VoiceInput::VoiceInput()
 {
-	// Nothing to do
+	// TODO
+
+	PaError err;	
+	err = Pa_Initialize();
+	if (err != paNoError)
+	{
+		LogError("Could not initialize PortAudio.");
+		// TODO exit somehow and avoid any further use of this object during runtime
+	}
+	LogInfo("PortAudio version: " + std::to_string(Pa_GetVersion()));
 }
 
 VoiceInput::~VoiceInput()
 {
-	// Nothing to do
+	// TODO
 }
 
-bool VoiceInput::StartAudioRecording()
+VoiceAction VoiceInput::Update(float tpf)
 {
-	LogInfo("VoiceInput: Start listening");
-	return eyegui::startAudioRecording(_pGUI);
-}
-
-VoiceAction VoiceInput::EndAndProcessAudioRecording()
-{
-	// End recording and retrieve audio
-	eyegui::endAudioRecording(_pGUI);
-	auto spAudio = eyegui::retrieveAudioRecord(_pGUI);
-	LogInfo("VoiceInput: End listening");
-
-	// If some audio was retrieved, proceed
-	if (spAudio != nullptr)
-	{
-		// spAudio has different methods to access data like sampleRate, sampleCount and the audio data itself
-		LogInfo("VoiceInput: Samples received: ", spAudio->getSampleCount());
-
-		LogInfo("VoiceInput: Start processing");
-
-		// TODO for Voice Input
-		// 1. Store Audio locally as .wav (for example in system' TEMP folder)
-		//    See this link for "how to save as wave": http://www.cplusplus.com/forum/beginner/166954/
-		// 2. Upload wave using CURL
-		// 3. Retrieve answer by speech recognition API
-		// 4. Parse answer and return action
-	}
-	else
-	{
-		LogInfo("VoiceInput: Failure");
-	}
+	// TODO
 
 	// Fallback if error occurs
 	return VoiceAction::NO_ACTION;

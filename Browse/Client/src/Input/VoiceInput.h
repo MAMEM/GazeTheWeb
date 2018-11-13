@@ -4,14 +4,14 @@
 //============================================================================
 // Stub for voice input handling.
 
+// TODO @ Christopher: Change this interface as desired!
+
 #ifndef VOICEINPUT_H_
 #define VOICEINPUT_H_
 
-#include "submodules/eyeGUI/include/eyeGUI.h"
-
 enum class VoiceAction
 {
-	NO_ACTION, SCROLL_UP, SCROLL_DOWN // TODO: ADD MORE
+	NO_ACTION, SCROLL_UP, SCROLL_DOWN // TODO @ Christopher: change datastructure
 };
 
 class VoiceInput
@@ -19,21 +19,17 @@ class VoiceInput
 public:
 
 	// Constructor
-	VoiceInput(eyegui::GUI* pGUI); // TODO FOR LATER: Avoid handing over GUI pointer but make more elaborated solution
+	VoiceInput();
 
 	// Destructor
 	virtual ~VoiceInput();
 
-	// Method to start recording, returns whether successful (must be manually triggered right now)
-	bool StartAudioRecording();
-
-	// Method to end recording and do processing. Returns action for browser to perform. 
-	VoiceAction EndAndProcessAudioRecording();
+	// Update voice input
+	VoiceAction Update(float tpf);
 
 private:
 
-	// Members
-	eyegui::GUI* _pGUI;
+	// Nothing yet
 };
 
 #endif // VOICEINPUT_H_
