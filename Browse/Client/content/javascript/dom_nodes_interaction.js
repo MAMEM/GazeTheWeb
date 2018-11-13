@@ -144,10 +144,17 @@ DOMVideo.prototype.setFullscreen = function(fullscreen)
 			
 			// Request fullscreen for given video
 			// YOUTUBE FIX
-			if(scoped_node.className === "video-stream html5-main-video" && scoped_node.parentElement 
-				&& scoped_node.parentElement.parentElement)
+			if (scoped_node.className === "video-stream html5-main-video"
+                && scoped_node.parentElement
+				&& scoped_node.parentElement.parentElement
+                && scoped_node.parentElement.parentElement.parentElement
+                && scoped_node.parentElement.parentElement.parentElement.parentElement
+                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement
+                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
+                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
+                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement)
 			{
-				var container = scoped_node.parentElement.parentElement;
+			    var container = scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
 				container.webkitRequestFullscreen();
 
 				console.log("Requested fullscreen for: ", container);
