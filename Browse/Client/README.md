@@ -34,6 +34,7 @@ __externals__:
   * Boost: https://github.com/boostorg/boost
 * curl: https://github.com/curl/curl
 * SensorLib: https://github.com/MAMEM/SensorLib
+* go-speech-recognition-lib: https://github.com/Drizzy3D/go-speech-recognition-lib
 	
 __submodules__:
 * eyeGUI: https://github.com/raphaelmenges/eyeGUI

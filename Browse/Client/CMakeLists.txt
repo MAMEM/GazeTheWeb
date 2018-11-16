@@ -146,7 +146,16 @@ else() # Linux
 	# ${CURL_INCLUDE_DIR}
 	find_package(CURL REQUIRED)
 endif()
-include_directories(${CURL_INCLUDE_DIR}) 
+include_directories(${CURL_INCLUDE_DIR})
+
+# go-speech-recognition-lib
+if(WIN32) # Windows
+	set(GO_SPEECH_DIRECTORY "${EXTERNALS_DIR}/go-speech-recognition-lib")
+	set(GO_SPEECH_INCLUDE_DIR "${GO_SPEECH_DIRECTORY}")
+else() # Linux
+	# TODO future
+endif()
+include_directories(${GO_SPEECH_INCLUDE_DIR})
 	
 ### SUBMODULES #################################################################
 
@@ -265,33 +274,39 @@ if(OS_WINDOWS) # Windows
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		"${LIBLSL_DIRECTORY}/lib-vs2015_x86_release/liblsl32.dll"
 		$<TARGET_FILE_DIR:${CEF_TARGET}>)
+
+	# Copy Go speech library to output folder
+	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		"${GO_SPEECH_DIRECTORY}/go-speech-recognition.dll"
+		$<TARGET_FILE_DIR:${CEF_TARGET}>)
 		
 	# Copy Sensor Lib library and dependencies to output folder (relies on liblsl.dll provided by GTW)
 	if(${CLIENT_SENSOR_LIB_INTEGRATION})
 	
-	  # Copy all dependencies....
-		macro(SimpleCopy arg)
-			add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				"${SENSOR_LIB_DIRECTORY}/bin/${arg}"
-				$<TARGET_FILE_DIR:${CEF_TARGET}>)
-		endmacro()
-		
-		# Libraries
-		SimpleCopy("SensorLibrary.dll")
-		SimpleCopy("EBNeuro.Galileo.Hardware.Communication.Device.GSR.dll")
-		SimpleCopy("EBNeuro.Galileo.Hardware.IO.dll")
-		SimpleCopy("EBNeuro.Galileo.Hardware.Ut.dll")
-		SimpleCopy("MathNet.Numerics.dll")
-		SimpleCopy("SDK_Shimmer.dll")
-		SimpleCopy("ShimmerClosedLibraryRev0_4.dll")
-		
-		# Licenses
-		SimpleCopy("LICENSE-EBNeuro.x.txt")
-		SimpleCopy("LICENSE-MathNet.Numerics.txt")
-		SimpleCopy("LICENSE-SDK_Shimmer.txt")
-		SimpleCopy("LICENSE-SensorLibrary.txt")
-		SimpleCopy("LICENSE-ShimmerClosedLibraryRev0_4.txt")
+	# Copy all dependencies....
+	macro(SimpleCopy arg)
+		add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${SENSOR_LIB_DIRECTORY}/bin/${arg}"
+			$<TARGET_FILE_DIR:${CEF_TARGET}>)
+	endmacro()
+	
+	# Libraries
+	SimpleCopy("SensorLibrary.dll")
+	SimpleCopy("EBNeuro.Galileo.Hardware.Communication.Device.GSR.dll")
+	SimpleCopy("EBNeuro.Galileo.Hardware.IO.dll")
+	SimpleCopy("EBNeuro.Galileo.Hardware.Ut.dll")
+	SimpleCopy("MathNet.Numerics.dll")
+	SimpleCopy("SDK_Shimmer.dll")
+	SimpleCopy("ShimmerClosedLibraryRev0_4.dll")
+	
+	# Licenses
+	SimpleCopy("LICENSE-EBNeuro.x.txt")
+	SimpleCopy("LICENSE-MathNet.Numerics.txt")
+	SimpleCopy("LICENSE-SDK_Shimmer.txt")
+	SimpleCopy("LICENSE-SensorLibrary.txt")
+	SimpleCopy("LICENSE-ShimmerClosedLibraryRev0_4.txt")
 	
 	endif()
 	
