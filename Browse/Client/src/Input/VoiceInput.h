@@ -164,13 +164,15 @@ private:
 	// state showing if RunTranscribing is activated (recording + streaming to google)
 	bool _active = false;
 	// state showing if RunTranscribing should be stopped
-	bool _stopped = true;
+
+	// Thread variable, set in main thread, read in subthreads
+	std::atomic<bool> _stopped = true;
 
 	// thread handling the sending
-	std::unique_ptr<std::thread> _tSending;
+	std::unique_ptr<std::thread> _tSending = nullptr;
 	bool _isSending = false;
 	// thread handling the receving
-	std::unique_ptr<std::thread> _tReceiving;
+	std::unique_ptr<std::thread> _tReceiving = nullptr;
 	bool _isReceiving = false;
 
 	GO_SPEECH_RECOGNITION_INITIALIZE_STREAM	GO_SPEECH_RECOGNITION_InitializeStream;
