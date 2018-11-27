@@ -320,7 +320,8 @@ std::vector<std::string> VoiceInput::split(std::string text) {
 /*
 	TRANSCRIBING
 */
-void VoiceInput::Activate() {
+void VoiceInput::Activate()
+{
 
 	LogInfo("VoiceInput: Started transcribing process.");
 
@@ -342,7 +343,7 @@ void VoiceInput::Activate() {
 	}
 
 	// [SENDING] loops till it's stopped by calling VoiceInput::StopTranscribing() or VoiceInput::Deactivate()
-	std::thread _tSending([this] {
+	_tSending = std::make_unique<std::thread>(([this] {
 		_isSending = true;
 		ContinuousAudioRecord& pRecord = *_spAudioInput.get();
 		
@@ -377,10 +378,10 @@ void VoiceInput::Activate() {
 			}
 		}
 		_isSending = false;
-	});
+	}));
 
 	// [RECEIVING] loops till it's stopped by calling VoiceInput::StopTranscribing() or VoiceInput::Deactivate()
-	std::thread _tReceiving([this] {
+	_tReceiving = std::make_unique<std::thread>(([this] {
 		_isReceiving = true;
 		LogInfo("VoiceInput: Started receiving transcripts.");
 
@@ -409,7 +410,7 @@ void VoiceInput::Activate() {
 			}
 		}
 		_isReceiving = false;
-	});
+	}));
 }
 
 void VoiceInput::Deactivate() {
