@@ -17,6 +17,8 @@
 
 // Use portaudio library coming with eyeGUI. Bad practice, but eyeGUI would be needed to be linked dynamically otherwise
 #include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
+// #include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp" -> levenshtein library
+
 PaStream* _pInputStream = nullptr;
 HINSTANCE pluginHandle;
 
