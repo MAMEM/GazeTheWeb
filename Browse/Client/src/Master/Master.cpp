@@ -448,6 +448,8 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 
 	// ### VOICE INPUT ###
 	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput());
+	_upVoiceInput->Activate();
+	//bool VoiceInputDeactivated = false;
 
     // ### FRAMEBUFFER ###
     _upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
@@ -771,6 +773,9 @@ bool Master::threadsafe_MayTransferData()
 
 void Master::Loop()
 {
+	auto voiceStartedTime = std::chrono::steady_clock::now();
+	
+
 	while (!_exit)
 	{
 		// Update the async computations
@@ -891,7 +896,19 @@ void Master::Loop()
 			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
 
 		// Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
-		auto voice_input = _upVoiceInput->Update(tpf);
+	//	if (!VoiceInputDeactivated) {
+			auto voice_input = _upVoiceInput->Update(tpf);
+	//		if (std::chrono::steady_clock::now() - voiceStartedTime > std::chrono::seconds(20)) {
+	//			_upVoiceInput->Deactivate();
+	//			VoiceInputDeactivated = true;
+	//		}
+	//
+	//	}
+	//	if (!_upVoiceInput->IsActive()) {
+	//		_upVoiceInput->Activate();
+	//		VoiceInputDeactivated = false;
+	//		voiceStartedTime = std::chrono::steady_clock::now();
+	//	}
 
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))

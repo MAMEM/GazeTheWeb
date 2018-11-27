@@ -1,20 +1,20 @@
 //============================================================================
 // Distributed under the Apache License, Version 2.0.
 // Author: Raphael Menges (raphaelmenges@uni-koblenz.de)
+//		   Christopher Dreide (cdreide@uni-koblenz.de)
 //============================================================================
 // Stub for voice input handling.
 
-// TODO @ Christopher: Change this interface as desired!
 
 #ifndef VOICEINPUT_H_
 #define VOICEINPUT_H_
 
-#include <windows.h>
 #include <thread>
 #include <memory>
 #include <vector>
-#include <deque>
+#include <queue>
 #include <mutex>
+#include <deque>
 
 #include "go-speech-recognition.h"
 
@@ -22,10 +22,10 @@ static const int AUDIO_INPUT_SAMPLE_RATE = 16000;
 static const int AUDIO_INPUT_CHANNEL_COUNT = 1;
 static const unsigned int AUDIO_INPUT_MAX_INPUT_SECONDS = 3;
 
-enum class VoiceAction
+enum class VoiceCommand
 {
 
-	NO_ACTION,		
+	NO_ACTION,
 	SCROLL_UP,		// scroll the page up
 	SCROLL_DOWN, 	// scroll the page down
 	TOP,			// scroll to the top
@@ -34,7 +34,8 @@ enum class VoiceAction
 	BACK,			// return to the last visited page
 	RELOAD,			// return to the last visited page
 	FORWARD,		// reverse the back command
-	NEW_TAB,		// create a new tab
+	GO_TO,			// open url [parameter]
+	NEW_TAB,		// create a new tab and open url [parameter]
 	SEARCH,			// search for the [parameter] on the current page
 	ZOOM,			// toggle zoom on the current page
 	TAB_OVERVIEW,	// open the tab overview
@@ -45,20 +46,21 @@ enum class VoiceAction
 	PAUSE,			// pause the nearest video 
 	MUTE,			// mute the browsers sound
 	UNMUTE,			// unmute the browsers sound
-	TEXT,			// activate text input
+	TEXT,			// activate text input ?[parameter]
 	REMOVE,			// remove last inputted word
 	CLEAR,			// clear the entire text input field
 	CLOSE			// close the current view and return to the page view
-};					
+
+};
 
 // VoiceCommand: Action(Parameter)
-struct VoiceCommand {
+struct VoiceAction {
 
-	VoiceAction action;
+	VoiceCommand command;
 	std::string parameter;
 
-	VoiceCommand(VoiceAction action, std::string parameter) {
-		this->action = action;
+	VoiceAction(VoiceCommand command, std::string parameter) {
+		this->command = command;
 		this->parameter = parameter;
 	}
 };
@@ -69,27 +71,26 @@ class AudioRecord
 public:
 	//! Constructor.
 	AudioRecord(unsigned int channelCount, unsigned int sampleRate, unsigned int maxSeconds)
-		: mChannelCount(channelCount)
-		, mSampleRate(sampleRate)
-		, mMaxSeconds(maxSeconds) {};
+		: _ChannelCount(channelCount)
+		, _SampleRate(sampleRate)
+		, _MaxSeconds(maxSeconds) {};
 
 	//! Add sample.
 	virtual bool addSample(short sample) = 0;
 
 	//! Getter.
-	int getChannelCount() const { return mChannelCount; };
-	int getSampleRate() const { return mSampleRate; };
-	int getSampleCount() const { return mIndex; }
+	int getChannelCount() const { return _ChannelCount; };
+	int getSampleRate() const { return _SampleRate; };
+	int getSampleCount() const { return _Index; }
 
 protected:
 	//! Members.
-	std::shared_ptr<std::vector<short>> mspBuffer;
-	unsigned int mChannelCount;
-	unsigned int mSampleRate;
-	unsigned int mMaxSeconds;
-	unsigned int mIndex = 0;
+	std::shared_ptr<std::vector<short>> _spBuffer;
+	unsigned int _ChannelCount;
+	unsigned int _SampleRate;
+	unsigned int _MaxSeconds;
+	unsigned int _Index = 0;
 };
-
 
 //! Class for holding continuous audio records.
 class ContinuousAudioRecord : public AudioRecord
@@ -97,30 +98,30 @@ class ContinuousAudioRecord : public AudioRecord
 public:
 	//! Constructor.
 	ContinuousAudioRecord(
-		unsigned int channelCount, unsigned int sampleRate, unsigned int maxSeconds)
-		: maximum_size(channelCount * sampleRate * maxSeconds)
+		unsigned int channelCount,
+		unsigned int sampleRate,
+		unsigned int maxSeconds)
+		: _maximumSize(channelCount * sampleRate * maxSeconds)
 		, AudioRecord(channelCount, sampleRate, maxSeconds)
 	{
 	}
 
 	//! Add sample. Increments index and returns whether successful.
 	bool addSample(short sample);
-
-	//! Getter.
-	std::vector<short> getBuffer();
-
+	void copyBuffer(std::vector<short>* audioData);
 
 private:
 	//! Members.
-	std::deque<short> buffer;
-	const int maximum_size;
-	bool maximum_size_reached = false;
-	mutable std::mutex buffer_guard;
+	std::deque<short> _buffer;
+	const int _maximumSize;
+	bool _maximumSizeReached = false;
+	mutable std::mutex _bufferGuard;
 };
 
-
+// Class that handles recording and transcribing audio 
 class VoiceInput
 {
+
 public:
 
 	// Constructor
@@ -129,75 +130,65 @@ public:
 	// Destructor
 	virtual ~VoiceInput();
 
+	// Change language of transcribed audio
+	void SetLanguage(char* lang) { _language = lang; }
+
 	// Update voice input
 	VoiceAction Update(float tpf);
 
-	void addTranscript(std::string transcript);
+	// Start recording and transcribing process.
+	void Activate();
 
-	std::string getLastTranscript();
+	// Stop recording and transcribing process.
+	void Deactivate();
 
+	// Returns whether the recording and transcribing process is currently running.
+	bool IsActive() { return _active; }
 
+private: 
 
-	bool portAudioInitialized = false;
-	std::shared_ptr<ContinuousAudioRecord> pAudioInput;
+	// [RECORDING]
+	bool _portAudioInitialized = false;
+	std::shared_ptr<ContinuousAudioRecord> _spAudioInput;
 
-	bool startAudioRecording();
-	bool endAudioRecording();
-	std::shared_ptr<ContinuousAudioRecord> retrieveAudioRecord();
+	bool StartAudioRecording();
+	bool EndAudioRecording();
 
-	void setAudioRecordingTime(int ms) { audio_recording_time_ms = ms; }
+	// [STREAMING]
+	// language to be transcribed
+	char* _language = "en-US";
+	// _sample_rate of the audio
+	int _sample_rate = 16000;
+	// time to query audio in ms
+	int _queryTime = 1000;
+	// state showing if RunTranscribing is activated (recording + streaming to google)
+	bool _active = false;
+	// state showing if RunTranscribing should be stopped
+	bool _stopped = true;
 
-private:
+	// thread handling the sending
+	std::unique_ptr<std::thread> _tSending;
+	bool _isSending = false;
+	// thread handling the receving
+	std::unique_ptr<std::thread> _tReceiving;
+	bool _isReceiving = false;
 
-	// Last recognized speech as text
-	std::vector<std::string> recognition_results;
-	int audio_recording_time_ms = AUDIO_INPUT_MAX_INPUT_SECONDS;
-	std::mutex mutexTranscript; // protects access to recognition_results 
+	GO_SPEECH_RECOGNITION_INITIALIZE_STREAM	GO_SPEECH_RECOGNITION_InitializeStream;
+	GO_SPEECH_RECOGNITION_SEND_AUDIO GO_SPEECH_RECOGNITION_SendAudio;
+	GO_SPEECH_RECOGNITION_RECEIVE_TRANSCRIPT GO_SPEECH_RECOGNITION_ReceiveTranscript;
+	GO_SPEECH_RECOGNITION_GET_LOG GO_SPEECH_RECOGNITION_GetLog;
+	GO_SPEECH_RECOGNITION_CLOSE_STREAM GO_SPEECH_RECOGNITION_CloseStream;
+	GO_SPEECH_RECOGNITION_IS_INITIALIZED GO_SPEECH_RECOGNITION_IsInitialized;
+
+	// [PROCESSING TRANSCRIPT]
+	// last recognized speech as text
+	std::queue<std::string> _recognitionResults;
+	// protects access to recognition_results
+	std::mutex _transcriptGuard; 
+
+	std::vector<std::string> split(std::string text);
+	std::string findPrefixAndParameters(VoiceCommand command, std::vector<std::string> transcript, int paraIndex);
+	size_t uiLevenshteinDistance(const std::string & s1, const std::string & s2);
 };
-
-class Transcriber : public VoiceInput
-{
-public:
-	// Constructor
-	Transcriber();
-	
-	// Destructor
-	~Transcriber();
-
-	void run();
-	void stop();
-
-	// Change language of transcribed audio
-	void setLanguage(char* lang) { language = lang; }
-
-private:
-
-	HINSTANCE plugin_handle;
-
-	INITIALIZE_STREAM InitializeStream;
-	SEND_AUDIO SendAudio;
-	RECEIVE_TRANSCRIPT ReceiveTranscript;
-	CLOSE_STREAM CloseStream;
-	GET_LOG GetLog;
-	IS_INITIALIZED IsInitialized;
-
-
-	char* language = "en-US";
-	int sample_rate = 16000;
-	int queryTime = 250;
-	bool isRunning = false;
-	bool stopped = true;
-
-	void initializeStream();
-	void sendAudio(ContinuousAudioRecord & record);
-	void receiveTranscript();
-
-	std::unique_ptr<std::thread> sending_thread;
-
-//	std::vector<std::string>* recognition_results;
-
-};
-
-
 
 #endif // VOICEINPUT_H_
