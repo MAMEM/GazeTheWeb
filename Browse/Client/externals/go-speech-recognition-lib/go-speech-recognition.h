@@ -55,13 +55,15 @@ GO_SPEECH_RECOGNITION_FALSE if failed (error log can be retrieved with "GetLog()
 typedef GO_SPEECH_RECOGNITION_BOOL(*GO_SPEECH_RECOGNITION_SEND_AUDIO)(const short* recording, int recording_size);
 
 /*
-char* ReceiveTranscript ():
-retrieves and returns the current final transcripts from Google
+ReceiveTranscript (char**):
+retrieves and saves the current final transcripts from Google
 
 Return:
-char* (current transcript)
+(per reference [char* (current transcript)])
+GO_SPEECH_RECOGNITION_TRUE if successful
+GO_SPEECH_RECOGNITION_FALSE if failed (error log can be retrieved with "GetLog()")
 */
-typedef char*(*GO_SPEECH_RECOGNITION_RECEIVE_TRANSCRIPT)();
+typedef GO_SPEECH_RECOGNITION_BOOL(*GO_SPEECH_RECOGNITION_RECEIVE_TRANSCRIPT)(char**);
 
 /*
 char* GetLog ():

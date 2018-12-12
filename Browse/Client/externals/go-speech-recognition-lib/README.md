@@ -165,7 +165,12 @@ if (success != GO_SPEECH_RECOGNITION_TRUE) {
 Note: size has to be an Integer representing the sample count of the recording.
 
 ```
-std::string received = ReceiveTranscript();
+char* received; 
+GO_SPEECH_RECOGNITION_BOOL success = ReceiveTranscript(&received);
+if (success != GO_SPEECH_RECOGNITION_TRUE) {
+	std::string log = GetLog();
+	std::cout << "Error:" << log << std::endl;
+	// Or handle the error like you want to
 ```
 
 

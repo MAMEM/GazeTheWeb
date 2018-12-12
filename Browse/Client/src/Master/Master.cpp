@@ -107,79 +107,79 @@ const std::string simpleFragmentShaderSource =
 
 Master::Master(Mediator* pCefMediator, std::string userDirectory)
 {
-    // Save members
-    _pCefMediator = pCefMediator;
+	// Save members
+	_pCefMediator = pCefMediator;
 	_userDirectory = userDirectory;
 
-    // ### GLFW AND OPENGL ###
+	// ### GLFW AND OPENGL ###
 
-    // Create OpenGL context
-    LogInfo("Initializing GLFW...");
-    glfwInit();
-    LogInfo("..done.");
+	// Create OpenGL context
+	LogInfo("Initializing GLFW...");
+	glfwInit();
+	LogInfo("..done.");
 
-    // Window mode and size (assumption: use primary monitor, only)
-    GLFWmonitor* usedMonitor = NULL;
+	// Window mode and size (assumption: use primary monitor, only)
+	GLFWmonitor* usedMonitor = NULL;
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 	const GLFWvidmode * mode = glfwGetVideoMode(monitor);
 	_monitorWidth = mode->width;
 	_monitorHeight = mode->height;
-    if (setup::FULLSCREEN)
-    {
-        LogInfo("Fullscreen mode");
-        _width = _monitorWidth;
-        _height = _monitorHeight;
-        usedMonitor = monitor;
-    }
-    else
-    {
-		
-        LogInfo("Windowed mode");
-    }
+	if (setup::FULLSCREEN)
+	{
+		LogInfo("Fullscreen mode");
+		_width = _monitorWidth;
+		_height = _monitorHeight;
+		usedMonitor = monitor;
+	}
+	else
+	{
 
-    LogInfo("Creating window...");
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    _pWindow = glfwCreateWindow(_width, _height, "GazeTheWeb - Browse", usedMonitor, NULL);
-    glfwMakeContextCurrent(_pWindow);
-    glfwSetInputMode(_pWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); // hide native mouse cursor
-    LogInfo("..done.");
-    LogInfo("Initializing OpenGL...");
-    ogl_LoadFunctions();
-    LogInfo("..done.");
+		LogInfo("Windowed mode");
+	}
 
-    // Log hardware and maximum OpenGL version
-    const GLubyte* renderer = glGetString(GL_RENDERER);
-    LogInfo("GPU: ", std::string(reinterpret_cast<char const*>(renderer)));
-    const GLubyte* version = glGetString(GL_VERSION);
-    LogInfo("OpenGL Version: ", std::string(reinterpret_cast<char const*>(version)));
+	LogInfo("Creating window...");
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	_pWindow = glfwCreateWindow(_width, _height, "GazeTheWeb - Browse", usedMonitor, NULL);
+	glfwMakeContextCurrent(_pWindow);
+	glfwSetInputMode(_pWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); // hide native mouse cursor
+	LogInfo("..done.");
+	LogInfo("Initializing OpenGL...");
+	ogl_LoadFunctions();
+	LogInfo("..done.");
 
-    // VSync
-    glfwSwapInterval(1);
+	// Log hardware and maximum OpenGL version
+	const GLubyte* renderer = glGetString(GL_RENDERER);
+	LogInfo("GPU: ", std::string(reinterpret_cast<char const*>(renderer)));
+	const GLubyte* version = glGetString(GL_VERSION);
+	LogInfo("OpenGL Version: ", std::string(reinterpret_cast<char const*>(version)));
+
+	// VSync
+	glfwSwapInterval(1);
 #ifdef _WIN32
-    // Turn on vertical screen sync under Windows
-    // (I.e. it uses the WGL_EXT_swap_control extension)
-    typedef BOOL(WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
-    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
-    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-    if (wglSwapIntervalEXT)
-        wglSwapIntervalEXT(1);
+	// Turn on vertical screen sync under Windows
+	// (I.e. it uses the WGL_EXT_swap_control extension)
+	typedef BOOL(WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
+	PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
+	wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+	if (wglSwapIntervalEXT)
+		wglSwapIntervalEXT(1);
 #endif
 
-    // Register callbacks to GLFW
-    static std::function<void(int, int, int, int)> kC = [&](int k, int s, int a, int m) { this->GLFWKeyCallback(k, s, a, m); };
-    glfwSetKeyCallback(_pWindow, [](GLFWwindow* window, int k, int s, int a, int m) { kC(k, s, a, m); });
+	// Register callbacks to GLFW
+	static std::function<void(int, int, int, int)> kC = [&](int k, int s, int a, int m) { this->GLFWKeyCallback(k, s, a, m); };
+	glfwSetKeyCallback(_pWindow, [](GLFWwindow* window, int k, int s, int a, int m) { kC(k, s, a, m); });
 
-    static std::function<void(int, int, int)> bC = [&](int b, int a, int m) { this->GLFWMouseButtonCallback(b, a, m); };
-    glfwSetMouseButtonCallback(_pWindow, [](GLFWwindow* window, int b, int a, int m) { bC(b, a, m); });
+	static std::function<void(int, int, int)> bC = [&](int b, int a, int m) { this->GLFWMouseButtonCallback(b, a, m); };
+	glfwSetMouseButtonCallback(_pWindow, [](GLFWwindow* window, int b, int a, int m) { bC(b, a, m); });
 
-    static std::function<void(double, double)> cC = [&](double x, double y) { this->GLFWCursorPosCallback(x, y); };
-    glfwSetCursorPosCallback(_pWindow, [](GLFWwindow* window, double x, double y) { cC(x, y); });
+	static std::function<void(double, double)> cC = [&](double x, double y) { this->GLFWCursorPosCallback(x, y); };
+	glfwSetCursorPosCallback(_pWindow, [](GLFWwindow* window, double x, double y) { cC(x, y); });
 
-    static std::function<void(int, int)> fC = [&](int w, int h) { this->GLFWResizeCallback(w, h); };
-    glfwSetFramebufferSizeCallback(_pWindow, [](GLFWwindow* window, int w, int h) { fC(w, h); });
+	static std::function<void(int, int)> fC = [&](int w, int h) { this->GLFWResizeCallback(w, h); };
+	glfwSetFramebufferSizeCallback(_pWindow, [](GLFWwindow* window, int w, int h) { fC(w, h); });
 
 	// ### CONTENT PATH ###
 
@@ -227,7 +227,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		std::srand(std::time(nullptr)); // use current time as seed for random generator
 		_useDriftMap = (std::rand() % 2) == 1;
 	}
-	
+
 	// Provide this info in log
 	if (_useDriftMap)
 	{
@@ -238,7 +238,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		LogInfo("Drift Map is *not* used");
 	}
 
-    // ### EYEGUI ###
+	// ### EYEGUI ###
 
 	// Decide on localization
 	std::string localizationFilepath = "";
@@ -255,10 +255,10 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		break;
 	}
 
-    // Set print callbacks
-    std::function<void(std::string)> printGUICallback = [&](std::string message) { this->GUIPrintCallback(message); };
-    eyegui::setErrorCallback(printGUICallback);
-    eyegui::setWarningCallback(printGUICallback);
+	// Set print callbacks
+	std::function<void(std::string)> printGUICallback = [&](std::string message) { this->GUIPrintCallback(message); };
+	eyegui::setErrorCallback(printGUICallback);
+	eyegui::setWarningCallback(printGUICallback);
 
 	// Create GUI builder
 	LogInfo("Creating eyeGUI...");
@@ -280,76 +280,76 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	glfwPollEvents(); // poll events not necessary for GUI but lets display the icon in Windows taskbar earlier
 	eyegui::terminateGUI(pSplashGUI);
 
-    // Construct GUI
+	// Construct GUI
 	guiBuilder.useDriftMap = _useDriftMap;
-    _pGUI = guiBuilder.construct(); // standard GUI object used everywhere
+	_pGUI = guiBuilder.construct(); // standard GUI object used everywhere
 	guiBuilder.useDriftMap = false;
-    _pSuperGUI = guiBuilder.construct(); // GUI which is rendered on top of everything else
-    LogInfo("..done.");
+	_pSuperGUI = guiBuilder.construct(); // GUI which is rendered on top of everything else
+	LogInfo("..done.");
 
-    // Load styling
-    eyegui::loadStyleSheet(_pGUI, "stylesheets/Global.seyegui");
+	// Load styling
+	eyegui::loadStyleSheet(_pGUI, "stylesheets/Global.seyegui");
 	eyegui::loadStyleSheet(_pSuperGUI, "stylesheets/Global.seyegui");
 
 	// Load overriding styles for demo mode
 #ifdef CLIENT_DEMO
-		eyegui::loadStyleSheet(_pGUI, "stylesheets/Demo.seyegui");
-		eyegui::loadStyleSheet(_pSuperGUI, "stylesheets/Demo.seyegui");
+	eyegui::loadStyleSheet(_pGUI, "stylesheets/Demo.seyegui");
+	eyegui::loadStyleSheet(_pSuperGUI, "stylesheets/Demo.seyegui");
 #endif
 
-    // Set resize callback of GUI
-    std::function<void(int, int)> resizeGUICallback = [&](int width, int height) { this->GUIResizeCallback(width, height); };
-    eyegui::setResizeCallback(_pGUI, resizeGUICallback); // only one GUI needs to callback it. Use standard for it
+	// Set resize callback of GUI
+	std::function<void(int, int)> resizeGUICallback = [&](int width, int height) { this->GUIResizeCallback(width, height); };
+	eyegui::setResizeCallback(_pGUI, resizeGUICallback); // only one GUI needs to callback it. Use standard for it
 
-    // Load dictionary
-    _dictonaryId = eyegui::addDictionary(_pGUI, "dictionaries/NewEnglishUS.dic");
+														 // Load dictionary
+	_dictonaryId = eyegui::addDictionary(_pGUI, "dictionaries/NewEnglishUS.dic");
 
-    // ### INTERACTION LOGGING ###
+	// ### INTERACTION LOGGING ###
 
-    // New CSV file for interaction logging
-    if(setup::LOG_INTERACTIONS)
-    {
-        // Name of file
-        std::string filename = std::string(INTERACTION_FILE_NAME) + ".csv";
+	// New CSV file for interaction logging
+	if (setup::LOG_INTERACTIONS)
+	{
+		// Name of file
+		std::string filename = std::string(INTERACTION_FILE_NAME) + ".csv";
 
-        // Title line
-        LogInfo("Create file for interaction logging...");
-        LogInfo("File named: ", filename);
-        std::ofstream fs(filename, std::ios_base::out); // overwrite existing
-        csv::csv_ostream csvs(fs);
-        csvs << "Timestamp" << "Layout" << "GazeCoordinate" << "ElementType" << "ElementId" << "ElementRect" << "ElementActivity" << "InteractionType" << "InteractionInfoA";
+		// Title line
+		LogInfo("Create file for interaction logging...");
+		LogInfo("File named: ", filename);
+		std::ofstream fs(filename, std::ios_base::out); // overwrite existing
+		csv::csv_ostream csvs(fs);
+		csvs << "Timestamp" << "Layout" << "GazeCoordinate" << "ElementType" << "ElementId" << "ElementRect" << "ElementActivity" << "InteractionType" << "InteractionInfoA";
 		fs << std::endl;
-        LogInfo("..done.");
+		LogInfo("..done.");
 
-        // Listen to eyeGUI
-        eyegui::setInteractionCallback([filename](
-            std::string layout,
-            std::string gazeCoordinate,
-            std::string elementType,
-            std::string elementId,
-            std::string elementRect,
-            std::string elementActivity,
-            std::string interactionType,
-            std::string interactionInfoA)
-        {
-            // Get current date and time
-            const auto currentTime = std::chrono::system_clock::now();
-            auto time = std::chrono::system_clock::to_time_t(currentTime);
-            std::stringstream ss;
-            ss << std::put_time(std::localtime(&time), "%Y-%m-%d %X");
+		// Listen to eyeGUI
+		eyegui::setInteractionCallback([filename](
+			std::string layout,
+			std::string gazeCoordinate,
+			std::string elementType,
+			std::string elementId,
+			std::string elementRect,
+			std::string elementActivity,
+			std::string interactionType,
+			std::string interactionInfoA)
+		{
+			// Get current date and time
+			const auto currentTime = std::chrono::system_clock::now();
+			auto time = std::chrono::system_clock::to_time_t(currentTime);
+			std::stringstream ss;
+			ss << std::put_time(std::localtime(&time), "%Y-%m-%d %X");
 
-            // Get current miliseconds
-            auto currentTimeRounded = std::chrono::system_clock::from_time_t(time);
-            if(currentTimeRounded > currentTime)
-            {
-                --time;
-                currentTimeRounded -= std::chrono::seconds(1);
-            }
-            int milliseconds = std::chrono::duration_cast<std::chrono::duration<int,std::milli> >(currentTime - currentTimeRounded).count();
+			// Get current miliseconds
+			auto currentTimeRounded = std::chrono::system_clock::from_time_t(time);
+			if (currentTimeRounded > currentTime)
+			{
+				--time;
+				currentTimeRounded -= std::chrono::seconds(1);
+			}
+			int milliseconds = std::chrono::duration_cast<std::chrono::duration<int, std::milli> >(currentTime - currentTimeRounded).count();
 
-            // Write everything to file
-            std::ofstream fs(filename, std::ios_base::app | std::ios_base::out); // append to existing
-            csv::csv_ostream csvs(fs);
+			// Write everything to file
+			std::ofstream fs(filename, std::ios_base::app | std::ios_base::out); // append to existing
+			csv::csv_ostream csvs(fs);
 			csvs
 				<< ss.str() + ":" + std::to_string(milliseconds)
 				<< layout
@@ -361,20 +361,20 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 				<< interactionType
 				<< interactionInfoA;
 			fs << std::endl;
-        });
-    }
+		});
+	}
 
-    // ### STATES ###
+	// ### STATES ###
 
-    // Create states
-    _upWeb = std::unique_ptr<Web>(new Web(this, _pCefMediator, _dataTransfer));
-    _upSettings = std::unique_ptr<Settings>(new Settings(this));
+	// Create states
+	_upWeb = std::unique_ptr<Web>(new Web(this, _pCefMediator, _dataTransfer));
+	_upSettings = std::unique_ptr<Settings>(new Settings(this));
 
-    // Set first state
-    _currentState = StateType::WEB;
-    _upWeb->Activate();
+	// Set first state
+	_currentState = StateType::WEB;
+	_upWeb->Activate();
 
-    // ### HOMEPAGE ###
+	// ### HOMEPAGE ###
 	// _upWeb->AddTab("https://developer.mozilla.org/en-US/docs/Web/CSS/overflow");
 	// _upWeb->AddTab("http://html5-demos.appspot.com/static/fullscreen.html");
 	// _upWeb->AddTab(std::string(CONTENT_PATH) + "/websites/test/index.html");
@@ -399,7 +399,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		*/
 	}
 
-    // ### SUPER LAYOUT ###
+	// ### SUPER LAYOUT ###
 
 	// Load layouts
 	_pSuperLayout = eyegui::addLayout(_pSuperGUI, "layouts/Super.xeyegui", EYEGUI_SUPER_LAYER, true);
@@ -407,12 +407,12 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	// Load super calibration layout
 	_pSuperCalibrationLayout = eyegui::addLayout(_pSuperGUI, "layouts/SuperCalibration.xeyegui", EYEGUI_SUPER_LAYER, false); // adding on top of super layout but still beneath cursor
 
-    // Load notification layout
+																															 // Load notification layout
 	_pSuperNotificationLayout = eyegui::addLayout(_pSuperGUI, "layouts/Empty.xeyegui", EYEGUI_SUPER_LAYER, true);
 
-    // Button listener for pause
-    _spMasterButtonListener = std::shared_ptr<MasterButtonListener>(new MasterButtonListener(this));
-    eyegui::registerButtonListener(_pSuperLayout, "pause", _spMasterButtonListener);
+	// Button listener for pause
+	_spMasterButtonListener = std::shared_ptr<MasterButtonListener>(new MasterButtonListener(this));
+	eyegui::registerButtonListener(_pSuperLayout, "pause", _spMasterButtonListener);
 
 	// Button listener for super calibration (reusing the master button listener)
 	eyegui::registerButtonListener(_pSuperCalibrationLayout, "continue", _spMasterButtonListener);
@@ -435,32 +435,32 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	// Add floating frames for eyes in trackbox display of super calibration layout
 	_trackboxLeftFrameIndex = eyegui::addFloatingFrameWithBrick(_pSuperCalibrationLayout, "bricks/TrackboxEyeLeft.beyegui", 0, 0, 0, 0, true, false);
 	_trackboxRightFrameIndex = eyegui::addFloatingFrameWithBrick(_pSuperCalibrationLayout, "bricks/TrackboxEyeRight.beyegui", 0, 0, 0, 0, true, false);
-	
+
 	// ### CURSOR LAYOUT ###
 
-    // Add floating frame on empty layout for cursor
-    _pCursorLayout = eyegui::addLayout(_pSuperGUI, "layouts/Empty.xeyegui", EYEGUI_CURSOR_LAYER, true); // placed over super layer
-    eyegui::setInputUsageOfLayout(_pCursorLayout, false);
-    _cursorFrameIndex = eyegui::addFloatingFrameWithBrick(_pCursorLayout, "bricks/Cursor.beyegui", 0, 0, 0, 0, true, false); // will be moved and sized in loop
+	// Add floating frame on empty layout for cursor
+	_pCursorLayout = eyegui::addLayout(_pSuperGUI, "layouts/Empty.xeyegui", EYEGUI_CURSOR_LAYER, true); // placed over super layer
+	eyegui::setInputUsageOfLayout(_pCursorLayout, false);
+	_cursorFrameIndex = eyegui::addFloatingFrameWithBrick(_pCursorLayout, "bricks/Cursor.beyegui", 0, 0, 0, 0, true, false); // will be moved and sized in loop
 
-    // ### EYE INPUT ###
+																															 // ### EYE INPUT ###
 	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
-	// ### VOICE INPUT ###
+	// ### VOICE INPUT ### Christopher
 	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput());
 	_upVoiceInput->Activate();
-	//bool VoiceInputDeactivated = false;
 
-    // ### FRAMEBUFFER ###
-    _upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
+
+	// ### FRAMEBUFFER ###
+	_upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
 	_upFramebuffer->Bind();
-    _upFramebuffer->AddAttachment(Framebuffer::ColorFormat::RGB);
+	_upFramebuffer->AddAttachment(Framebuffer::ColorFormat::RGB);
 	_upFramebuffer->Unbind();
-    _upScreenFillingQuad = std::unique_ptr<RenderItem>(
-        new RenderItem(
-            vertexShaderSource,
-            geometryShaderSource,
-            setup::BLUR_PERIPHERY ? blurFragmentShaderSource : simpleFragmentShaderSource));
+	_upScreenFillingQuad = std::unique_ptr<RenderItem>(
+		new RenderItem(
+			vertexShaderSource,
+			geometryShaderSource,
+			setup::BLUR_PERIPHERY ? blurFragmentShaderSource : simpleFragmentShaderSource));
 
 	// ### FIREBASE MAILER ###
 
@@ -502,13 +502,13 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	// Create callback
 	_spLabStreamCallback = std::shared_ptr<LabStreamCallback>(new LabStreamCallback(
 		[](std::vector<std::string> messages)
+	{
+		for (const std::string& rMessage : messages)
 		{
-			for (const std::string& rMessage : messages)
-			{
-				// Just print all message received via LabStreamingLayer
-				LogInfo("LabStream: " + rMessage);
-			}
+			// Just print all message received via LabStreamingLayer
+			LogInfo("LabStream: " + rMessage);
 		}
+	}
 	));
 
 	// Register callback
@@ -529,7 +529,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 		ShowSuperCalibrationLayout();
 	}
 
-    // ### OTHER ###
+	// ### OTHER ###
 
 	// Treat window
 #ifdef _WIN32 // Windows
@@ -560,29 +560,29 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 
 #endif
 
-    // Time
-    _lastTime = glfwGetTime();
+	// Time
+	_lastTime = glfwGetTime();
 }
 
 Master::~Master()
 {
-    // Manual destruction of Web. Otherwise there are errors in CEF at shutdown (TODO: understand why)
-    _upWeb.reset();
+	// Manual destruction of Web. Otherwise there are errors in CEF at shutdown (TODO: understand why)
+	_upWeb.reset();
 
 	// Wait for all async jobs to finish
 	UpdateAsyncJobs(true);
 
-    // Terminate eyeGUI
-    eyegui::terminateGUI(_pSuperGUI);
-    eyegui::terminateGUI(_pGUI);
+	// Terminate eyeGUI
+	eyegui::terminateGUI(_pSuperGUI);
+	eyegui::terminateGUI(_pGUI);
 
-    // Terminate GLFW
-    glfwTerminate();
+	// Terminate GLFW
+	glfwTerminate();
 }
 
 bool Master::Run()
 {
-    this->Loop();
+	this->Loop();
 	return _shouldShutdownAtExit;
 }
 
@@ -602,7 +602,7 @@ int Master::GetScreenHeight() const
 
 double Master::GetTime() const
 {
-    return glfwGetTime();
+	return glfwGetTime();
 }
 
 void Master::Exit(bool shutdown)
@@ -687,7 +687,7 @@ void Master::SimplePushBackAsyncJob(FirebaseIntegerKey countKey, FirebaseJSONKey
 	record.emplace("date", GetDate()); // add date
 	record.emplace("timestamp", GetTimestamp()); // add timestamp
 
-	// Push back the job
+												 // Push back the job
 	PushBackAsyncJob(
 		[countKey, recordKey, record]() // copy of date, start index and success
 	{
@@ -696,22 +696,22 @@ void Master::SimplePushBackAsyncJob(FirebaseIntegerKey countKey, FirebaseJSONKey
 		bool pushedBack = FirebaseMailer::Instance().PushBack_Transform(countKey, 1, &promise); // adds one to the count
 		if (pushedBack) { pushedBack = FirebaseMailer::Instance().PushBack_Put(recordKey, record, std::to_string(future.get() - 1)); } // send JSON to database
 
-		// Return some value (not used)
+																																	   // Return some value (not used)
 		return true;
 	});
 }
 
 eyegui::Layout* Master::AddLayout(std::string filepath, int layer, bool visible)
 {
-    // Add layout
-    eyegui::Layout* pLayout = eyegui::addLayout(_pGUI, filepath, layer, visible);
-    return pLayout;
+	// Add layout
+	eyegui::Layout* pLayout = eyegui::addLayout(_pGUI, filepath, layer, visible);
+	return pLayout;
 }
 
 void Master::RemoveLayout(eyegui::Layout* pLayout)
 {
-    // Remove layout
-    eyegui::removeLayout(_pGUI, pLayout);
+	// Remove layout
+	eyegui::removeLayout(_pGUI, pLayout);
 }
 
 std::u16string Master::FetchLocalization(std::string key) const
@@ -773,15 +773,16 @@ bool Master::threadsafe_MayTransferData()
 
 void Master::Loop()
 {
+	// Christopher
 	auto voiceStartedTime = std::chrono::steady_clock::now();
-	
+	bool VoiceInputDeactivated = false;
 
 	while (!_exit)
 	{
 		// Update the async computations
 		UpdateAsyncJobs(false); // do not wait until finished
 
-		// Call exit when window should close
+								// Call exit when window should close
 		if (glfwWindowShouldClose(_pWindow))
 		{
 			Exit();
@@ -808,7 +809,7 @@ void Master::Loop()
 		_threadJobs.clear();
 		_threadJobsMutex.unlock(); // unlock jobs
 
-		// Update lab streaming layer mailer to get incoming messages
+								   // Update lab streaming layer mailer to get incoming messages
 		LabStreamMailer::instance().Update();
 
 		// Notification handling
@@ -842,7 +843,7 @@ void Master::Loop()
 					color = NOTIFICATION_WARNING_COLOR;
 					break;
 				}
-				
+
 				// Set color in state (TODO: would be better to set / add / remove old style of element so color can be defined in stylesheet)
 				eyegui::setStyleTreePropertyValue(_pSuperGUI, "notification", eyegui::property::Color::BackgroundColor, RGBAToHexString(color));
 
@@ -873,10 +874,10 @@ void Master::Loop()
 			_notificationTime = glm::max(0.f, _notificationTime);
 		}
 
-        // Get cursor coordinates
-        double currentMouseX;
-        double currentMouseY;
-        glfwGetCursorPos(_pWindow, &currentMouseX, &currentMouseY);
+		// Get cursor coordinates
+		double currentMouseX;
+		double currentMouseY;
+		glfwGetCursorPos(_pWindow, &currentMouseX, &currentMouseY);
 
 		// Update eye input
 		int focused = glfwGetWindowAttrib(_pWindow, GLFW_FOCUSED);
@@ -895,20 +896,21 @@ void Master::Loop()
 			_monitorWidth,
 			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
 
-		// Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
-	//	if (!VoiceInputDeactivated) {
+							 // Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
+		if (!VoiceInputDeactivated) {
 			auto voice_input = _upVoiceInput->Update(tpf);
-	//		if (std::chrono::steady_clock::now() - voiceStartedTime > std::chrono::seconds(20)) {
-	//			_upVoiceInput->Deactivate();
-	//			VoiceInputDeactivated = true;
-	//		}
-	//
-	//	}
-	//	if (!_upVoiceInput->IsActive()) {
-	//		_upVoiceInput->Activate();
-	//		VoiceInputDeactivated = false;
-	//		voiceStartedTime = std::chrono::steady_clock::now();
-	//	}
+
+			if (std::chrono::steady_clock::now() - voiceStartedTime > std::chrono::seconds(50)) {
+				_upVoiceInput->Deactivate();
+				VoiceInputDeactivated = true;
+			}
+		}
+
+		if (!_upVoiceInput->IsActive()) {
+			_upVoiceInput->Activate();
+			VoiceInputDeactivated = false;
+			voiceStartedTime = std::chrono::steady_clock::now();
+		}
 
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
@@ -994,27 +996,27 @@ void Master::Loop()
 			eyegui::setSizeOfFloatingFrame(_pSuperCalibrationLayout, _trackboxRightFrameIndex, rightSize, rightSize);
 		}
 
-        // Update cursor with original mouse input
-        eyegui::setVisibilityOfLayout(_pCursorLayout, spInput->gazeEmulated, false, true);
-        float halfRelativeMouseCursorSize = MOUSE_CURSOR_RELATIVE_SIZE / 2.f;
-        eyegui::setPositionOfFloatingFrame(
-            _pCursorLayout,
-            _cursorFrameIndex,
-            (currentMouseX / _width) - halfRelativeMouseCursorSize,
-            (currentMouseY / _height) - halfRelativeMouseCursorSize);
-        eyegui::setSizeOfFloatingFrame(
-            _pCursorLayout,
-            _cursorFrameIndex,
-            MOUSE_CURSOR_RELATIVE_SIZE,
-            MOUSE_CURSOR_RELATIVE_SIZE);
+		// Update cursor with original mouse input
+		eyegui::setVisibilityOfLayout(_pCursorLayout, spInput->gazeEmulated, false, true);
+		float halfRelativeMouseCursorSize = MOUSE_CURSOR_RELATIVE_SIZE / 2.f;
+		eyegui::setPositionOfFloatingFrame(
+			_pCursorLayout,
+			_cursorFrameIndex,
+			(currentMouseX / _width) - halfRelativeMouseCursorSize,
+			(currentMouseY / _height) - halfRelativeMouseCursorSize);
+		eyegui::setSizeOfFloatingFrame(
+			_pCursorLayout,
+			_cursorFrameIndex,
+			MOUSE_CURSOR_RELATIVE_SIZE,
+			MOUSE_CURSOR_RELATIVE_SIZE);
 
-        // Pause visualization
-        _pausedDimming.update(tpf, !_paused);
-        eyegui::setStyleTreePropertyValue(
+		// Pause visualization
+		_pausedDimming.update(tpf, !_paused);
+		eyegui::setStyleTreePropertyValue(
 			_pSuperGUI,
-            "pause_background",
+			"pause_background",
 			eyegui::property::Color::BackgroundColor,
-            RGBAToHexString(glm::vec4(0, 0, 0, MASTER_PAUSE_ALPHA * _pausedDimming.getValue())));
+			RGBAToHexString(glm::vec4(0, 0, 0, MASTER_PAUSE_ALPHA * _pausedDimming.getValue())));
 
 		// Check whether input is desired
 		if ((!spInput->windowFocused) // window not focused
@@ -1025,85 +1027,85 @@ void Master::Loop()
 			spInput->gazeUponGUI = true; // means: gaze already consumed, so nothing reacts anymore
 		}
 
-        // Fill input structure for eyeGUI
+		// Fill input structure for eyeGUI
 		eyegui::Input eyeGUIInput;
-        eyeGUIInput.instantInteraction =
+		eyeGUIInput.instantInteraction =
 			(_leftMouseButtonPressed && spInput->gazeEmulated) // in case of gaze emulation
 			|| (_enterKeyPressed && !spInput->gazeEmulated); // other
-        eyeGUIInput.gazeX = (int)spInput->gazeX;
-        eyeGUIInput.gazeY = (int)spInput->gazeY;
+		eyeGUIInput.gazeX = (int)spInput->gazeX;
+		eyeGUIInput.gazeY = (int)spInput->gazeY;
 		eyeGUIInput.gazeUsed = spInput->gazeUponGUI;
 
-        // Update super GUI, including pause button
+		// Update super GUI, including pause button
 		eyeGUIInput = eyegui::updateGUI(_pSuperGUI, tpf, eyeGUIInput); // update super GUI with pause button
-        if(_paused)
-        {
-            // Do not pipe input to standard GUI if paused
+		if (_paused)
+		{
+			// Do not pipe input to standard GUI if paused
 			eyeGUIInput.gazeUsed = true; // TODO: null pointer would be nicer
-        }
+		}
 		eyeGUIInput = eyegui::updateGUI(_pGUI, tpf, eyeGUIInput); // update GUI
 
-        // Do message loop of CEF
-        _pCefMediator->DoMessageLoopWork(); // TODO: Breaks randomly after sometime in debug mode?
+																  // Do message loop of CEF
+		_pCefMediator->DoMessageLoopWork(); // TODO: Breaks randomly after sometime in debug mode?
 
-        // Update our input structure
+											// Update our input structure
 		spInput->gazeUponGUI = eyeGUIInput.gazeUsed;
 		spInput->instantInteraction = eyeGUIInput.instantInteraction;
 
 		// eyeGUI returns drift corrected gaze (if DriftMap is activated).
 		// However, this is not used here. Instead, we ask for drift correction where required.
 
-        // Bind framebuffer
-        _upFramebuffer->Bind();
+		// Bind framebuffer
+		_upFramebuffer->Bind();
 
-        // Clearing of buffers
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Clearing of buffers
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Disable depth test for drawing
 		glDisable(GL_DEPTH_TEST);
 
-        // Update current state and draw it (one should use here pointer instead of switch case)
-        StateType nextState = StateType::WEB;
-        switch (_currentState)
-        {
-        case StateType::WEB:
-            nextState = _upWeb->Update(tpf, spInput);
-            _upWeb->Draw();
-            break;
-        case StateType::SETTINGS:
-            nextState = _upSettings->Update(tpf, spInput);
-            _upSettings->Draw();
-            break;
-        }
+		// Update current state and draw it (one should use here pointer instead of switch case)
+		StateType nextState = StateType::WEB;
+		switch (_currentState)
+		{
+		case StateType::WEB:
+			nextState = _upWeb->Update(tpf, spInput);
+			_upWeb->Draw();
+			break;
+		case StateType::SETTINGS:
+			nextState = _upSettings->Update(tpf, spInput);
+			_upSettings->Draw();
+			break;
+		}
 
-        // Check next state
-        if (_currentState != nextState)
-        {
-            // Deactivate current state
-            switch (_currentState)
-            {
-            case StateType::WEB:
-                _upWeb->Deactivate();
-                break;
-            case StateType::SETTINGS:
-                _upSettings->Deactivate();
-                break;
-            }
+		// Check next state
+		if (_currentState != nextState)
+		{
+			// Deactivate current state
+			switch (_currentState)
+			{
+			case StateType::WEB:
+				_upWeb->Deactivate();
+				break;
+			case StateType::SETTINGS:
+				_upSettings->Deactivate();
+				break;
+			}
 
-            // Activate next state
-            switch (nextState)
-            {
-            case StateType::WEB:
-                _upWeb->Activate();
-                break;
-            case StateType::SETTINGS:
-                _upSettings->Activate();
-                break;
-            }
+			// Activate next state
+			switch (nextState)
+			{
+			case StateType::WEB:
+				_upWeb->Activate();
+				break;
+			case StateType::SETTINGS:
+				_upSettings->Activate();
+				break;
+			}
 
-            // Remember state
-            _currentState = nextState;
-        }
+			// Remember state
+			_currentState = nextState;
+		}
 
 		// If demo mode reset, just reset to Web
 		if (_demoModeReset)
@@ -1130,41 +1132,41 @@ void Master::Loop()
 		// Enable depth test again
 		glEnable(GL_DEPTH_TEST);
 
-        // Draw eyeGUI on top
-        eyegui::drawGUI(_pGUI);
-        eyegui::drawGUI(_pSuperGUI);
+		// Draw eyeGUI on top
+		eyegui::drawGUI(_pGUI);
+		eyegui::drawGUI(_pSuperGUI);
 
-        // Bind standard framebuffer
-        _upFramebuffer->Unbind();
+		// Bind standard framebuffer
+		_upFramebuffer->Unbind();
 
-        // Clearing of buffers
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Clearing of buffers
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Bind framebuffer as texture
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _upFramebuffer->GetAttachment(0));
+		// Bind framebuffer as texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, _upFramebuffer->GetAttachment(0));
 
-        // Render screen filling quad
-        _upScreenFillingQuad->Bind();
+		// Render screen filling quad
+		_upScreenFillingQuad->Bind();
 
-        // Fill uniforms when necessary
-        if(setup::BLUR_PERIPHERY)
-        {
-            _upScreenFillingQuad->GetShader()->UpdateValue("focusPixelPosition", glm::vec2(spInput->gazeX, _height - spInput->gazeY)); // OpenGL coordinate system
-            _upScreenFillingQuad->GetShader()->UpdateValue("focusPixelRadius", (float)glm::min(_width, _height) * BLUR_FOCUS_RELATIVE_RADIUS);
-            _upScreenFillingQuad->GetShader()->UpdateValue("peripheryMultiplier", BLUR_PERIPHERY_MULTIPLIER);
-        }
+		// Fill uniforms when necessary
+		if (setup::BLUR_PERIPHERY)
+		{
+			_upScreenFillingQuad->GetShader()->UpdateValue("focusPixelPosition", glm::vec2(spInput->gazeX, _height - spInput->gazeY)); // OpenGL coordinate system
+			_upScreenFillingQuad->GetShader()->UpdateValue("focusPixelRadius", (float)glm::min(_width, _height) * BLUR_FOCUS_RELATIVE_RADIUS);
+			_upScreenFillingQuad->GetShader()->UpdateValue("peripheryMultiplier", BLUR_PERIPHERY_MULTIPLIER);
+		}
 
-         _upScreenFillingQuad->Draw(GL_POINTS);
+		_upScreenFillingQuad->Draw(GL_POINTS);
 
-        // Reset reminder BEFORE POLLING
-        _leftMouseButtonPressed = false;
-        _enterKeyPressed = false;
+		// Reset reminder BEFORE POLLING
+		_leftMouseButtonPressed = false;
+		_enterKeyPressed = false;
 
-        // Swap front and back buffers and poll events
-        glfwSwapBuffers(_pWindow);
-        glfwPollEvents();
-    }
+		// Swap front and back buffers and poll events
+		glfwSwapBuffers(_pWindow);
+		glfwPollEvents();
+	}
 }
 
 void Master::UpdateAsyncJobs(bool wait)
@@ -1263,36 +1265,36 @@ void Master::PersistDriftGrid(PersistDriftGridReason reason)
 
 void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 {
-    if (action == GLFW_PRESS)
-    {
-        switch (key)
-        {
-			case GLFW_KEY_ESCAPE: { if (!setup::DEMO_MODE) { Exit();} break; }
-            case GLFW_KEY_TAB:  { eyegui::hitButton(_pSuperLayout, "pause"); break; }
-            case GLFW_KEY_ENTER: { _enterKeyPressed = true; break; }
-			case GLFW_KEY_SPACE: { _enterKeyPressed = true; break; }
-			// case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
-			case GLFW_KEY_R: { ShowSuperCalibrationLayout(); break; } // just show the super calibration layout
-			// case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
-			// case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
-			// case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
-			case GLFW_KEY_0: { if (!setup::DEPLOYMENT && !setup::DEMO_MODE) { _pCefMediator->ShowDevTools(); } break; }
-			// case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
-			case GLFW_KEY_D: {
-				if (mods & GLFW_MOD_CONTROL)
+	if (action == GLFW_PRESS)
+	{
+		switch (key)
+		{
+		case GLFW_KEY_ESCAPE: { if (!setup::DEMO_MODE) { Exit(); } break; }
+		case GLFW_KEY_TAB: { eyegui::hitButton(_pSuperLayout, "pause"); break; }
+		case GLFW_KEY_ENTER: { _enterKeyPressed = true; break; }
+		case GLFW_KEY_SPACE: { _enterKeyPressed = true; break; }
+							 // case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
+		case GLFW_KEY_R: { ShowSuperCalibrationLayout(); break; } // just show the super calibration layout
+																  // case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
+																  // case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
+																  // case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
+		case GLFW_KEY_0: { if (!setup::DEPLOYMENT && !setup::DEMO_MODE) { _pCefMediator->ShowDevTools(); } break; }
+						 // case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
+		case GLFW_KEY_D: {
+			if (mods & GLFW_MOD_CONTROL)
+			{
+				if (setup::DEMO_MODE)
 				{
-					if (setup::DEMO_MODE)
-					{
-						_upWeb->DemoModeReset();
-						_demoModeReset = true;
-						eyegui::buttonDown(_pSuperLayout, "pause");
-						PushNotification(u"Demo Mode Reset", MasterNotificationInterface::Type::SUCCESS, false);
-						LogInfo("Demo Mode Reset");
-					}
+					_upWeb->DemoModeReset();
+					_demoModeReset = true;
+					eyegui::buttonDown(_pSuperLayout, "pause");
+					PushNotification(u"Demo Mode Reset", MasterNotificationInterface::Type::SUCCESS, false);
+					LogInfo("Demo Mode Reset");
 				}
-				break; }
-        }
-    }
+			}
+			break; }
+		}
+	}
 	else if (action == GLFW_RELEASE)
 	{
 		/*
@@ -1305,62 +1307,62 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 
 void Master::GLFWMouseButtonCallback(int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        _leftMouseButtonPressed = true;
-    }
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		_leftMouseButtonPressed = true;
+	}
 }
 
 void Master::GLFWCursorPosCallback(double xpos, double ypos)
 {
-    // Nothing to do, yet
+	// Nothing to do, yet
 }
 
 void Master::GLFWResizeCallback(int width, int height)
 {
-    // Save it
-    _width = width;
-    _height = height;
+	// Save it
+	_width = width;
+	_height = height;
 
-    // Tell it eyeGUI (which indirect tells its Tabs which tell it CEF...)
-    eyegui::resizeGUI(_pGUI, _width, _height);
-    eyegui::resizeGUI(_pSuperGUI, _width, _height);
+	// Tell it eyeGUI (which indirect tells its Tabs which tell it CEF...)
+	eyegui::resizeGUI(_pGUI, _width, _height);
+	eyegui::resizeGUI(_pSuperGUI, _width, _height);
 
-    // Set viewport (can be set here, untouched/rescued by eyeGUI)
-    // Independent from bound framebuffer
-    glViewport(0, 0, _width, _height);
+	// Set viewport (can be set here, untouched/rescued by eyeGUI)
+	// Independent from bound framebuffer
+	glViewport(0, 0, _width, _height);
 
-    // Tell framebuffer about new window size
-    _upFramebuffer->Bind();
-    _upFramebuffer->Resize(_width, _height);
-    _upFramebuffer->Unbind();
+	// Tell framebuffer about new window size
+	_upFramebuffer->Bind();
+	_upFramebuffer->Resize(_width, _height);
+	_upFramebuffer->Unbind();
 
-    // CEF mediator is told to resize tabs via GUI callback
+	// CEF mediator is told to resize tabs via GUI callback
 }
 
 void Master::GUIResizeCallback(int width, int height)
 {
-    // Tell CEF mediator to resize tabs
-    // Has to be done after GUI has resized because size of web view is taken from GUI
-    _pCefMediator->ResizeTabs();
+	// Tell CEF mediator to resize tabs
+	// Has to be done after GUI has resized because size of web view is taken from GUI
+	_pCefMediator->ResizeTabs();
 }
 
 void Master::GUIPrintCallback(std::string message) const
 {
-    LogInfo("eyeGUI: ", message);
+	LogInfo("eyeGUI: ", message);
 }
 
 void Master::MasterButtonListener::down(eyegui::Layout* pLayout, std::string id)
 {
-    if(pLayout == _pMaster->_pSuperLayout)
-    {
-        _pMaster->_paused = true;
-        eyegui::setDescriptionVisibility(_pMaster->_pGUI, eyegui::DescriptionVisibility::VISIBLE);
+	if (pLayout == _pMaster->_pSuperLayout)
+	{
+		_pMaster->_paused = true;
+		eyegui::setDescriptionVisibility(_pMaster->_pGUI, eyegui::DescriptionVisibility::VISIBLE);
 		_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_PAUSE_COUNT, FirebaseJSONKey::GENERAL_PAUSE);
-    }
+	}
 	else if (pLayout == _pMaster->_pSuperCalibrationLayout)
 	{
-		if(id == "continue")
+		if (id == "continue")
 		{
 			// Hide layout
 			eyegui::setVisibilityOfLayout(_pMaster->_pSuperCalibrationLayout, false, false, true);
@@ -1461,12 +1463,12 @@ void Master::MasterButtonListener::down(eyegui::Layout* pLayout, std::string id)
 
 void Master::MasterButtonListener::up(eyegui::Layout* pLayout, std::string id)
 {
-    if(pLayout == _pMaster->_pSuperLayout)
-    {
-        _pMaster->_paused = false;
-        eyegui::setDescriptionVisibility(_pMaster->_pGUI, eyegui::DescriptionVisibility::ON_PENETRATION); // TODO look up in Settings for set value
+	if (pLayout == _pMaster->_pSuperLayout)
+	{
+		_pMaster->_paused = false;
+		eyegui::setDescriptionVisibility(_pMaster->_pGUI, eyegui::DescriptionVisibility::ON_PENETRATION); // TODO look up in Settings for set value
 		_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_UNPAUSE_COUNT, FirebaseJSONKey::GENERAL_UNPAUSE);
-    }
+	}
 }
 
 Master::ThreadJob::~ThreadJob()
@@ -1503,7 +1505,7 @@ void Master::PushEyetrackerStatusThreadJob::Execute()
 			_pMaster->PushNotificationByKey("notification:eye_tracker_status:connected", MasterNotificationInterface::Type::SUCCESS, false);
 			break;
 		}
-		
+
 		break;
 	case EyeTrackerStatus::DISCONNECTED:
 		_pMaster->PushNotificationByKey("notification:eye_tracker_status:disconnected", MasterNotificationInterface::Type::WARNING, false);

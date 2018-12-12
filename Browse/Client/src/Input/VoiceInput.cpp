@@ -9,19 +9,20 @@
 #include <map>
 #include <set>
 #include <windows.h>
-
-#include <regex>
-#include <algorithm>
 #include <iterator>
-#include <future>
+
+// levenshtein library
+#include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp"
 
 // Use portaudio library coming with eyeGUI. Bad practice, but eyeGUI would be needed to be linked dynamically otherwise
 #include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
-// #include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp" -> levenshtein library
 
 PaStream* _pInputStream = nullptr;
 HINSTANCE pluginHandle;
 
+// const std::string _triggerKey = "voice";
+
+// maybe set with tuples? with a bool indicating if a parameter is needed (could make VoiceInput::Update() a bit more dynamic)
 std::map<std::string, VoiceCommand> voiceCommandMapping = {
 
 	{ "up",				VoiceCommand::SCROLL_UP },
@@ -63,36 +64,6 @@ std::map<std::string, VoiceCommand> voiceCommandMapping = {
 
 };
 
-std::set<std::string> voiceCommandKeys = {
-
-	"up",
-	"down",
-	"top",
-	"bottom",
-	"boredom",
-	"bookmark",
-	"back",
-	"reload",
-	"forward",
-	"go to",
-	"new tab",
-	"search",
-	"zoom",
-	"tab overview",
-	"show bookmarks",
-	"click",
-	"check",
-	"play",
-	"pause",
-	"mute",
-	"unmute",
-	"text",
-	"type",
-	"remove",
-	"clear",
-	"close"
-
-};
 
 // Constructor - initializes Portaudio, loads go-speech-recognition.dll and it's functions
 VoiceInput::VoiceInput() {
@@ -166,18 +137,37 @@ VoiceInput::VoiceInput() {
 			return;
 		}
 
-		LogInfo("VoiceInput: Loaded successfully all functions from go-speech-recognition.dll.");
+
+		if (IsPluginLoaded())
+		{
+			LogInfo("VoiceInput: Loaded successfully all functions from go-speech-recognition.dll.");
+		}
+		else {
+			LogError("VoiceInput: go-speech-recognition.dll is not properly loaded.");
+		}
 	}
 }
 
+
+// Problem! Deactivate runs in it's own thread
 // Destructor
 VoiceInput::~VoiceInput() {
 	Deactivate();
-	FreeLibrary(pluginHandle);
+	if (pluginHandle) {
+		FreeLibrary(pluginHandle);
+	}
 }
+
+bool VoiceInput::IsPluginLoaded() {
+	return pluginHandle && GO_SPEECH_RECOGNITION_InitializeStream && GO_SPEECH_RECOGNITION_SendAudio
+		&& GO_SPEECH_RECOGNITION_ReceiveTranscript && GO_SPEECH_RECOGNITION_GetLog
+		&& GO_SPEECH_RECOGNITION_CloseStream && GO_SPEECH_RECOGNITION_IsInitialized;
+}
+
 /*
-	TRANSCRIPT TO ACTION
+TRANSCRIPT TO ACTION
 */
+
 // Returns the last transcribed audio as a VoiceAction object
 VoiceAction VoiceInput::Update(float tpf) {
 
@@ -193,121 +183,141 @@ VoiceAction VoiceInput::Update(float tpf) {
 	}
 	_transcriptGuard.unlock();
 
-
+	// Assignment of voice action begins
 	if (!transcript.empty()) {
 
 		std::string voiceCommand = "";
-		int voiceParameter = 0;
-		std::vector<std::string> keySplitList;
+		// Index representing the beginning of the parameter (index of the last word of a key + 1)
+		int voiceParameterIndex = 0;
 		std::vector<std::string> tranSplitList = split(transcript);
 		int tranSplitListLen = tranSplitList.size();
 
-		for (std::string key : voiceCommandKeys) {
-			//lev distance of key with transciption
-			int levCom = 0;
-			keySplitList = split(key);
-			int keySplitListLen = keySplitList.size();
+/*
+		bool triggered = false;
+		int triggerIndex;
 
+		// Check transcript for _triggerKey ("voice")
+		for (int i = 0; i < tranSplitListLen; i++ ) {
+			int levDistance = levenshteinSSE::levenshtein(tranSplitList[i], _triggerKey);
+			if (levDistance < 2) {
+				triggered = true;
+				triggerIndex = i;
+			}
+		}
 
-			for (int i = 0; i < keySplitListLen; i++) {
-				for (int j = 0; j < tranSplitListLen; j++) {
-					if (i < tranSplitListLen) {
-						levCom += uiLevenshteinDistance(tranSplitList[j], keySplitList[i]);
-						if (tranSplitList[j] == keySplitList[i] || levCom == 0 || (levCom < 2 && levCom != key.size())) {
+		// Check for voice command after _triggerKey
+		if (triggered) {
+			for (auto const pair : voiceCommandMapping) {
+				std::string key = pair.first;
+
+				// lev distance between key and transcription
+				int levDistance = 0;
+
+				// vector representing a key (needed because some keys are longer than 1 word)
+				std::vector<std::string> keySplitList = split(key);
+				int keySplitListLen = keySplitList.size();
+
+				// iterate over the key
+				for (int i = 0; i < keySplitListLen; i++) {
+					// don't access indexes > than tranSplitListLen to avoid exceptions
+					if (i < tranSplitListLen - 1) {
+						// check the Levenshtein Distance between the current word in the key and the current word in the transcript
+						levDistance += levenshteinSSE::levenshtein(keySplitList[i], tranSplitList[triggerIndex + 1 + i]);
+						// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command is found
+						if (levDistance < 2 && i == keySplitListLen - 1) {
 							voiceCommand = key;
-							voiceParameter = j + 1;
-							LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[j], " ) and ( ", keySplitList[i], " ) is ", levCom);
+							voiceParameterIndex = triggerIndex + 1 + i;
+							LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[triggerIndex + 1 + i], " ) and ( ", keySplitList[i], " ) is ", levDistance);
 						}
 					}
 				}
 			}
 		}
+*/
+	
+		int shortestLevDistance = INT32_MAX;
+
+		// iterate over all keys
+		for (auto const pair : voiceCommandMapping) {
+			std::string key = pair.first;
+
+			// lev distance of key with transciption
+			int levDistance = 0;
+			std::vector<std::string> keySplitList = split(key);
+			int keySplitListLen = keySplitList.size();
+
+			// iterate over the key
+			for (int i = 0; i < tranSplitListLen; i++) {
+
+				// check the Levenshtein Distance between the first word in the key and the current word in the transcript
+				levDistance = levenshteinSSE::levenshtein(tranSplitList[i], keySplitList[0]);
+				
+				// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
+				if (levDistance < 2 && levDistance < shortestLevDistance) {
+
+					// check if the following words are matching if the key is longer than 1 word
+					if (keySplitListLen > 1) {
+
+						// iterate over the rest of the keySplitList
+						for (int j = 1; j < keySplitListLen; j++) {
+
+							// levDistance has to be < 2 for the whole key 
+							levDistance += levenshteinSSE::levenshtein(tranSplitList[i + j], keySplitList[j]);
+
+							// we found the currently best matching key
+							if (levDistance < 2 && levDistance < shortestLevDistance && j == keySplitListLen - 1) {
+								voiceCommand = key;
+								voiceParameterIndex = i + j + 1;
+								LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[i + j], " ) and ( ", keySplitList[j], " ) is ", levDistance);
+								shortestLevDistance = levDistance;
+							}
+						}
+					}
+
+					// the key is one word and the currently best matching one
+					else {
+						voiceCommand = key;
+						voiceParameterIndex = i + 1;
+						LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[i], " ) and ( ", keySplitList[0], " ) is ", levDistance);
+						shortestLevDistance = levDistance;
+					}
+				}
+			}
+		}
+
+		// assign the found command to the voiceResult
 		if (!voiceCommand.empty()) {
 			voiceResult.command = voiceCommandMapping[voiceCommand];
-			voiceResult.parameter = findPrefixAndParameters(voiceResult.command, tranSplitList, voiceParameter);
+
+			// assign parameter if needed
+			if (VoiceCommand::NEW_TAB == voiceResult.command
+				|| VoiceCommand::GO_TO == voiceResult.command
+				|| VoiceCommand::SEARCH == voiceResult.command
+				|| VoiceCommand::CLICK == voiceResult.command
+				|| VoiceCommand::TEXT == voiceResult.command) {
+				
+				// add the transcripted words following the command to the voiceResult.parameter
+				for (int i = voiceParameterIndex; i < tranSplitListLen; i++) {			
+					if (i == voiceParameterIndex) {
+						voiceResult.parameter += tranSplitList[i];
+					}
+					else {
+						voiceResult.parameter += " " + tranSplitList[i];
+					}			
+				}
+				
+			}
 		}
 		LogInfo("voiceCommand: " + voiceCommand + " Parameter: " + voiceResult.parameter);
 	}
-		
+	
+
 	return voiceResult;
 }
 
 /*
-	HELPER FOR UPDATE
+HELPER FOR UPDATE
 */
-std::string VoiceInput::findPrefixAndParameters(VoiceCommand command, std::vector<std::string> transcript, int paraIndex) {
-	
-	std::string parameter = "";
-
-	if (command == VoiceCommand::GO_TO || command == VoiceCommand::NEW_TAB)	{
-
-		if (transcript.size() > 1) {
-			if (!transcript[paraIndex].empty()) {
-				parameter = transcript[paraIndex];
-				size_t found = parameter.find('.');
-				if (found == std::string::npos) {
-					parameter = transcript[paraIndex] + ".com";
-				}
-			}
-		}
-	}
-
-	if (command == VoiceCommand::SEARCH || command == VoiceCommand::CLICK) {
-
-		if (transcript.size() > 1) {
-			if (!transcript[paraIndex].empty()) {
-				for (int i = paraIndex; i < transcript.size(); i++) { 
-					parameter += transcript[i];
-				};
-			}
-		}
-	}
-
-	return parameter;
-}
-
-// levenshtein distance
-size_t VoiceInput::uiLevenshteinDistance(const std::string &s1, const std::string &s2)
-{
-	const size_t m(s1.size());
-	const size_t n(s2.size());
-
-	if (m == 0) return n;
-	if (n == 0) return m;
-
-	size_t *costs = new size_t[n + 1];
-
-	for (size_t k = 0; k <= n; k++) costs[k] = k;
-
-	size_t i = 0;
-	for (std::string::const_iterator it1 = s1.begin(); it1 != s1.end(); ++it1, ++i)
-	{
-		costs[0] = i + 1;
-		size_t corner = i;
-
-		size_t j = 0;
-		for (std::string::const_iterator it2 = s2.begin(); it2 != s2.end(); ++it2, ++j)
-		{
-			size_t upper = costs[j + 1];
-			if (*it1 == *it2)
-			{
-				costs[j + 1] = corner;
-			}
-			else
-			{
-				size_t t(upper < corner ? upper : corner);
-				costs[j + 1] = (costs[j] < t ? costs[j] : t) + 1;
-			}
-
-			corner = upper;
-		}
-	}
-
-	size_t result = costs[n];
-	delete[] costs;
-
-	return result;
-}
 
 // split a string at spaces
 std::vector<std::string> VoiceInput::split(std::string text) {
@@ -317,120 +327,9 @@ std::vector<std::string> VoiceInput::split(std::string text) {
 	return splittedList;
 }
 
-/*
-	TRANSCRIBING
-*/
-void VoiceInput::Activate()
-{
-
-	LogInfo("VoiceInput: Started transcribing process.");
-
-	_active = true;
-	_stopped = false;
-	// [STREAM INITIALIZATION]
-	GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sample_rate);
-	if (initSuccess != GO_SPEECH_RECOGNITION_TRUE) {
-		std::string log = GO_SPEECH_RECOGNITION_GetLog();
-		LogError("VoiceInput: " + log);
-	}
-
-	LogInfo("VoiceInput: Stream was successfully initialized.");
-
-	// [SETUP RECORDING]
-	bool recSuccess = StartAudioRecording();
-	if (!recSuccess) {
-		LogError("VoiceInput: Started audio recording.");
-	}
-
-	// [SENDING] loops till it's stopped by calling VoiceInput::StopTranscribing() or VoiceInput::Deactivate()
-	_tSending = std::make_unique<std::thread>(([this] {
-		_isSending = true;
-		ContinuousAudioRecord& pRecord = *_spAudioInput.get();
-		
-		LogInfo("VoiceInput: Started sending audio.");
-
-		while (!_stopped) {
-
- 			std::this_thread::sleep_for(std::chrono::milliseconds(_queryTime));
-
-			// Retrieve audio
-			std::vector<short> audioData;
-			pRecord.copyBuffer(&audioData);
-
-			// Check initialization
-			GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
-			if (initialized != GO_SPEECH_RECOGNITION_TRUE) {
-				if (_stopped) {
-					LogInfo("VoiceInput: Stream is not initialized! (SENDING)");
-					_isSending = false;
-					return;
-				}
-				LogError("VoiceInput: Stream is not initialized! (SENDING)");
-				_isSending = false;
-				return;
-			}
-
-			// Send the audio
-			GO_SPEECH_RECOGNITION_BOOL sendSuccess = GO_SPEECH_RECOGNITION_SendAudio(audioData.data(), audioData.size());
-			if (sendSuccess != GO_SPEECH_RECOGNITION_TRUE) {
-				std::string log = GO_SPEECH_RECOGNITION_GetLog();
-				LogError("VoiceInput: " + log);
-			}
-		}
-		_isSending = false;
-	}));
-
-	// [RECEIVING] loops till it's stopped by calling VoiceInput::StopTranscribing() or VoiceInput::Deactivate()
-	_tReceiving = std::make_unique<std::thread>(([this] {
-		_isReceiving = true;
-		LogInfo("VoiceInput: Started receiving transcripts.");
-
-		while (!_stopped) {
-
-			// Check initialization
-			GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
-			if (initialized != GO_SPEECH_RECOGNITION_TRUE) {
-				if (_stopped) {
-					LogInfo("VoiceInput: Stream is not initialized! (RECEIVING)");
-					_isReceiving = false;
-					return;
-				}
-				LogError("VoiceInput: Stream is not initialized! (RECEIVING)");
-				_isReceiving = false;
-				return;
-			}
-
-			// Receive the transcript
-			std::string received = GO_SPEECH_RECOGNITION_ReceiveTranscript();
-			if (!received.empty()) {
-				LogInfo("VoiceInput: Received: [" + received + "]");
-				
-				std::lock_guard<std::mutex> lock(_transcriptGuard);
-				_recognitionResults.push(received);
-			}
-		}
-		_isReceiving = false;
-	}));
-}
-
-void VoiceInput::Deactivate() {
-		std::thread _tStopping([this] {
-		LogInfo("VoiceInput: Stopping audio recording and transcribing process.");
-
-		_stopped = true;
-		GO_SPEECH_RECOGNITION_CloseStream();
-		EndAudioRecording();
-
-		while (_isSending || _isReceiving) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
-		};
-		_active = false;
-		LogInfo("VoiceInput: Stopped audio recording and transcribing process.");
-	});
-}
 
 /*
-	PORTAUDIO/RECORDING
+PORTAUDIO/RECORDING
 */
 
 // Static callback for PortAudio input stream
@@ -462,108 +361,224 @@ static int audioStreamRecordCallback(
 	return PaStreamCallbackResult::paContinue;
 }
 
-bool VoiceInput::StartAudioRecording()
-{
-	// Check for PortAudio
-	if (!_portAudioInitialized)
-	{
-		// DEBUG
-		LogError("PortAudio not initialized!");
-		return false;
+/*
+TRANSCRIBING
+*/
+void VoiceInput::Activate() {
+
+	if (IsPluginLoaded()) {
+		LogInfo("VoiceInput: Started transcribing process.");
+
+		_active = true;
+		_stopped = false;
+
+		// [STREAM INITIALIZATION]
+		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sample_rate);
+		if (initSuccess != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
+			std::string log = GO_SPEECH_RECOGNITION_GetLog();
+			LogError("VoiceInput: " + log + " (INITIALIZING)");
+		}
+
+		LogInfo("VoiceInput: Stream was successfully initialized.");
+
+		// [SETUP RECORDING]
+		// Check for PortAudio
+		if (!_portAudioInitialized)
+		{
+			// DEBUG
+			LogError("PortAudio not initialized!");
+			return;
+		}
+
+		// Return false if ongoing recording
+		if (_pInputStream != nullptr)
+		{
+			// DEBUG
+			LogInfo("Recording still in progress...");
+			return;
+		}
+
+		_spAudioInput = std::shared_ptr<ContinuousAudioRecord>(new ContinuousAudioRecord(
+			AUDIO_INPUT_CHANNEL_COUNT,
+			AUDIO_INPUT_SAMPLE_RATE,
+			AUDIO_INPUT_MAX_INPUT_SECONDS));
+
+		// Set up stream
+		PaStreamParameters parameters;
+		parameters.device = Pa_GetDefaultInputDevice();
+
+		// Get and log name of used device 
+		std::string deviceName = Pa_GetDeviceInfo(parameters.device)->name;
+		LogInfo("PortAudio: Chosen input audio device: " + deviceName);
+
+		parameters.channelCount = AUDIO_INPUT_CHANNEL_COUNT;
+		parameters.sampleFormat = paInt16;
+		parameters.suggestedLatency = Pa_GetDeviceInfo(parameters.device)->defaultLowInputLatency;
+		parameters.hostApiSpecificStreamInfo = NULL;
+
+		if (parameters.device == paNoDevice)
+		{
+			LogError("PortAudio error: Have not found an input audio device");
+			return;
+		}
+
+		PaError err; // Variable to fetch errors
+
+					 // Open stream
+		err = Pa_OpenStream(&_pInputStream, &parameters, NULL, AUDIO_INPUT_SAMPLE_RATE,
+			paFramesPerBufferUnspecified, paClipOff, audioStreamRecordCallback, _spAudioInput.get());
+		if (err != paNoError)
+		{
+			LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
+			_pInputStream = nullptr;
+			return;
+		}
+
+		// Start stream
+		err = Pa_StartStream(_pInputStream);
+		if (err != paNoError)
+		{
+			LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
+			_pInputStream = nullptr; // possible memory leak?
+			return;
+		}
+
+
+		// [SENDING] loops till it's stopped by calling VoiceInput::StopTranscribing() or VoiceInput::Deactivate()
+		_tSending = std::make_unique<std::thread>([this] {
+			_isSending = true;
+			ContinuousAudioRecord& pRecord = *_spAudioInput.get();
+
+			LogInfo("VoiceInput: Started sending audio.");
+
+			while (!_stopped) {
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(_queryTime));
+
+				// Retrieve audio
+				auto upAudioData = pRecord.moveBuffer();
+
+				// Check initialization
+				GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
+				if (initialized != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
+					if (_stopped) {
+						LogInfo("VoiceInput: Stream is not initialized! (SENDING)");
+					}
+					else {
+						LogError("VoiceInput: Stream is not initialized! (SENDING)");
+					}
+					_isSending = false;
+					return;
+				}
+
+				// Send the audio
+				GO_SPEECH_RECOGNITION_BOOL sendSuccess = GO_SPEECH_RECOGNITION_SendAudio(upAudioData->data(), upAudioData->size());
+				if (sendSuccess != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
+					std::string log = GO_SPEECH_RECOGNITION_GetLog();
+					LogError("VoiceInput: " + log + " (SENDING)");
+					_stopped = true;
+					_isSending = false;
+					return;
+				}
+			}
+			_isSending = false;
+		});
+
+		// [RECEIVING] loops till it's stopped by calling VoiceInput::StopTranscribing() or VoiceInput::Deactivate()
+		_tReceiving = std::make_unique<std::thread>([this] {
+			_isReceiving = true;
+			LogInfo("VoiceInput: Started receiving transcripts.");
+
+			while (!_stopped) {
+
+				std::string receivedString;
+				char* received;
+
+				// Check initialization
+				GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
+				if (initialized != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
+					if (_stopped) {
+						LogInfo("VoiceInput: Stream is not initialized! (RECEIVING)");
+					}
+					else {
+						LogError("VoiceInput: Stream is not initialized! (RECEIVING)");
+					}
+					_isReceiving = false;
+					return;
+				}
+
+				// Receive the transcript
+				GO_SPEECH_RECOGNITION_BOOL receiveSuccess = GO_SPEECH_RECOGNITION_ReceiveTranscript(&received);
+				if (receiveSuccess != GO_SPEECH_RECOGNITION_TRUE) {
+					std::string log = GO_SPEECH_RECOGNITION_GetLog();
+					LogError("VoiceInput: " + log + " (RECEIVING)");
+					_stopped = true;
+					_isReceiving = false;
+					return;
+				}
+
+				receivedString = received;
+				if (!receivedString.empty()) {
+					LogInfo("VoiceInput: Received: [" + receivedString + "]");
+
+					std::lock_guard<std::mutex> lock(_transcriptGuard);
+					_recognitionResults.push(receivedString);
+				}
+			}
+			_isReceiving = false;
+		});
 	}
-
-	// Return false if ongoing recording
-	if (_pInputStream != nullptr)
-	{
-		// DEBUG
-		LogInfo("Recording still in progress...");
-		return false;
-	}
-
-	_spAudioInput = std::shared_ptr<ContinuousAudioRecord>(new ContinuousAudioRecord(
-		AUDIO_INPUT_CHANNEL_COUNT,
-		AUDIO_INPUT_SAMPLE_RATE,
-		AUDIO_INPUT_MAX_INPUT_SECONDS));
-
-	// Set up stream
-	PaStreamParameters parameters;
-	parameters.device = Pa_GetDefaultInputDevice();
-	parameters.channelCount = AUDIO_INPUT_CHANNEL_COUNT;
-	parameters.sampleFormat = paInt16;
-	parameters.suggestedLatency = Pa_GetDeviceInfo(parameters.device)->defaultLowInputLatency;
-	parameters.hostApiSpecificStreamInfo = NULL;
-
-	if (parameters.device == paNoDevice)
-	{
-		LogError("PortAudio error: Have not found an input audio device");
-		return false;
-	}
-
-	PaError err; // Variable to fetch errors
-
-	// Open stream
-	err = Pa_OpenStream(&_pInputStream, &parameters, NULL, AUDIO_INPUT_SAMPLE_RATE,
-		paFramesPerBufferUnspecified, paClipOff, audioStreamRecordCallback, _spAudioInput.get());
-	if (err != paNoError)
-	{
-		LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
-		_pInputStream = nullptr;
-		return false;
-	}
-
-	// Start stream
-	err = Pa_StartStream(_pInputStream);
-	if (err != paNoError)
-	{
-		LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
-		_pInputStream = nullptr; // possible memory leak?
-		return false;
-	}
-
-	return true;
 }
 
-bool VoiceInput::EndAudioRecording()
-{
-	// Check for PortAudio
-	if (!_portAudioInitialized)
-	{
-		return false;
-	}
+void VoiceInput::Deactivate() {
+	std::thread _tStopping([this] {
+		LogInfo("VoiceInput: Stopping audio recording and transcribing process.");
 
-	// Variable to fetch errors
-	PaError err;
+		_stopped = true;
+		GO_SPEECH_RECOGNITION_CloseStream();
 
-	LogInfo("VoiceInput: Stopping audio recording.");
+		// STOP AUDIO RECORDING
+		// Check for PortAudio
+		if (_portAudioInitialized)
+		{
+			// Variable to fetch errors
+			PaError err;
 
-	// Aborts stream (stop would wait until buffer finished)
-	err = Pa_AbortStream(_pInputStream);
-	if (err != paNoError)
-	{
-		LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
-		_pInputStream = NULL;
-		return false;
-	}
+			LogInfo("VoiceInput: Stopping audio recording.");
 
-	// Close stream
-	err = Pa_CloseStream(_pInputStream);
-	if (err != paNoError)
-	{
-		LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
-		_pInputStream = NULL;
-		return false;
-	}
+			// Aborts stream (stop would wait until buffer finished)
+			err = Pa_AbortStream(_pInputStream);
+			if (err != paNoError)
+			{
+				LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
+				_pInputStream = NULL;
+				return false;
+			}
 
-	// Set stream to NULL
-	_pInputStream = NULL;
+			// Close stream
+			err = Pa_CloseStream(_pInputStream);
+			if (err != paNoError)
+			{
+				LogError("PortAudio error: " + std::string(Pa_GetErrorText(err)));
+				_pInputStream = NULL;
+				return false;
+			}
 
+			// Set stream to NULL
+			_pInputStream = NULL;
+		}
 
-	// Success
-	return true;
+		while (_isSending || _isReceiving) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		};
+		_active = false;
+		LogInfo("VoiceInput: Stopped audio recording and transcribing process.");
+	});
 }
+
 
 /*
-	CLASS ContinuousAudioRecord
+CLASS ContinuousAudioRecord
 */
 
 /*
@@ -595,12 +610,15 @@ bool ContinuousAudioRecord::addSample(short sample)
 	return true;
 }
 
-void ContinuousAudioRecord::copyBuffer(std::vector<short> *audioData)
+std::unique_ptr<std::vector<short> > ContinuousAudioRecord::moveBuffer()
 {
 	std::lock_guard<std::mutex> lock(_bufferGuard);
 
-	audioData->resize(_buffer.size());
+	std::vector<short> audioData(_buffer.size());
 
-	std::copy(std::begin(_buffer), std::end(_buffer), std::begin(*audioData));
+	std::copy(std::begin(_buffer), std::end(_buffer), std::begin(audioData));
+
 	_buffer.clear();
+
+	return std::make_unique<std::vector<short> >(audioData);
 }

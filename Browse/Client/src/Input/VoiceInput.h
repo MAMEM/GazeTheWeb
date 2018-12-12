@@ -15,12 +15,10 @@
 #include <queue>
 #include <mutex>
 #include <deque>
+#include <atomic>
 
 #include "go-speech-recognition.h"
 
-static const int AUDIO_INPUT_SAMPLE_RATE = 16000;
-static const int AUDIO_INPUT_CHANNEL_COUNT = 1;
-static const unsigned int AUDIO_INPUT_MAX_INPUT_SECONDS = 3;
 
 enum class VoiceCommand
 {
@@ -65,35 +63,9 @@ struct VoiceAction {
 	}
 };
 
-//! Class for holding audio records.
-class AudioRecord
-{
-public:
-	//! Constructor.
-	AudioRecord(unsigned int channelCount, unsigned int sampleRate, unsigned int maxSeconds)
-		: _ChannelCount(channelCount)
-		, _SampleRate(sampleRate)
-		, _MaxSeconds(maxSeconds) {};
-
-	//! Add sample.
-	virtual bool addSample(short sample) = 0;
-
-	//! Getter.
-	int getChannelCount() const { return _ChannelCount; };
-	int getSampleRate() const { return _SampleRate; };
-	int getSampleCount() const { return _Index; }
-
-protected:
-	//! Members.
-	std::shared_ptr<std::vector<short>> _spBuffer;
-	unsigned int _ChannelCount;
-	unsigned int _SampleRate;
-	unsigned int _MaxSeconds;
-	unsigned int _Index = 0;
-};
 
 //! Class for holding continuous audio records.
-class ContinuousAudioRecord : public AudioRecord
+class ContinuousAudioRecord
 {
 public:
 	//! Constructor.
@@ -101,14 +73,22 @@ public:
 		unsigned int channelCount,
 		unsigned int sampleRate,
 		unsigned int maxSeconds)
-		: _maximumSize(channelCount * sampleRate * maxSeconds)
-		, AudioRecord(channelCount, sampleRate, maxSeconds)
+		: _maximumSize(channelCount * sampleRate * maxSeconds),
+		_ChannelCount(channelCount),
+		_SampleRate(sampleRate),
+		_MaxSeconds(maxSeconds)
 	{
 	}
 
+	//! Getter.
+	int getChannelCount() const { return _ChannelCount; };
+	int getSampleRate() const { return _SampleRate; };
+	int getSampleCount() const { return _Index; }
+
 	//! Add sample. Increments index and returns whether successful.
 	bool addSample(short sample);
-	void copyBuffer(std::vector<short>* audioData);
+	std::unique_ptr<std::vector<short> > moveBuffer();
+
 
 private:
 	//! Members.
@@ -116,6 +96,11 @@ private:
 	const int _maximumSize;
 	bool _maximumSizeReached = false;
 	mutable std::mutex _bufferGuard;
+	std::shared_ptr<std::vector<short> > _spBuffer;
+	unsigned int _ChannelCount;
+	unsigned int _SampleRate;
+	unsigned int _MaxSeconds;
+	unsigned int _Index = 0;
 };
 
 // Class that handles recording and transcribing audio 
@@ -145,32 +130,43 @@ public:
 	// Returns whether the recording and transcribing process is currently running.
 	bool IsActive() { return _active; }
 
-private: 
+private:
 
-	// [RECORDING]
+	// Returns whether the plugin itself and all the respective functions are loaded.
+	bool IsPluginLoaded();
+
+// [RECORDING]
+
+	static const int AUDIO_INPUT_SAMPLE_RATE = 16000;
+	static const int AUDIO_INPUT_CHANNEL_COUNT = 1;
+	static const unsigned int AUDIO_INPUT_MAX_INPUT_SECONDS = 3;
+	
 	bool _portAudioInitialized = false;
 	std::shared_ptr<ContinuousAudioRecord> _spAudioInput;
 
-	bool StartAudioRecording();
-	bool EndAudioRecording();
+// [STREAMING]
 
-	// [STREAMING]
 	// language to be transcribed
 	char* _language = "en-US";
+
 	// _sample_rate of the audio
 	int _sample_rate = 16000;
+
 	// time to query audio in ms
 	int _queryTime = 1000;
-	// state showing if RunTranscribing is activated (recording + streaming to google)
+
+
+	// state showing if the transcribing is activate (recording and streaming to google)
 	bool _active = false;
-	// state showing if RunTranscribing should be stopped
 
 	// Thread variable, set in main thread, read in subthreads
+	// state showing if RunTranscribing should be stopped
 	std::atomic<bool> _stopped = true;
 
 	// thread handling the sending
 	std::unique_ptr<std::thread> _tSending = nullptr;
 	bool _isSending = false;
+
 	// thread handling the receving
 	std::unique_ptr<std::thread> _tReceiving = nullptr;
 	bool _isReceiving = false;
@@ -182,15 +178,16 @@ private:
 	GO_SPEECH_RECOGNITION_CLOSE_STREAM GO_SPEECH_RECOGNITION_CloseStream;
 	GO_SPEECH_RECOGNITION_IS_INITIALIZED GO_SPEECH_RECOGNITION_IsInitialized;
 
-	// [PROCESSING TRANSCRIPT]
+// [PROCESSING TRANSCRIPT]
+
 	// last recognized speech as text
 	std::queue<std::string> _recognitionResults;
-	// protects access to recognition_results
-	std::mutex _transcriptGuard; 
 
+	// protects access to recognition_results
+	std::mutex _transcriptGuard;
+
+	// split a string at spaces
 	std::vector<std::string> split(std::string text);
-	std::string findPrefixAndParameters(VoiceCommand command, std::vector<std::string> transcript, int paraIndex);
-	size_t uiLevenshteinDistance(const std::string & s1, const std::string & s2);
 };
 
 #endif // VOICEINPUT_H_
