@@ -13,6 +13,7 @@
 #include "src/State/Web/Managers/HistoryManager.h"
 #include "src/State/Web/Screens/URLInput.h"
 #include "src/State/Web/Screens/History.h"
+#include "src/Input/VoiceInput.h"
 #include <map>
 #include <vector>
 #include <memory>
@@ -112,6 +113,10 @@ public:
 
     // Get own id in web. Returns -1 if not found
     virtual int GetIdOfTab(Tab const * pCaller) const;
+
+	virtual void actionsOfVoice(VoiceAction voiceAction, std::shared_ptr<Input> input);
+
+	virtual void dictationOfVoice(std::string transcript);
 
 	// Add history entry
 	virtual std::shared_ptr<HistoryManager::Page> AddPageToHistory(std::string URL, std::string title);

@@ -7,7 +7,6 @@
 #include "VoiceInput.h"
 #include "src/Utils/Logger.h"
 #include <map>
-#include <set>
 #include <windows.h>
 #include <iterator>
 
@@ -17,53 +16,43 @@
 // Use portaudio library coming with eyeGUI. Bad practice, but eyeGUI would be needed to be linked dynamically otherwise
 #include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
 
+/*
+	Thread variable:
+		Read in: main, _tStopping
+		Manipulated in: main, _tStopping
+*/
 PaStream* _pInputStream = nullptr;
 HINSTANCE pluginHandle;
 
-// const std::string _triggerKey = "voice";
 
-// maybe set with tuples? with a bool indicating if a parameter is needed (could make VoiceInput::Update() a bit more dynamic)
-std::map<std::string, VoiceCommand> voiceCommandMapping = {
+std::vector<CommandStruct> commandStructList = {
 
-	{ "up",				VoiceCommand::SCROLL_UP },
-	{ "app",			VoiceCommand::SCROLL_UP },
-	{ "down",			VoiceCommand::SCROLL_DOWN },
-	{ "town",			VoiceCommand::SCROLL_DOWN },
-	{ "dawn",			VoiceCommand::SCROLL_DOWN },
-	{ "dumb",			VoiceCommand::SCROLL_DOWN },
-	{ "top",			VoiceCommand::TOP },
-	{ "bottom",			VoiceCommand::BOTTOM },
-	{ "button",			VoiceCommand::BOTTOM },
-	{ "boredom",		VoiceCommand::BOTTOM },
-	{ "bookmark",		VoiceCommand::BOOKMARK },
-	{ "back",			VoiceCommand::BACK },
-	{ "reload",			VoiceCommand::RELOAD },
-	{ "forward",		VoiceCommand::FORWARD },
-	{ "go to",			VoiceCommand::GO_TO },
-	{ "new tab",		VoiceCommand::NEW_TAB },
-	{ "new tap",		VoiceCommand::NEW_TAB },
-	{ "UTEP",			VoiceCommand::NEW_TAB },
-	{ "search",			VoiceCommand::SEARCH },
-	{ "zoom",			VoiceCommand::ZOOM },
-	{ "tab overview",	VoiceCommand::TAB_OVERVIEW },
-	{ "show bookmarks",	VoiceCommand::SHOW_BOOKMARKS },
-	{ "click",			VoiceCommand::CLICK },
-	{ "clique",			VoiceCommand::CLICK },
-	{ "clip",			VoiceCommand::CLICK },
-	{ "check",			VoiceCommand::CHECK },
-	{ "chuck",			VoiceCommand::CHECK },
-	{ "play",			VoiceCommand::PLAY },
-	{ "pause",			VoiceCommand::PAUSE },
-	{ "mute",			VoiceCommand::MUTE },
-	{ "unmute",			VoiceCommand::UNMUTE },
-	{ "text",			VoiceCommand::TEXT },
-	{ "type",			VoiceCommand::TEXT },
-	{ "remove",			VoiceCommand::REMOVE },
-	{ "clear",			VoiceCommand::CLEAR },
-	{ "close",			VoiceCommand::CLOSE },
+	CommandStruct(VoiceCommand::SCROLL_UP,		std::vector<std::string> {"up", "app" },					false),
+	CommandStruct(VoiceCommand::SCROLL_DOWN,	std::vector<std::string> {"down", "town", "dawn", "dumb"},	false),
+	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top"},							false),
+	CommandStruct(VoiceCommand::BOTTOM,			std::vector<std::string> {"bottom", "button", "boredom"},	false),
+	CommandStruct(VoiceCommand::BOOKMARK,		std::vector<std::string> {"bookmark"},						false),
+	CommandStruct(VoiceCommand::BACK,			std::vector<std::string> {"back"},							false),
+	CommandStruct(VoiceCommand::REFRESH,		std::vector<std::string> {"reload", "refresh"},				false),
+	CommandStruct(VoiceCommand::FORWARD,		std::vector<std::string> {"forward", "for what"},			false),
+	CommandStruct(VoiceCommand::GO_TO,			std::vector<std::string> {"go to"},							true),
+	CommandStruct(VoiceCommand::NEW_TAB,		std::vector<std::string> {"new tab", "new tap", "UTEP"},	true),
+	CommandStruct(VoiceCommand::SEARCH,			std::vector<std::string> {"search"},						true),
+	CommandStruct(VoiceCommand::ZOOM,			std::vector<std::string> {"zoom"},							false),
+	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview"},					false),
+	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},				false),
+	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "clique", "clip"},		true),
+	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck"},				false),
+	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},							false),
+	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},							false),
+	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},						false),
+	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},					true),
+	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},						false),
+	CommandStruct(VoiceCommand::CLEAR,			std::vector<std::string> {"clear"},							false),
+	CommandStruct(VoiceCommand::CLOSE,			std::vector<std::string> {"close"},							false),
+	CommandStruct(VoiceCommand::QUIT,			std::vector<std::string> {"quit"},							false),
 
 };
-
 
 // Constructor - initializes Portaudio, loads go-speech-recognition.dll and it's functions
 VoiceInput::VoiceInput() {
@@ -168,6 +157,14 @@ bool VoiceInput::IsPluginLoaded() {
 TRANSCRIPT TO ACTION
 */
 
+// split a string at spaces
+std::vector<std::string> split(std::string text) {
+	std::istringstream iss(text);
+	std::vector<std::string> splittedList(std::istream_iterator<std::string>{iss},
+		std::istream_iterator<std::string>());
+	return splittedList;
+}
+
 // Returns the last transcribed audio as a VoiceAction object
 VoiceAction VoiceInput::Update(float tpf) {
 
@@ -183,149 +180,105 @@ VoiceAction VoiceInput::Update(float tpf) {
 	}
 	_transcriptGuard.unlock();
 
+	/*
+		TODO:
+			Maybe change the following process if the requirements are more specific.
+	*/
+
 	// Assignment of voice action begins
 	if (!transcript.empty()) {
 
-		std::string voiceCommand = "";
 		// Index representing the beginning of the parameter (index of the last word of a key + 1)
 		int voiceParameterIndex = 0;
-		std::vector<std::string> tranSplitList = split(transcript);
-		int tranSplitListLen = tranSplitList.size();
 
-/*
-		bool triggered = false;
-		int triggerIndex;
+		// For comparing purpose split the transcript
+		std::vector<std::string> splittedTranscript = split(transcript);
+		int splittedTranscriptLen = splittedTranscript.size();
 
-		// Check transcript for _triggerKey ("voice")
-		for (int i = 0; i < tranSplitListLen; i++ ) {
-			int levDistance = levenshteinSSE::levenshtein(tranSplitList[i], _triggerKey);
-			if (levDistance < 2) {
-				triggered = true;
-				triggerIndex = i;
-			}
-		}
-
-		// Check for voice command after _triggerKey
-		if (triggered) {
-			for (auto const pair : voiceCommandMapping) {
-				std::string key = pair.first;
-
-				// lev distance between key and transcription
-				int levDistance = 0;
-
-				// vector representing a key (needed because some keys are longer than 1 word)
-				std::vector<std::string> keySplitList = split(key);
-				int keySplitListLen = keySplitList.size();
-
-				// iterate over the key
-				for (int i = 0; i < keySplitListLen; i++) {
-					// don't access indexes > than tranSplitListLen to avoid exceptions
-					if (i < tranSplitListLen - 1) {
-						// check the Levenshtein Distance between the current word in the key and the current word in the transcript
-						levDistance += levenshteinSSE::levenshtein(keySplitList[i], tranSplitList[triggerIndex + 1 + i]);
-						// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command is found
-						if (levDistance < 2 && i == keySplitListLen - 1) {
-							voiceCommand = key;
-							voiceParameterIndex = triggerIndex + 1 + i;
-							LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[triggerIndex + 1 + i], " ) and ( ", keySplitList[i], " ) is ", levDistance);
-						}
-					}
-				}
-			}
-		}
-*/
-	
+		// The current shortest shortest Levenshtein Distance in the transcript
 		int shortestLevDistance = INT32_MAX;
 
+		// The best matching CommandStruct
+		CommandStruct commandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
+
 		// iterate over all keys
-		for (auto const pair : voiceCommandMapping) {
-			std::string key = pair.first;
+		for (CommandStruct currentCommandStruct : commandStructList) {
+			for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
-			// lev distance of key with transciption
-			int levDistance = 0;
-			std::vector<std::string> keySplitList = split(key);
-			int keySplitListLen = keySplitList.size();
+				// lev distance of key with transciption
+				int levDistance = 0;
+				std::vector<std::string> splittedPhoneticVariant = split(phoneticVariant);
+				int splittedPhoneticVariantLen = splittedPhoneticVariant.size();
 
-			// iterate over the key
-			for (int i = 0; i < tranSplitListLen; i++) {
+				// iterate over the phonetic variant
+				for (int i = 0; i < splittedTranscriptLen; i++) {
 
-				// check the Levenshtein Distance between the first word in the key and the current word in the transcript
-				levDistance = levenshteinSSE::levenshtein(tranSplitList[i], keySplitList[0]);
-				
-				// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
-				if (levDistance < 2 && levDistance < shortestLevDistance) {
+					// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
+					levDistance = levenshteinSSE::levenshtein(splittedTranscript[i], splittedPhoneticVariant[0]);
 
-					// check if the following words are matching if the key is longer than 1 word
-					if (keySplitListLen > 1) {
+					// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
+					if (levDistance < 2 && levDistance < shortestLevDistance) {
 
-						// iterate over the rest of the keySplitList
-						for (int j = 1; j < keySplitListLen; j++) {
+						// check if the following words are matching if the phonetic variant is longer than 1 word
+						if (splittedPhoneticVariantLen > 1) {
 
-							// levDistance has to be < 2 for the whole key 
-							levDistance += levenshteinSSE::levenshtein(tranSplitList[i + j], keySplitList[j]);
+							// iterate over the rest of the splittedPhoneticVariant
+							for (int j = 1; j < splittedPhoneticVariantLen; j++) {
 
-							// we found the currently best matching key
-							if (levDistance < 2 && levDistance < shortestLevDistance && j == keySplitListLen - 1) {
-								voiceCommand = key;
-								voiceParameterIndex = i + j + 1;
-								LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[i + j], " ) and ( ", keySplitList[j], " ) is ", levDistance);
-								shortestLevDistance = levDistance;
+								// levDistance has to be < 2 for the whole key 
+								levDistance += levenshteinSSE::levenshtein(splittedTranscript[i + j], splittedPhoneticVariant[j]);
+
+								// we found the currently best matching key
+								if (levDistance < 2 && levDistance < shortestLevDistance && j == splittedPhoneticVariantLen - 1) {
+									commandStruct = currentCommandStruct;
+									voiceParameterIndex = i + j + 1;
+									LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", levDistance);
+									shortestLevDistance = levDistance;
+								}
 							}
 						}
-					}
 
-					// the key is one word and the currently best matching one
-					else {
-						voiceCommand = key;
-						voiceParameterIndex = i + 1;
-						LogInfo("VoiceInput: voice distance between transcript ( ", tranSplitList[i], " ) and ( ", keySplitList[0], " ) is ", levDistance);
-						shortestLevDistance = levDistance;
+						// the key is one word and the currently best matching one
+						else {
+							commandStruct = currentCommandStruct;
+							voiceParameterIndex = i + 1;
+							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", levDistance);
+							shortestLevDistance = levDistance;
+						}
 					}
 				}
 			}
 		}
 
 		// assign the found command to the voiceResult
-		if (!voiceCommand.empty()) {
-			voiceResult.command = voiceCommandMapping[voiceCommand];
+		if (commandStruct.command != VoiceCommand::NO_ACTION) {
+			voiceResult.command = commandStruct.command;
 
 			// assign parameter if needed
-			if (VoiceCommand::NEW_TAB == voiceResult.command
-				|| VoiceCommand::GO_TO == voiceResult.command
-				|| VoiceCommand::SEARCH == voiceResult.command
-				|| VoiceCommand::CLICK == voiceResult.command
-				|| VoiceCommand::TEXT == voiceResult.command) {
+			if (commandStruct.takesParameter) {
 				
 				// add the transcripted words following the command to the voiceResult.parameter
-				for (int i = voiceParameterIndex; i < tranSplitListLen; i++) {			
+				for (int i = voiceParameterIndex; i < splittedTranscriptLen; i++) {
 					if (i == voiceParameterIndex) {
-						voiceResult.parameter += tranSplitList[i];
+						voiceResult.parameter += splittedTranscript[i];
 					}
 					else {
-						voiceResult.parameter += " " + tranSplitList[i];
+						voiceResult.parameter += " " + splittedTranscript[i];
 					}			
 				}
 				
 			}
+
+			LogInfo("voiceCommand: " + commandStruct.phoneticVariants[0] + " Parameter: " + voiceResult.parameter);
 		}
-		LogInfo("voiceCommand: " + voiceCommand + " Parameter: " + voiceResult.parameter);
+
 	}
 	
 
 	return voiceResult;
 }
 
-/*
-HELPER FOR UPDATE
-*/
 
-// split a string at spaces
-std::vector<std::string> VoiceInput::split(std::string text) {
-	std::istringstream iss(text);
-	std::vector<std::string> splittedList(std::istream_iterator<std::string>{iss},
-		std::istream_iterator<std::string>());
-	return splittedList;
-}
 
 
 /*
@@ -353,9 +306,9 @@ static int audioStreamRecordCallback(
 
 	for (unsigned int i = 0; i < framesPerBuffer; i++) // go over frames
 	{
-		for (unsigned int j = 0; j < pData->getChannelCount(); j++) // go over channels
+		for (unsigned int j = 0; j < pData->GetChannelCount(); j++) // go over channels
 		{
-			pData->addSample(*in++);
+			pData->AddSample(*in++);
 		}
 	}
 	return PaStreamCallbackResult::paContinue;
@@ -373,7 +326,7 @@ void VoiceInput::Activate() {
 		_stopped = false;
 
 		// [STREAM INITIALIZATION]
-		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sample_rate);
+		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sampleRate);
 		if (initSuccess != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
 			std::string log = GO_SPEECH_RECOGNITION_GetLog();
 			LogError("VoiceInput: " + log + " (INITIALIZING)");
@@ -382,6 +335,7 @@ void VoiceInput::Activate() {
 		LogInfo("VoiceInput: Stream was successfully initialized.");
 
 		// [SETUP RECORDING]
+
 		// Check for PortAudio
 		if (!_portAudioInitialized)
 		{
@@ -424,7 +378,7 @@ void VoiceInput::Activate() {
 
 		PaError err; // Variable to fetch errors
 
-					 // Open stream
+		// Open stream
 		err = Pa_OpenStream(&_pInputStream, &parameters, NULL, AUDIO_INPUT_SAMPLE_RATE,
 			paFramesPerBufferUnspecified, paClipOff, audioStreamRecordCallback, _spAudioInput.get());
 		if (err != paNoError)
@@ -456,7 +410,7 @@ void VoiceInput::Activate() {
 				std::this_thread::sleep_for(std::chrono::milliseconds(_queryTime));
 
 				// Retrieve audio
-				auto upAudioData = pRecord.moveBuffer();
+				auto upAudioData = pRecord.MoveBuffer();
 
 				// Check initialization
 				GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
@@ -491,7 +445,7 @@ void VoiceInput::Activate() {
 
 			while (!_stopped) {
 
-				std::string receivedString;
+				std::string receivedString = "";
 				char* received;
 
 				// Check initialization
@@ -517,10 +471,12 @@ void VoiceInput::Activate() {
 					return;
 				}
 
+				// Save transcript as a string
 				receivedString = received;
 				if (!receivedString.empty()) {
 					LogInfo("VoiceInput: Received: [" + receivedString + "]");
 
+					// Save transcript in _recognitionResults vector
 					std::lock_guard<std::mutex> lock(_transcriptGuard);
 					_recognitionResults.push(receivedString);
 				}
@@ -531,10 +487,10 @@ void VoiceInput::Activate() {
 }
 
 void VoiceInput::Deactivate() {
-	std::thread _tStopping([this] {
+	_tStopping = std::make_unique<std::thread>([this] {
+		_stopped = true;
 		LogInfo("VoiceInput: Stopping audio recording and transcribing process.");
 
-		_stopped = true;
 		GO_SPEECH_RECOGNITION_CloseStream();
 
 		// STOP AUDIO RECORDING
@@ -566,11 +522,13 @@ void VoiceInput::Deactivate() {
 
 			// Set stream to NULL
 			_pInputStream = NULL;
+
 		}
 
 		while (_isSending || _isReceiving) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		};
+
 		_active = false;
 		LogInfo("VoiceInput: Stopped audio recording and transcribing process.");
 	});
@@ -592,14 +550,14 @@ Parameters:
 Return:
 bool: true if correctly finished
 */
-bool ContinuousAudioRecord::addSample(short sample)
+bool ContinuousAudioRecord::AddSample(short sample)
 {
 	std::lock_guard<std::mutex> lock(_bufferGuard);
 
 	if (!_maximumSizeReached)
 	{
 		_maximumSizeReached = static_cast<int>(_buffer.size()) == _maximumSize;
-		_Index = _buffer.size();
+		_index = _buffer.size();
 	}
 	if (_maximumSizeReached)
 	{
@@ -610,7 +568,7 @@ bool ContinuousAudioRecord::addSample(short sample)
 	return true;
 }
 
-std::unique_ptr<std::vector<short> > ContinuousAudioRecord::moveBuffer()
+std::unique_ptr<std::vector<short> > ContinuousAudioRecord::MoveBuffer()
 {
 	std::lock_guard<std::mutex> lock(_bufferGuard);
 

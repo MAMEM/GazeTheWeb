@@ -14,6 +14,8 @@
 #include "src/ContentPath.h"
 #include <algorithm>
 
+// levenshtein library
+#include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp"
 
 // Include singleton for mailing to JavaScript
 #include "src/Singletons/JSMailer.h"
@@ -1172,3 +1174,426 @@ void Web::WebButtonListener::up(eyegui::Layout* pLayout, std::string id)
 		}
 	}
 }
+
+
+
+void Web::actionsOfVoice(VoiceAction voiceAction, std::shared_ptr<Input> input) {
+	switch (voiceAction.command)
+	{
+	case VoiceCommand::NO_ACTION:
+		break;
+
+		// ###############################
+		// ### TAB       CONTROL       ###
+		// ###############################
+	case VoiceCommand::QUIT:
+	{
+		_pMaster->Exit(false); 
+	}
+	break;
+//	case VoiceCommand::SCROLL_UP:
+//	{
+//		int tabId = _currentTabId;
+//		if (tabId >= 0)
+//			_tabs.at(tabId)->EmulateMouseWheelScrolling(0, _tabs.at(tabId)->getPageHeight()); 
+//	}
+//	break;
+//	case VoiceCommand::SCROLL_DOWN:
+//	{
+//		int tabId = _currentTabId;
+//		if (tabId >= 0)
+//			_tabs.at(tabId)->EmulateMouseWheelScrolling(0, -_tabs.at(tabId)->getPageHeight()); 
+//	}
+//	break;
+//	case VoiceCommand::TOP:
+//	{
+//		int tabId = _currentTabId;
+//		if (tabId >= 0)_tabs.at(tabId)->EmulateMouseWheelScrolling(0, _tabs.at(tabId)->getPageHeight());  
+//	}
+//	break;
+//	case VoiceCommand::BOTTOM:
+//	{
+//		int tabId = _currentTabId;
+//		if (tabId >= 0)
+//			_tabs.at(tabId)->EmulateMouseWheelScrolling(0, -_tabs.at(tabId)->getPageHeight());   
+//	}
+//	break;
+	case VoiceCommand::BOOKMARK:
+	{
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+		{
+			// Add as bookmark
+			bool success = _upBookmarkManager->AddBookmark(_tabs.at(tabId)->GetURL());
+
+			// Display it on icon. Even if not successful, because that means it was already a bookmark
+			eyegui::setIconOfIconElement(_pTabOverviewLayout, "bookmark_tab", "icons/BookmarkTab_true.png");
+
+			// Display notification
+			if (success)
+			{
+				_pMaster->PushNotificationByKey("notification:bookmark_added_success", MasterNotificationInterface::Type::SUCCESS, false);
+			}
+			else
+			{
+				_pMaster->PushNotificationByKey("notification:bookmark_added_existing", MasterNotificationInterface::Type::NEUTRAL, false);
+			}
+		}
+	}
+	break;
+	case VoiceCommand::BACK:
+	{
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+		{
+			_tabs.at(tabId)->GoBack();
+		}
+	}
+	break;
+	case VoiceCommand::REFRESH:
+	{
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+			_tabs.at(tabId)->Reload();
+	}
+	break;
+	case VoiceCommand::FORWARD:
+	{
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+		{
+			_tabs.at(tabId)->GoForward();
+		}
+	}
+	break;
+	case VoiceCommand::GO_TO: {
+		if (!voiceAction.parameter.empty())
+		{
+			//dictationOfVoice(voiceAction.parameter);
+			int tabId = _currentTabId;
+			std::u16string url16;
+			eyegui_helper::convertUTF8ToUTF16(voiceAction.parameter, url16);
+			url16 = u"Going to " + url16;
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+			if (tabId >= 0)
+				_tabs.at(tabId)->OpenURL(voiceAction.parameter);
+		}
+	}
+	break;
+	case VoiceCommand::NEW_TAB:
+	{
+		if (!voiceAction.parameter.empty()) {
+			std::u16string url16;
+			eyegui_helper::convertUTF8ToUTF16(voiceAction.parameter, url16);
+			url16 = u"Going to " + url16;
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+			int tabId = AddTab(voiceAction.parameter, true);
+
+		}
+		else {
+			// Add tab
+			int tabId = AddTab(BLANK_PAGE_URL, true);
+
+			// Close tab overview
+			ShowTabOverview(false);
+
+			// Open URLInput to type in URL which should be loaded in new tab
+			_upURLInput->Activate(tabId);
+
+			JSMailer::instance().Send("new_tab");
+			LabStreamMailer::instance().Send("Open new tab");
+		}
+	}
+	break;
+	case VoiceCommand::ZOOM: {
+		// TODO
+	}
+	break;
+	// ###############################
+	// ### INPUT     CONTROL       ###
+	// ###############################
+	case VoiceCommand::SEARCH: {
+		if (!voiceAction.parameter.empty())
+			dictationOfVoice(voiceAction.parameter);
+	}
+	break;
+	case VoiceCommand::REMOVE: {
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+			_tabs.at(tabId)->DeleteContentAtCursorInTextEdit("text_input_action_text_edit", -1);
+	}
+	break;
+	case VoiceCommand::CLEAR: {
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+			_tabs.at(tabId)->DeleteContentInTextEdit("text_input_action_text_edit");
+	}
+	break;
+//	case VoiceCommand::TEXT: {
+//		if (!voiceAction.parameter.empty()) {
+//			try
+//			{
+//				int index = std::stoi(voiceAction.parameter);
+//				int tabId = _currentTabId;
+//				if (tabId >= 0)
+//					_tabs.at(tabId)->ScheduleTextInputTrigger(index - 1);
+//			}
+//			catch (const char *exception) {
+//				_pMaster->PushNotification(u"The number is not valid", MasterNotificationInterface::Type::WARNING, false);
+//			}
+//		}
+//		else {
+//			int index = 0;
+//			int tabId = _currentTabId;
+//			if (tabId >= 0) {
+//				float gazeYOffset = input->gazeY + _tabs.at(tabId)->getScrollingOffsetY();
+//				float gazeXOffset = input->gazeX - _tabs.at(tabId)->GetWebViewX();
+//				std::pair<float, float> finalCD = { gazeXOffset , gazeYOffset };
+//				LogInfo("gaze offset X:", gazeXOffset, " ,Y:", gazeYOffset);
+//				std::vector<Tab::DOMTextInputInfo> domTextList = _tabs.at(tabId)->RetrieveDOMTextInputInfos();
+//				float shortestDis = 50.f;
+//				for (Tab::DOMTextInputInfo link : domTextList) {
+//					float finalLinkX = 0.0;
+//					float finalLinkY = 0.0;
+//					for (Rect rect : link.rects) {
+//						float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
+//						float dy = glm::max(glm::abs(gazeYOffset - rect.Center().y) - (rect.Height() / 2.f), 0.f);
+//						float distance = glm::sqrt((dx * dx) + (dy * dy));
+//						if (distance < shortestDis) {
+//							LogInfo("nearestElement :", distance, "  ,x:", rect.Center().x, " ,y:", rect.Center().y);
+//							finalLinkY = rect.Center().y;
+//							finalLinkX = rect.Center().x;
+//							shortestDis = distance;
+//							index = link.nodeId;
+//						}
+//					}
+//					LogInfo("text id:", link.nodeId, "shortest dis: ", shortestDis);
+//				}
+//				if (shortestDis < 50.f)
+//					_tabs.at(tabId)->ScheduleTextInputTrigger(index);
+//			}
+//		}
+//	}
+//	break;
+
+
+		// ###############################
+		// ### CLICK     CONTROL       ###
+		// ###############################
+
+//	case VoiceCommand::CLICK: {
+//		float thresholdY = 50.0;
+//		float thresholdX = 100.0;
+//		int tabId = _currentTabId;
+//		if (tabId >= 0) {
+//			//LogInfo("scrollingOffset Y:", _tabs.at(tabId)->getScrollingOffsetY(), " ,X:", _tabs.at(tabId)->getScrollingOffsetX());
+//			//LogInfo("web Y:", _tabs.at(tabId)->GetWebViewY(), " ,X:", _tabs.at(tabId)->GetWebViewX());
+//			//LogInfo("Window Height:", _tabs.at(tabId)->GetWindowHeight(), " , width:", _tabs.at(tabId)->GetWindowWidth());
+//			//LogInfo("Web Height:", _tabs.at(tabId)->GetWebViewHeight(), " , width:", _tabs.at(tabId)->GetWebViewWidth());
+//			float finalLinkX = input->gazeX;
+//			float finalLinkY = input->gazeY;
+//			float gazeYOffset = input->gazeY + _tabs.at(tabId)->getScrollingOffsetY();
+//			float gazeXOffset = input->gazeX - _tabs.at(tabId)->GetWebViewX();
+//			LogInfo("gaze offset X:", gazeXOffset, " ,Y:", gazeYOffset);
+//			std::vector<Tab::DOMLinkInfo> domLinkList = _tabs.at(tabId)->RetrieveDOMLinkInfos();
+//			int levDisMax = 20;
+//			float shortestDis = 50.f;
+//			for (Tab::DOMLinkInfo link : domLinkList) {
+//				std::vector<Rect> rectList = link.rects;
+//				for (Rect rect : rectList) {
+//					//get the lev distance between text of link and transcription
+//					if (!voiceAction.parameter.empty()) {
+//						std::transform(voiceAction.parameter.begin(), voiceAction.parameter.end(), voiceAction.parameter.begin(), ::tolower);
+//						// gaze must be within (threshold  + the area of link )
+//						if ((glm::abs(rect.top - gazeYOffset) < thresholdY || glm::abs(rect.bottom - gazeYOffset) < thresholdY) &&
+//							(glm::abs(rect.right - gazeXOffset) < thresholdX || glm::abs(rect.left - gazeXOffset) < thresholdX)) {
+//							std::string linktext = link.text;
+//							std::transform(linktext.begin(), linktext.end(), linktext.begin(), ::tolower);
+//							int levDis = levenshteinSSE::levenshtein(voiceAction.parameter, linktext);
+//							if (levDis < levDisMax && levDis != linktext.size()) {
+//								LogInfo("shorter dis:", linktext, " . dis:", levDis, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
+//								finalLinkY = rect.Center().y;
+//								finalLinkX = rect.Center().x;
+//								levDisMax = levDis;
+//							}
+//						}
+//					}
+//					//get the distance of link and gaze
+//					if (levDisMax == 20) {
+//						float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
+//						float dy = glm::max(glm::abs(gazeYOffset - rect.Center().y) - (rect.Height() / 2.f), 0.f);
+//						float distance = glm::sqrt((dx * dx) + (dy * dy));
+//						if (shortestDis > distance) {
+//							LogInfo("shorter dis:", distance, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
+//							finalLinkY = rect.Center().y;
+//							finalLinkX = rect.Center().x;
+//							shortestDis = distance;
+//						}
+//					}
+//				}
+//			}
+//			_tabs.at(tabId)->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - _tabs.at(tabId)->getScrollingOffsetY());
+//		}
+//	}
+//	break;
+
+		// ###############################
+		// ### TAB VIDEO CONTROL       ###
+		// ###############################
+//	case VoiceCommand::VIDEO_INPUT: {
+//		if (!voiceAction.parameter.empty()) {
+//			try
+//			{
+//				int index = std::stoi(voiceAction.parameter);
+//				int tabId = _currentTabId;
+//				if (tabId >= 0)
+//					_tabs.at(tabId)->ScheduleVideoModeTrigger(index - 1);
+//			}
+//			catch (const char *exception) {
+//				_pMaster->PushNotification(u"The number is not valid", MasterNotificationInterface::Type::WARNING, false);
+//			}
+//		}
+//		else {
+//			int index = 0;
+//			int tabId = _currentTabId;
+//			if (tabId >= 0) {
+//				float gazeYOffset = input->gazeY + _tabs.at(tabId)->getScrollingOffsetY();
+//				float gazeXOffset = input->gazeX - _tabs.at(tabId)->GetWebViewX();
+//				float finalLinkX = input->gazeX;
+//				float finalLinkY = input->gazeY;
+//				LogInfo("gaze offset X:", gazeXOffset, " ,Y:", gazeYOffset);
+//				std::vector<Tab::DOMVideoInfo> domVideoList = _tabs.at(tabId)->RetrieveDOMVideoInfos();
+//				float shortestDis = 50.f;
+//				for (Tab::DOMVideoInfo link : domVideoList) {
+//					for (Rect rect : link.rects) {
+//						float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
+//						float dy = glm::max(glm::abs(gazeYOffset - rect.Center().y) - (rect.Height() / 2.f), 0.f);
+//						float distance = glm::sqrt((dx * dx) + (dy * dy));
+//						if (distance < shortestDis) {
+//							LogInfo("nearestElement :", distance, "  ,x:", rect.Center().x, " ,y:", rect.Center().y);
+//							finalLinkY = rect.Center().y;
+//							finalLinkX = rect.Center().x;
+//							shortestDis = distance;
+//							index = link.nodeId;
+//						}
+//					}
+//					LogInfo("video id:", link.nodeId, "shortest dis: ", shortestDis);
+//				}
+//				if (shortestDis < 50.f)
+//					_tabs.at(tabId)->ScheduleVideoModeTrigger(index);
+//			}
+//		}
+//	}
+//	break;
+
+//	case VoiceCommand::PLAY: {
+//		int tabId = _currentTabId;
+//		int videoId = _tabs.at(tabId)->getVideoId();
+//		LogInfo("video id ", videoId);
+//		if (tabId >= 0 && videoId >= 0)
+//			_tabs.at(tabId)->PlayVideo(videoId);
+//	}
+//	break;
+//	case VoiceCommand::PAUSE: {
+//		int tabId = _currentTabId;
+//		int videoId = _tabs.at(tabId)->getVideoId();
+//		LogInfo("video id ", videoId);
+//		if (tabId >= 0 && videoId >= 0)
+//			_tabs.at(tabId)->StopVideo(videoId);
+//	}
+//	break;
+//	case VoiceCommand::MUTE: {
+//		int tabId = _currentTabId;
+//		int videoId = _tabs.at(tabId)->getVideoId();
+//		LogInfo("video id ", videoId);
+//		if (tabId >= 0 && videoId >= 0)
+//			_tabs.at(tabId)->MuteVideo(videoId);
+//	}	
+//	break;
+//	case VoiceCommand::UNMUTE: {
+//		int tabId = _currentTabId;
+//		int videoId = _tabs.at(tabId)->getVideoId();
+//		LogInfo("video id ", videoId);
+//		if (tabId >= 0)
+//			_tabs.at(tabId)->UnmuteVideo(videoId);
+//	}
+//	break;
+//	case VoiceCommand::CHECK: {
+//		float thresholdY = 50.0;
+//		float thresholdX = 50.0;
+//		int tabId = _currentTabId;
+//		if (tabId >= 0) {
+//			//LogInfo("scrollingOffset Y:", _tabs.at(tabId)->getScrollingOffsetY(), " ,X:", _tabs.at(tabId)->getScrollingOffsetX());
+//			//LogInfo("web Y:", _tabs.at(tabId)->GetWebViewY(), " ,X:", _tabs.at(tabId)->GetWebViewX());
+//			//LogInfo("Window Height:", _tabs.at(tabId)->GetWindowHeight(), " , width:", _tabs.at(tabId)->GetWindowWidth());
+//			//LogInfo("Web Height:", _tabs.at(tabId)->GetWebViewHeight(), " , width:", _tabs.at(tabId)->GetWebViewWidth());
+//			float gazeYOffset = input->gazeY + _tabs.at(tabId)->getScrollingOffsetY();
+//			float gazeXOffset = input->gazeX - _tabs.at(tabId)->GetWebViewX();
+//			float finalLinkX = input->gazeX;
+//			float finalLinkY = input->gazeY;
+//			LogInfo("gaze offset X:", gazeXOffset, " ,Y:", gazeYOffset);
+//			std::vector<Tab::DOMCheckboxInfo> domCheckBoxList = _tabs.at(tabId)->RetrieveDOMCheckboxInfos();
+//			int levDisMax = 20;
+//			float shortestDis = 50.f;
+//			for (Tab::DOMCheckboxInfo link : domCheckBoxList) {
+//				std::vector<Rect> rectList = link.rects;
+//				for (Rect rect : rectList) {
+//					//get the lev distance between text of link and transcription
+//					/*if (!voiceAction.parameter.empty())
+//					// gaze must be within (threshold  + the area of link )
+//					if ((glm::abs(rect.top - gazeYOffset) < thresholdY || glm::abs(rect.bottom - gazeYOffset) < thresholdY) &&
+//					(glm::abs(rect.right - gazeXOffset) < thresholdX || glm::abs(rect.left - gazeXOffset) < thresholdX)) {
+//					std::vector<DOMAttribute> desc = link.description;
+//					int levDis = levenshteinSSE::levenshtein(voiceAction.parameter, desc.);
+//					if (levDis < levDisMax) {
+//					finalLinkY = rect.Center().y;
+//					finalLinkX = rect.Center().x;
+//					levDisMax = levDis;
+//					}
+//					}
+//					*/
+//					//get the distance of link and gaze
+//					if (levDisMax == 20) {
+//						float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
+//						float dy = glm::max(glm::abs(gazeYOffset - rect.Center().y) - (rect.Height() / 2.f), 0.f);
+//						float distance = glm::sqrt((dx * dx) + (dy * dy));
+//						LogInfo("checkbox: ", distance, "  ,x:", rect.Center().x, " ,y:", rect.Center().y);
+//						if (shortestDis > distance) {
+//							finalLinkY = rect.Center().y;
+//							finalLinkX = rect.Center().x;
+//							shortestDis = distance;
+//						}
+//					}
+//				}
+//			}
+//			_tabs.at(tabId)->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - _tabs.at(tabId)->getScrollingOffsetY());
+//		}
+//	}
+//	break;
+		/*	case VoiceAction::: {
+		int tabId = _currentTabId;
+		if (tabId >= 0)
+		_tabs.at(tabId)->;
+		}	break;
+		*/
+	default:
+		break;
+
+	}
+}
+
+void Web::dictationOfVoice(std::string transcription) {
+
+	transcription = transcription;
+	std::u16string s16;
+	eyegui_helper::convertUTF8ToUTF16(transcription, s16);
+	//TODO:: 
+	//_tabs.at(_currentTabId)->SetContentOfTextBlock("text_block", s16);
+
+	std::string _overlayTextEditId = "text_input_action_text_edit";
+	//std::string _overlayWordSuggestId = "text_input_action_word_suggest";
+	// Add content from keyboard
+	_tabs.at(_currentTabId)->AddContentAtCursorInTextEdit(_overlayTextEditId, s16);
+}
+
+
