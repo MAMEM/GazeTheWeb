@@ -90,7 +90,7 @@ public:
     // #############
 
     // Update. Returns which state should be active in next time step
-    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput);
+    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
 
     // Draw
     virtual void Draw() const;
@@ -113,8 +113,6 @@ public:
 
     // Get own id in web. Returns -1 if not found
     virtual int GetIdOfTab(Tab const * pCaller) const;
-
-	virtual void actionsOfVoice(VoiceAction voiceAction, std::shared_ptr<Input> input);
 
 	virtual void dictationOfVoice(std::string transcript);
 

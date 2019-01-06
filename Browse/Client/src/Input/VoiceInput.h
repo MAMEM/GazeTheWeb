@@ -149,7 +149,7 @@ public:
 	void SetLanguage(char* lang) { _language = lang; }
 
 	// Update voice input
-	VoiceAction Update(float tpf);
+	std::shared_ptr<VoiceAction> Update(float tpf);
 
 	// Start recording and transcribing process.
 	void Activate();

@@ -6,12 +6,10 @@
 
 #include "VoiceInput.h"
 #include "src/Utils/Logger.h"
+#include "src/Utils/helper.h"
 #include <map>
 #include <windows.h>
 #include <iterator>
-
-// levenshtein library
-#include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp"
 
 // Use portaudio library coming with eyeGUI. Bad practice, but eyeGUI would be needed to be linked dynamically otherwise
 #include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
@@ -29,7 +27,7 @@ std::vector<CommandStruct> commandStructList = {
 
 	CommandStruct(VoiceCommand::SCROLL_UP,		std::vector<std::string> {"up", "app" },					false),
 	CommandStruct(VoiceCommand::SCROLL_DOWN,	std::vector<std::string> {"down", "town", "dawn", "dumb"},	false),
-	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top"},							false),
+	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top", "talk"},					false),
 	CommandStruct(VoiceCommand::BOTTOM,			std::vector<std::string> {"bottom", "button", "boredom"},	false),
 	CommandStruct(VoiceCommand::BOOKMARK,		std::vector<std::string> {"bookmark"},						false),
 	CommandStruct(VoiceCommand::BACK,			std::vector<std::string> {"back"},							false),
@@ -42,7 +40,7 @@ std::vector<CommandStruct> commandStructList = {
 	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview"},					false),
 	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},				false),
 	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "clique", "clip"},		true),
-	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck"},				false),
+	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck", "checkbox" "checkbook's"},				false),
 	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},							false),
 	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},							false),
 	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},						false),
@@ -157,16 +155,8 @@ bool VoiceInput::IsPluginLoaded() {
 TRANSCRIPT TO ACTION
 */
 
-// split a string at spaces
-std::vector<std::string> split(std::string text) {
-	std::istringstream iss(text);
-	std::vector<std::string> splittedList(std::istream_iterator<std::string>{iss},
-		std::istream_iterator<std::string>());
-	return splittedList;
-}
-
 // Returns the last transcribed audio as a VoiceAction object
-VoiceAction VoiceInput::Update(float tpf) {
+std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 
 	// Initialize voiceResult (When there's no (matching) transcript from queue it'll be returned as is)
 	VoiceAction voiceResult = VoiceAction(VoiceCommand::NO_ACTION, "");
@@ -192,11 +182,11 @@ VoiceAction VoiceInput::Update(float tpf) {
 		int voiceParameterIndex = 0;
 
 		// For comparing purpose split the transcript
-		std::vector<std::string> splittedTranscript = split(transcript);
+		std::vector<std::string> splittedTranscript = SplitBySeparator(transcript, ' ');
 		int splittedTranscriptLen = splittedTranscript.size();
 
 		// The current shortest shortest Levenshtein Distance in the transcript
-		int shortestLevDistance = INT32_MAX;
+		int shortestStrDistance = INT32_MAX;
 
 		// The best matching CommandStruct
 		CommandStruct commandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
@@ -205,19 +195,19 @@ VoiceAction VoiceInput::Update(float tpf) {
 		for (CommandStruct currentCommandStruct : commandStructList) {
 			for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
-				// lev distance of key with transciption
-				int levDistance = 0;
-				std::vector<std::string> splittedPhoneticVariant = split(phoneticVariant);
+				// distance between key and transcription
+				int strDistance = 0;
+				std::vector<std::string> splittedPhoneticVariant = SplitBySeparator(phoneticVariant, ' ');
 				int splittedPhoneticVariantLen = splittedPhoneticVariant.size();
 
 				// iterate over the phonetic variant
 				for (int i = 0; i < splittedTranscriptLen; i++) {
 
 					// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
-					levDistance = levenshteinSSE::levenshtein(splittedTranscript[i], splittedPhoneticVariant[0]);
+					strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0]);
 
 					// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
-					if (levDistance < 2 && levDistance < shortestLevDistance) {
+					if (strDistance < 2 && strDistance < shortestStrDistance) {
 
 						// check if the following words are matching if the phonetic variant is longer than 1 word
 						if (splittedPhoneticVariantLen > 1) {
@@ -225,15 +215,15 @@ VoiceAction VoiceInput::Update(float tpf) {
 							// iterate over the rest of the splittedPhoneticVariant
 							for (int j = 1; j < splittedPhoneticVariantLen; j++) {
 
-								// levDistance has to be < 2 for the whole key 
-								levDistance += levenshteinSSE::levenshtein(splittedTranscript[i + j], splittedPhoneticVariant[j]);
+								// strDistance has to be < 2 for the whole key 
+								strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j]);
 
 								// we found the currently best matching key
-								if (levDistance < 2 && levDistance < shortestLevDistance && j == splittedPhoneticVariantLen - 1) {
+								if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {
 									commandStruct = currentCommandStruct;
 									voiceParameterIndex = i + j + 1;
-									LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", levDistance);
-									shortestLevDistance = levDistance;
+									LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", strDistance);
+									shortestStrDistance = strDistance;
 								}
 							}
 						}
@@ -242,8 +232,8 @@ VoiceAction VoiceInput::Update(float tpf) {
 						else {
 							commandStruct = currentCommandStruct;
 							voiceParameterIndex = i + 1;
-							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", levDistance);
-							shortestLevDistance = levDistance;
+							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", strDistance);
+							shortestStrDistance = strDistance;
 						}
 					}
 				}
@@ -275,7 +265,7 @@ VoiceAction VoiceInput::Update(float tpf) {
 	}
 	
 
-	return voiceResult;
+	return std::make_shared<VoiceAction>(voiceResult);
 }
 
 

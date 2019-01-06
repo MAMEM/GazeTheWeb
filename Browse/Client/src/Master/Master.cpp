@@ -897,10 +897,10 @@ void Master::Loop()
 			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
 
 
-		VoiceAction voiceInput(VoiceCommand::NO_ACTION, "");
+		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
 		// Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
 		if (!VoiceInputDeactivated) {
-			voiceInput = _upVoiceInput->Update(tpf);
+			spVoiceInput = _upVoiceInput->Update(tpf);
 
 			if (std::chrono::steady_clock::now() - voiceStartedTime > std::chrono::seconds(50)) {
 				_upVoiceInput->Deactivate();
@@ -1066,24 +1066,17 @@ void Master::Loop()
 		// Disable depth test for drawing
 		glDisable(GL_DEPTH_TEST);
 
-			//VOICE COMMAND
-			if (voiceInput.command != VoiceCommand::NO_ACTION)
-			{
-				LogInfo("eye coordinates X:", spInput->gazeX, " ,Y:", spInput->gazeY);
-				LogInfo("------voice action starts-------- ");
-				_upWeb->actionsOfVoice(voiceInput, spInput);
-			}
 
 		// Update current state and draw it (one should use here pointer instead of switch case)
 		StateType nextState = StateType::WEB;
 		switch (_currentState)
 		{
 		case StateType::WEB:
-			nextState = _upWeb->Update(tpf, spInput);
+			nextState = _upWeb->Update(tpf, spInput, spVoiceInput);
 			_upWeb->Draw();
 			break;
 		case StateType::SETTINGS:
-			nextState = _upSettings->Update(tpf, spInput);
+			nextState = _upSettings->Update(tpf, spInput, spVoiceInput);
 			_upSettings->Draw();
 			break;
 		}

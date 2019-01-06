@@ -32,6 +32,7 @@
 #include "src/State/Web/Tab/Triggers/VideoModeTrigger.h"
 #include "src/Utils/glmWrapper.h"
 #include "src/Input/Input.h"
+#include "src/Input/VoiceInput.h"
 #include "src/Global.h"
 #include "src/State/Web/Tab/Pipelines/PointingEvaluationPipeline.h"
 #include "submodules/eyeGUI/include/eyeGUI.h"
@@ -68,7 +69,7 @@ public:
     virtual ~Tab();
 
     // Update
-    void Update(float tpf, const std::shared_ptr<const Input> spInput);
+    void Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
 
     // Draw
     void Draw() const;
@@ -127,6 +128,13 @@ public:
 		std::string text;
 	};
 	std::vector<DOMLinkInfo> RetrieveDOMLinkInfos() const;
+
+//	struct DOMCheckboxInfo
+//	{
+//		DOMCheckboxInfo(std::vector<Rect> rects) : rects(rects) {}
+//		std::vector<Rect> rects;
+//	};
+//	std::vector<DOMCheckboxInfo> RetrieveDOMCheckboxInfos() const;
 
 	// Getter for URL
 	std::string GetURL() const { return _url; }

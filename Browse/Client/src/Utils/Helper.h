@@ -32,4 +32,7 @@ std::string GetDate();
 // Simple getter of timestamp (in miliseconds)
 std::string GetTimestamp();
 
+// Get distance of two different strings (levenshtein)
+size_t StringDistance(const std::string &s1, const std::string &s2);
+
 #endif // HELPER_H_
