@@ -129,12 +129,22 @@ public:
 	};
 	std::vector<DOMLinkInfo> RetrieveDOMLinkInfos() const;
 
-//	struct DOMCheckboxInfo
-//	{
-//		DOMCheckboxInfo(std::vector<Rect> rects) : rects(rects) {}
-//		std::vector<Rect> rects;
-//	};
-//	std::vector<DOMCheckboxInfo> RetrieveDOMCheckboxInfos() const;
+	// Retrieve all Checkbox's,
+	struct DOMCheckboxInfo
+	{
+		DOMCheckboxInfo(std::vector<Rect> rects) : rects(rects) {}
+		std::vector<Rect> rects;
+	};
+	std::vector<DOMCheckboxInfo> RetrieveDOMCheckboxInfos() const;
+
+	// Retrieve all Textinputs.,
+	struct DOMTextInputInfo
+	{
+		DOMTextInputInfo(std::vector<Rect> rects, int nodeId) : rects(rects), nodeId(nodeId) {}
+		std::vector<Rect> rects;
+		int nodeId;
+	};
+	std::vector<DOMTextInputInfo> RetrieveDOMTextInputInfos() const;
 
 	// Getter for URL
 	std::string GetURL() const { return _url; }

@@ -25,30 +25,31 @@ HINSTANCE pluginHandle;
 
 std::vector<CommandStruct> commandStructList = {
 
-	CommandStruct(VoiceCommand::SCROLL_UP,		std::vector<std::string> {"up", "app" },					false),
-	CommandStruct(VoiceCommand::SCROLL_DOWN,	std::vector<std::string> {"down", "town", "dawn", "dumb"},	false),
-	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top", "talk"},					false),
-	CommandStruct(VoiceCommand::BOTTOM,			std::vector<std::string> {"bottom", "button", "boredom"},	false),
-	CommandStruct(VoiceCommand::BOOKMARK,		std::vector<std::string> {"bookmark"},						false),
-	CommandStruct(VoiceCommand::BACK,			std::vector<std::string> {"back"},							false),
-	CommandStruct(VoiceCommand::REFRESH,		std::vector<std::string> {"reload", "refresh"},				false),
-	CommandStruct(VoiceCommand::FORWARD,		std::vector<std::string> {"forward", "for what"},			false),
-	CommandStruct(VoiceCommand::GO_TO,			std::vector<std::string> {"go to"},							true),
-	CommandStruct(VoiceCommand::NEW_TAB,		std::vector<std::string> {"new tab", "new tap", "UTEP"},	true),
-	CommandStruct(VoiceCommand::SEARCH,			std::vector<std::string> {"search"},						true),
-	CommandStruct(VoiceCommand::ZOOM,			std::vector<std::string> {"zoom"},							false),
-	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview"},					false),
-	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},				false),
-	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "clique", "clip"},		true),
-	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck", "checkbox" "checkbook's"},				false),
-	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},							false),
-	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},							false),
-	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},						false),
-	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},					true),
-	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},						false),
-	CommandStruct(VoiceCommand::CLEAR,			std::vector<std::string> {"clear"},							false),
-	CommandStruct(VoiceCommand::CLOSE,			std::vector<std::string> {"close"},							false),
-	CommandStruct(VoiceCommand::QUIT,			std::vector<std::string> {"quit"},							false),
+	CommandStruct(VoiceCommand::SCROLL_UP,		std::vector<std::string> {"up", "app" },									false),	//
+	CommandStruct(VoiceCommand::SCROLL_DOWN,	std::vector<std::string> {"down", "town", "dawn", "dumb"},					false),	//
+	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top", "talk"},									false),	//
+	CommandStruct(VoiceCommand::BOTTOM,			std::vector<std::string> {"bottom", "button", "boredom"},					false),	//
+	CommandStruct(VoiceCommand::BOOKMARK,		std::vector<std::string> {"bookmark"},										false),	//
+	CommandStruct(VoiceCommand::BACK,			std::vector<std::string> {"back"},											false),	//
+	CommandStruct(VoiceCommand::REFRESH,		std::vector<std::string> {"reload", "refresh"},								false),	//
+	CommandStruct(VoiceCommand::FORWARD,		std::vector<std::string> {"forward", "for what"},							false),	//
+	CommandStruct(VoiceCommand::GO_TO,			std::vector<std::string> {"go to", "visit"},								true),	//
+	CommandStruct(VoiceCommand::NEW_TAB,		std::vector<std::string> {"new tab", "new tap", "UTEP"},					true),	//
+	CommandStruct(VoiceCommand::SEARCH,			std::vector<std::string> {"search"},										true),	
+	CommandStruct(VoiceCommand::ZOOM,			std::vector<std::string> {"zoom"},											false),	// SCHEDULED
+	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview", "tap overview"},					false),
+	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},								false),	//
+	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "clique", "clip"},						true),	//
+	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck", "checkbox" "checkbook's"},		false),	
+	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},											false),	
+	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},											false),	
+	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},										false),	
+	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},									true),	// -
+	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},										false),	//
+	CommandStruct(VoiceCommand::CLEAR,			std::vector<std::string> {"clear", "Thalia", "Clea"},						false),	//
+	CommandStruct(VoiceCommand::CLOSE,			std::vector<std::string> {"close"},											false),	//
+	CommandStruct(VoiceCommand::QUIT,			std::vector<std::string> {"quit"},											false),	//
+	CommandStruct(VoiceCommand::PARAMETER_ONLY,	std::vector<std::string> {},												true),	//
 
 };
 
@@ -261,7 +262,10 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 
 			LogInfo("voiceCommand: " + commandStruct.phoneticVariants[0] + " Parameter: " + voiceResult.parameter);
 		}
-
+		else if (_textInputMode) {
+				voiceResult.command = VoiceCommand::PARAMETER_ONLY;
+				voiceResult.parameter = transcript;
+			}
 	}
 	
 
@@ -316,7 +320,7 @@ void VoiceInput::Activate() {
 		_stopped = false;
 
 		// [STREAM INITIALIZATION]
-		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sampleRate);
+		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sampleRate, _model);
 		if (initSuccess != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
 			std::string log = GO_SPEECH_RECOGNITION_GetLog();
 			LogError("VoiceInput: " + log + " (INITIALIZING)");

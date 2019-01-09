@@ -509,6 +509,10 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std
 			if (_currentTabId >= 0)
 				_tabs.at(_currentTabId)->OpenURL(spVoiceInput->parameter);
 		}
+		else {
+			std::u16string url16 = u"\"Go To\" awaits a page to visit!";
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+		}
 	}
 	break;
 	case VoiceCommand::NEW_TAB:
@@ -545,13 +549,37 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std
 		// TODO
 	}
 	break;
-	
+	case VoiceCommand::TAB_OVERVIEW: {
+		this->ShowTabOverview(true);
+	}
+	break;
+	case VoiceCommand::SHOW_BOOKMARKS: {
+	}
+	break;
+	case VoiceCommand::CLOSE: {
+		if(eyegui::isLayoutVisible(_pTabOverviewLayout))
+			this->ShowTabOverview(false);
+	}
+	break;
 	// ###############################
 	// ### INPUT     CONTROL       ###
 	// ###############################
 	case VoiceCommand::SEARCH: {
-		if (!spVoiceInput->parameter.empty())
-			dictationOfVoice(spVoiceInput->parameter);
+		if (!spVoiceInput->parameter.empty()) {
+			std::u16string s16;
+			eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, s16);
+			//TODO:: 
+			//_tabs.at(_currentTabId)->SetContentOfTextBlock("text_block", s16);
+
+			std::string _overlayTextEditId = "text_input_action_text_edit";
+			//std::string _overlayWordSuggestId = "text_input_action_word_suggest";
+			// Add content from keyboard
+			_tabs.at(_currentTabId)->AddContentAtCursorInTextEdit(_overlayTextEditId, s16);
+		}
+		else {
+			std::u16string url16 = u"\"Search\" awaits a search word!";
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+		}
 	}
 	break;
 	case VoiceCommand::REMOVE: {
@@ -1304,20 +1332,3 @@ void Web::WebButtonListener::up(eyegui::Layout* pLayout, std::string id)
 		}
 	}
 }
-
-
-void Web::dictationOfVoice(std::string transcription) {
-
-	transcription = transcription;
-	std::u16string s16;
-	eyegui_helper::convertUTF8ToUTF16(transcription, s16);
-	//TODO:: 
-	//_tabs.at(_currentTabId)->SetContentOfTextBlock("text_block", s16);
-
-	std::string _overlayTextEditId = "text_input_action_text_edit";
-	//std::string _overlayWordSuggestId = "text_input_action_word_suggest";
-	// Add content from keyboard
-	_tabs.at(_currentTabId)->AddContentAtCursorInTextEdit(_overlayTextEditId, s16);
-}
-
-

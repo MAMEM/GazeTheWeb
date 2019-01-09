@@ -114,8 +114,6 @@ public:
     // Get own id in web. Returns -1 if not found
     virtual int GetIdOfTab(Tab const * pCaller) const;
 
-	virtual void dictationOfVoice(std::string transcript);
-
 	// Add history entry
 	virtual std::shared_ptr<HistoryManager::Page> AddPageToHistory(std::string URL, std::string title);
 

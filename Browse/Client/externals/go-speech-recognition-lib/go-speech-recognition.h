@@ -29,12 +29,14 @@ cTranscriptLanguage
 cSampleRate
 (the sample rate of the audio recording as an integer value, it's recommended
 use at least 16kHz)
+cTranscriptionModel
+(the requested model to use: can be either "video", "phone_call", "command_and_search", "default" (see https://cloud.google.com/speech-to-text/docs/basics))
 
 Return:
 GO_SPEECH_RECOGNITION_TRUE if successful
 GO_SPEECH_RECOGNITION_FALSE if failed (error log can be retrieved with "GetLog()")
 */
-typedef GO_SPEECH_RECOGNITION_BOOL(*GO_SPEECH_RECOGNITION_INITIALIZE_STREAM)(char* cTranscriptLanguage, int cSampleRate);
+typedef GO_SPEECH_RECOGNITION_BOOL(*GO_SPEECH_RECOGNITION_INITIALIZE_STREAM)(char* cTranscriptLanguage, int cSampleRate, char* cTranscriptionModel);
 
 /*
 GO_SPEECH_RECOGNITION_BOOL SendAudio(const short* recording, int recording_size):

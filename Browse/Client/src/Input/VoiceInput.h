@@ -48,8 +48,8 @@ enum class VoiceCommand
 	REMOVE,			// remove last inputted word
 	CLEAR,			// clear the entire text input field
 	CLOSE,			// close the current view and return to the page view
-	QUIT			// quit the browser
-
+	QUIT,			// quit the browser
+	PARAMETER_ONLY	// use when only the parameter is needed i.e. when using text input
 };
 
 // Needed to assign Transcripts to VoiceCommands
@@ -148,6 +148,9 @@ public:
 	// Change language of transcribed audio
 	void SetLanguage(char* lang) { _language = lang; }
 
+	// Change transcription model [Can be either "video", "phone_call", "command_and_search", "default" (see https://cloud.google.com/speech-to-text/docs/basics)]
+	void SetModel(char* model) { _model = model; }
+
 	// Update voice input
 	std::shared_ptr<VoiceAction> Update(float tpf);
 
@@ -163,6 +166,11 @@ public:
 	// Returns whether the stopping process was initialized.
 	// The process is really deactivated if IsActive() == false && IsStopped() == true
 	bool IsStopped() { return _stopped; }
+
+	// Sets the Input mode to Text 
+	// textInputMode true:	text mode
+	// textInputMode false:	command mode
+	void setTextInputMode(bool textInputMode) { _textInputMode = textInputMode; }
 
 private:
 
@@ -203,6 +211,9 @@ private:
 
 	// _sample_rate of the audio
 	int _sampleRate = 16000;
+
+	// transcription model to be used
+	char* _model = "command_and_search";
 
 	// time to query audio in ms
 	int _queryTime = 1000;
@@ -262,6 +273,8 @@ private:
 			Manipulated in: main, _tReceiving
 	*/
 	std::queue<std::string> _recognitionResults;
+
+	std::atomic<bool> _textInputMode = false;
 
 	// protects access to recognition_results
 	std::mutex _transcriptGuard;
