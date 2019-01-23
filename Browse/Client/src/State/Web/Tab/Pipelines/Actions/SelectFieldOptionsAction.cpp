@@ -87,7 +87,7 @@ SelectFieldOptionsAction::~SelectFieldOptionsAction()
 	}
 }
 
-bool SelectFieldOptionsAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool SelectFieldOptionsAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
     return _finished;
 }

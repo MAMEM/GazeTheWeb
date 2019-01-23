@@ -19,7 +19,7 @@ DriftCorrectionAction::DriftCorrectionAction(TabInteractionInterface* pTab, bool
     AddVec2OutputSlot("coordinate");
 }
 
-bool DriftCorrectionAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool DriftCorrectionAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
 	// ### PREPARATION ###
 

@@ -13,10 +13,10 @@ TextSelectionAction::TextSelectionAction(TabInteractionInterface *pTab) : ZoomCo
 	AddVec2InputSlot("coordinate");
 }
 
-bool TextSelectionAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool TextSelectionAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
 	// Call standard zoom coordinate update function
-	bool done = ZoomCoordinateAction::Update(tpf, spInput);
+	bool done = ZoomCoordinateAction::Update(tpf, spInput, spVoiceInput, spVoiceInputObject);
 
 	// Calculate current coordinate in CEFPixel space
 	glm::vec2 cefPixels(_pTab->GetWebViewResolutionX(), _pTab->GetWebViewResolutionY());

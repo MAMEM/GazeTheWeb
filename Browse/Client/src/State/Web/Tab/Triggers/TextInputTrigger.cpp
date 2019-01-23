@@ -18,6 +18,7 @@ TextInputTrigger::~TextInputTrigger()
 }
 
 bool TextInputTrigger::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+//bool TextInputTrigger::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
 	// Call super method
 	bool triggered = DOMTrigger::Update(tpf, spInput);
@@ -25,6 +26,9 @@ bool TextInputTrigger::Update(float tpf, const std::shared_ptr<const TabInput> s
 	// When triggered, push back pipeline to input text
 	if (triggered)
 	{
+		//if (spVoiceInputObject->GetVoiceMode == VoiceMode::FREE)
+		//	spVoiceInputObject->SetVoiceMode(VoiceMode::COMMAND);
+
 		LabStreamMailer::instance().Send("Text input started");
 
 		_pTab->PushBackPipeline(

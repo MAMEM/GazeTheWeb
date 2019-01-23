@@ -39,10 +39,15 @@ std::vector<CommandStruct> commandStructList = {
 	CommandStruct(VoiceCommand::ZOOM,			std::vector<std::string> {"zoom"},											false),	// SCHEDULED
 	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview", "tap overview"},					false),
 	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},								false),	//
-	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "clique", "clip"},						true),	//
+	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "clique", "clip", "Kik"},				true),	//
 	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck", "checkbox" "checkbook's"},		false),	
-	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},											false),	
-	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},											false),	
+	CommandStruct(VoiceCommand::VIDEO_INPUT,	std::vector<std::string> {"video", "video input"},							false),
+	CommandStruct(VoiceCommand::INCREASE,		std::vector<std::string> {"increase", "increase volume", "increase sound"},	false),	//
+	CommandStruct(VoiceCommand::DECREASE,		std::vector<std::string> {"decrease", "decrease volume", "decrease sound"},	false),	//
+	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},											false),	//
+	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},											false),	//
+	CommandStruct(VoiceCommand::STOP,			std::vector<std::string> {"stop"},											false),	//
+	CommandStruct(VoiceCommand::MUTE,			std::vector<std::string> {"mute"},											false),
 	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},										false),	
 	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},									true),	// -
 	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},										false),	//
@@ -162,6 +167,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 	// Initialize voiceResult (When there's no (matching) transcript from queue it'll be returned as is)
 	VoiceAction voiceResult = VoiceAction(VoiceCommand::NO_ACTION, "");
 	std::string transcript;
+	
 
 	// Take first transcript from queue
 	_transcriptGuard.lock();
@@ -170,6 +176,8 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 		_recognitionResults.pop();
 	}
 	_transcriptGuard.unlock();
+
+
 
 	/*
 		TODO:
@@ -205,7 +213,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 				for (int i = 0; i < splittedTranscriptLen; i++) {
 
 					// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
-					strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0]);
+					strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0], true);
 
 					// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
 					if (strDistance < 2 && strDistance < shortestStrDistance) {
@@ -217,7 +225,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 							for (int j = 1; j < splittedPhoneticVariantLen; j++) {
 
 								// strDistance has to be < 2 for the whole key 
-								strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j]);
+								strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], true);
 
 								// we found the currently best matching key
 								if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {
@@ -262,7 +270,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 
 			LogInfo("voiceCommand: " + commandStruct.phoneticVariants[0] + " Parameter: " + voiceResult.parameter);
 		}
-		else if (_textInputMode) {
+		else if (_voiceMode == VoiceMode::FREE) {
 				voiceResult.command = VoiceCommand::PARAMETER_ONLY;
 				voiceResult.parameter = transcript;
 			}
@@ -270,8 +278,26 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 	
 
 	return std::make_shared<VoiceAction>(voiceResult);
+
 }
 
+void VoiceInput::SetVoiceMode(VoiceMode voiceMode) { 
+	
+	// voice mode hasn't changed - nothing to do
+	if (voiceMode == _voiceMode)
+		return;
+
+	_voiceMode = voiceMode; 
+
+	if (_voiceMode == VoiceMode::COMMAND)
+		_model = "command_and_search";
+
+	if (_voiceMode == VoiceMode::FREE)
+		_model = "default";
+
+
+	this->Deactivate();
+}
 
 
 
@@ -317,7 +343,7 @@ void VoiceInput::Activate() {
 		LogInfo("VoiceInput: Started transcribing process.");
 
 		_active = true;
-		_stopped = false;
+		_stopping = false;
 
 		// [STREAM INITIALIZATION]
 		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sampleRate, _model);
@@ -326,7 +352,7 @@ void VoiceInput::Activate() {
 			LogError("VoiceInput: " + log + " (INITIALIZING)");
 		}
 
-		LogInfo("VoiceInput: Stream was successfully initialized.");
+		LogInfo("VoiceInput: Stream was successfully initialized: Transcription Language: " + std::string(_language) + " | Sample Rate: " + std::to_string(_sampleRate) + " | Transcription Model" + std::string(_model));
 
 		// [SETUP RECORDING]
 
@@ -399,7 +425,7 @@ void VoiceInput::Activate() {
 
 			LogInfo("VoiceInput: Started sending audio.");
 
-			while (!_stopped) {
+			while (!_stopping) {
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(_queryTime));
 
@@ -409,7 +435,7 @@ void VoiceInput::Activate() {
 				// Check initialization
 				GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
 				if (initialized != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
-					if (_stopped) {
+					if (_stopping) {
 						LogInfo("VoiceInput: Stream is not initialized! (SENDING)");
 					}
 					else {
@@ -424,7 +450,7 @@ void VoiceInput::Activate() {
 				if (sendSuccess != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
 					std::string log = GO_SPEECH_RECOGNITION_GetLog();
 					LogError("VoiceInput: " + log + " (SENDING)");
-					_stopped = true;
+					_stopping = true;
 					_isSending = false;
 					return;
 				}
@@ -437,7 +463,7 @@ void VoiceInput::Activate() {
 			_isReceiving = true;
 			LogInfo("VoiceInput: Started receiving transcripts.");
 
-			while (!_stopped) {
+			while (!_stopping) {
 
 				std::string receivedString = "";
 				char* received;
@@ -445,7 +471,7 @@ void VoiceInput::Activate() {
 				// Check initialization
 				GO_SPEECH_RECOGNITION_BOOL initialized = GO_SPEECH_RECOGNITION_IsInitialized();
 				if (initialized != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
-					if (_stopped) {
+					if (_stopping) {
 						LogInfo("VoiceInput: Stream is not initialized! (RECEIVING)");
 					}
 					else {
@@ -460,7 +486,7 @@ void VoiceInput::Activate() {
 				if (receiveSuccess != GO_SPEECH_RECOGNITION_TRUE) {
 					std::string log = GO_SPEECH_RECOGNITION_GetLog();
 					LogError("VoiceInput: " + log + " (RECEIVING)");
-					_stopped = true;
+					_stopping = true;
 					_isReceiving = false;
 					return;
 				}
@@ -481,8 +507,8 @@ void VoiceInput::Activate() {
 }
 
 void VoiceInput::Deactivate() {
+	_stopping = true;
 	_tStopping = std::make_unique<std::thread>([this] {
-		_stopped = true;
 		LogInfo("VoiceInput: Stopping audio recording and transcribing process.");
 
 		GO_SPEECH_RECOGNITION_CloseStream();

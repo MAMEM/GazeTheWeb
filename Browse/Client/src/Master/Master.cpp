@@ -447,8 +447,8 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
 	// ### VOICE INPUT ### Christopher
-	_upVoiceInput = std::unique_ptr<VoiceInput>(new VoiceInput());
-	_upVoiceInput->Activate();
+	_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput());
+	_spVoiceInputObject->Activate();
 
 
 	// ### FRAMEBUFFER ###
@@ -775,7 +775,6 @@ void Master::Loop()
 {
 	// Christopher
 	auto voiceStartedTime = std::chrono::steady_clock::now();
-	bool VoiceInputDeactivated = false;
 
 	while (!_exit)
 	{
@@ -897,20 +896,20 @@ void Master::Loop()
 			_monitorHeight); // returns whether gaze was used (or emulated by mouse)
 
 
+
+		// VOICE INPUT
+		
 		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
-		// Update voice input TODO @ Christopher: Pipe output to delegates, e.g., Web object that contains tabs. Maybe make similar structure like Input? Or extend Input?
-		if (!VoiceInputDeactivated) {
-			spVoiceInput = _upVoiceInput->Update(tpf);
+		if (!_spVoiceInputObject->IsStopping()) {
+			spVoiceInput = _spVoiceInputObject->Update(tpf);
 
 			if (std::chrono::steady_clock::now() - voiceStartedTime > std::chrono::seconds(50)) {
-				_upVoiceInput->Deactivate();
-				VoiceInputDeactivated = true;
+				_spVoiceInputObject->Deactivate();
 			}
-		}
+		}		
 
-		if (!_upVoiceInput->IsActive()) {
-			_upVoiceInput->Activate();
-			VoiceInputDeactivated = false;
+		if (!_spVoiceInputObject->IsActive()) {
+			_spVoiceInputObject->Activate();
 			voiceStartedTime = std::chrono::steady_clock::now();
 		}
 
@@ -1072,11 +1071,11 @@ void Master::Loop()
 		switch (_currentState)
 		{
 		case StateType::WEB:
-			nextState = _upWeb->Update(tpf, spInput, spVoiceInput);
+			nextState = _upWeb->Update(tpf, spInput, spVoiceInput, _spVoiceInputObject);
 			_upWeb->Draw();
 			break;
 		case StateType::SETTINGS:
-			nextState = _upSettings->Update(tpf, spInput, spVoiceInput);
+			nextState = _upSettings->Update(tpf, spInput, spVoiceInput, _spVoiceInputObject);
 			_upSettings->Draw();
 			break;
 		}

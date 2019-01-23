@@ -19,9 +19,13 @@
 
 #include "go-speech-recognition.h"
 
+enum class VoiceMode {
+	COMMAND,	// change mode to COMMAND to use the transcription mode "command and search" (is default, use for browsing)
+	FREE		// change mode to COMMAND to use the transcription mode "default" (use for i.e. text input)
+};
 
-enum class VoiceCommand
-{
+
+enum class VoiceCommand {
 
 	NO_ACTION,
 	SCROLL_UP,		// scroll the page up
@@ -40,10 +44,14 @@ enum class VoiceCommand
 	SHOW_BOOKMARKS,	// shows the list of bookmarks
 	CLICK,			// click on the nearest clickable element containing the [parameter]
 	CHECK,			// check the nearest checkbox
-	PLAY,			// play the nearest video 
-	PAUSE,			// pause the nearest video 
-	MUTE,			// mute the browsers sound
-	UNMUTE,			// unmute the browsers sound
+	VIDEO_INPUT,	// open videomode with nearest video
+	INCREASE,		// increases sound volume
+	DECREASE,		// decreases sound volume
+	PLAY,			// play the current video
+	PAUSE,			// pause the current video
+	STOP,			// stop the current video
+	MUTE,			// mute the videos sound
+	UNMUTE,			// unmute the videos sound
 	TEXT,			// activate text input ?[parameter]
 	REMOVE,			// remove last inputted word
 	CLEAR,			// clear the entire text input field
@@ -165,12 +173,16 @@ public:
 
 	// Returns whether the stopping process was initialized.
 	// The process is really deactivated if IsActive() == false && IsStopped() == true
-	bool IsStopped() { return _stopped; }
+	bool IsStopping() { return _stopping; }
 
-	// Sets the Input mode to Text 
-	// textInputMode true:	text mode
-	// textInputMode false:	command mode
-	void setTextInputMode(bool textInputMode) { _textInputMode = textInputMode; }
+	// Changes transcription mode/model
+	// input: VoiceMode
+	void SetVoiceMode(VoiceMode voiceMode);
+
+	VoiceMode GetVoiceMode() { return _voiceMode; }
+
+	// Returns the how many pixel should be scrolled when using SCROLL_UP/SCROLL_DOWN
+	static double GetScrollDistance() { return double(350); }	
 
 private:
 
@@ -235,7 +247,7 @@ private:
 			Read in: _tSending, _tReceiving
 			Manipulated in: _tStopping
 	*/
-	std::atomic<bool> _stopped = true;
+	std::atomic<bool> _stopping = true;
 
 	// thread handling the sending
 	std::unique_ptr<std::thread> _tSending = nullptr;
@@ -274,7 +286,7 @@ private:
 	*/
 	std::queue<std::string> _recognitionResults;
 
-	std::atomic<bool> _textInputMode = false;
+	VoiceMode _voiceMode = VoiceMode::COMMAND;
 
 	// protects access to recognition_results
 	std::mutex _transcriptGuard;

@@ -326,8 +326,8 @@ private:
     // Eye input
     std::unique_ptr<EyeInput> _upEyeInput;
 
-	// Voicde input
-	std::unique_ptr<VoiceInput> _upVoiceInput;
+	// Voice input
+	std::shared_ptr<VoiceInput> _spVoiceInputObject;
 
     // Id of dictionary in eyeGUI
     unsigned int _dictonaryId = 0;

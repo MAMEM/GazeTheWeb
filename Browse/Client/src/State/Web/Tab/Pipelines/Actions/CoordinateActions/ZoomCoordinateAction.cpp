@@ -17,7 +17,7 @@ ZoomCoordinateAction::ZoomCoordinateAction(TabInteractionInterface* pTab, bool d
     AddVec2OutputSlot("coordinate");
 }
 
-bool ZoomCoordinateAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool ZoomCoordinateAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
 	// Speed of zooming
 	float zoomSpeed = 0.f;

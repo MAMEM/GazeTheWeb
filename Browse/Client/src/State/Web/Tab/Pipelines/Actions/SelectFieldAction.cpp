@@ -20,7 +20,7 @@ SelectFieldAction::~SelectFieldAction()
     // Nothing to do
 }
 
-bool SelectFieldAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool SelectFieldAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
     // Set option
 	int option = 0;

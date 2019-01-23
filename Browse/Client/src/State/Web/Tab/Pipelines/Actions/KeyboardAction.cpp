@@ -426,12 +426,29 @@ KeyboardAction::~KeyboardAction()
 	_pTab->UnregisterButtonListenerInOverlay(_overlayExtraKeyId);
 }
 
-bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
 {
 	// Update duration
 	float duration = 0.f;
 	GetOutputValue("duration", duration);
 	SetOutputValue("duration", duration + tpf);
+
+	// Voice!
+	if ((spVoiceInput->command == VoiceCommand::PARAMETER_ONLY || spVoiceInput->command == VoiceCommand::TEXT) && !spVoiceInput->parameter.empty()) {
+		std::u16string paramU16;
+		eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, paramU16);
+
+		SetOutputValue("text", paramU16);
+
+		// Submit text directly if wished
+		SetOutputValue("submit", _submit);
+		JSMailer::instance().Send("submit");
+
+		// Action is now finished
+		return true;
+	}
+
+
 
 	// When classification timer is set, it is decremented at each update.
 	// When timer is zero, selection is ALWAYS accepted. Please change as required.
@@ -461,12 +478,11 @@ bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spI
 	// Decide whether action is complete
     if (_complete)
     {
-        // Fill collected input to output
-        SetOutputValue("text", _pTab->GetContentOfTextEdit(_overlayTextEditId));
-
-        // Submit text directly if wished
-        SetOutputValue("submit", _submit);
-
+		// Fill collected input to output
+		SetOutputValue("text", _pTab->GetContentOfTextEdit(_overlayTextEditId));			
+		
+		// Submit text directly if wished
+		SetOutputValue("submit", _submit);
 		JSMailer::instance().Send("submit");
 
         // Action is now finished

@@ -69,7 +69,7 @@ public:
     virtual ~Tab();
 
     // Update
-    void Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
+    void Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject);
 
     // Draw
     void Draw() const;
@@ -145,6 +145,14 @@ public:
 		int nodeId;
 	};
 	std::vector<DOMTextInputInfo> RetrieveDOMTextInputInfos() const;
+	
+	struct DOMVideoInfo
+	{
+		DOMVideoInfo(std::vector<Rect> rects, int nodeId) : rects(rects), nodeId(nodeId) {}
+		std::vector<Rect> rects;
+		int nodeId;
+	};
+	std::vector<DOMVideoInfo> RetrieveDOMVideoInfos() const;
 
 	// Getter for URL
 	std::string GetURL() const { return _url; }
@@ -157,6 +165,10 @@ public:
 
 	// Update award icon
 	void SetAwardIcon(Award award); 
+
+	// searchs the nearest element from the "rectList" to the gaze coordinates in the "spInput" and updates the committed "spResultX", "spResultY" and "spResultDis"
+	// returns a bool indicating if a nearer (the distance is smaller than the committed "spResultDis") Rect has been found
+	bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, std::vector<Rect> rectList, std::shared_ptr<float> spResultX, std::shared_ptr<float> spResultY, std::shared_ptr<float> spResultDis);
 
     // #################################
     // ### TAB INTERACTIVE INTERFACE ###
@@ -461,7 +473,7 @@ public:
 	virtual void Debug_DrawLine(glm::vec2 originCoordinate, glm::vec2 targetCoordinate, glm::vec3 color) const;
 
 private:
-
+	int _lastVideoId = 0;
 	// Enumeration for icon state of tab
 	enum class IconState { LOADING, ICON_NOT_FOUND, FAVICON };
 
@@ -574,6 +586,22 @@ private:
 	// Exit video mode
 	void ExitVideoMode(bool immediately = false);
 
+	// increase the volumn of the video
+	virtual void IncreaseVideoVolume(int videoModeId);
+	// decrease the volumn of the video
+	virtual void DecreaseVideoVolume(int videoModeId);
+	// play the video
+	virtual void PlayVideo(int videoModeId);
+	// stop the video
+	virtual void StopVideo(int videoModeId);
+	// mute the video
+	virtual void MuteVideo(int videoModeId);
+	// unmute the video
+	virtual void UnmuteVideo(int videoModeId);
+	// jump to some seconds of the video
+	virtual void JumpToVideo(float seconds, int videoModeId);
+
+	int getVideoId() const { return _lastVideoId; }
 	// Start social record
 	void StartSocialRecord(std::string URL, SocialPlatform platform);
 

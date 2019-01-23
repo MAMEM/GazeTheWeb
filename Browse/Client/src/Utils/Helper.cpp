@@ -11,6 +11,8 @@
 #include <vector>
 #include <ctime>
 #include <chrono>
+#include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp"
+
 
 std::string RGBAToHexString(glm::vec4 color)
 {
@@ -222,44 +224,120 @@ std::string GetTimestamp()
 	return std::to_string(ms.count());
 }
 
-size_t StringDistance(const std::string &s1, const std::string &s2)
-{
-	const size_t m(s1.size());
-	const size_t n(s2.size());
+std::string GenerateSoundexCode(std::string input) {
+	
 
-	if (m == 0) return n;
-	if (n == 0) return m;
+	// implementation of the soundex algortihm (american soundex) [https://en.wikipedia.org/wiki/Soundex]
+	// TODO: maybe implement alternative behaviour for different languages (needs different rating of appearing chars) 
 
-	size_t *costs = new size_t[n + 1];
 
-	for (size_t k = 0; k <= n; k++) costs[k] = k;
+	// initialization
+	std::string soundexCode = "";
+	soundexCode[0] = input[0];
 
-	size_t i = 0;
-	for (std::string::const_iterator it1 = s1.begin(); it1 != s1.end(); ++it1, ++i)
+	int inputCount = 1;
+	int codeCount = 1;
+	bool lastWasVowel = false;
+
+	// generate the soundex code by rating the current char in the input string
+	while ((inputCount < input.length()) && (codeCount < 4))
 	{
-		costs[0] = i + 1;
-		size_t corner = i;
-
-		size_t j = 0;
-		for (std::string::const_iterator it2 = s2.begin(); it2 != s2.end(); ++it2, ++j)
+		if (((input[inputCount] == 'b') 
+			|| (input[inputCount] == 'p') 
+			|| (input[inputCount] == 'v') 
+			|| (input[inputCount] == 'f')) 
+			&& (soundexCode[codeCount - 1] != 1) || lastWasVowel)	// in soundex code two adjacent with the same rating will only be counted once except a vowel is in between them
 		{
-			size_t upper = costs[j + 1];
-			if (*it1 == *it2)
-			{
-				costs[j + 1] = corner;
-			}
-			else
-			{
-				size_t t(upper < corner ? upper : corner);
-				costs[j + 1] = (costs[j] < t ? costs[j] : t) + 1;
-			}
-
-			corner = upper;
+			soundexCode[codeCount] = 1;
+			codeCount++;
+			lastWasVowel = false;
 		}
+		else if (((input[inputCount] == 'c') 
+				|| (input[inputCount] == 'g') 
+				|| (input[inputCount] == 'j') 
+				|| (input[inputCount] == 'k') 
+				|| (input[inputCount] == 'q') 
+				|| (input[inputCount] == 's') 
+				|| (input[inputCount] == 'x') 
+				|| (input[inputCount] == 'z')) 
+				&& (soundexCode[codeCount - 1] != 2) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 2;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if (((input[inputCount] == 'd') 
+				|| (input[inputCount] == 't')) 
+				&& (soundexCode[codeCount - 1] != 3) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 3;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if ((input[inputCount] == 'l') 
+				&& (soundexCode[codeCount - 1] != 4) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 4;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if (((input[inputCount] == 'm') 
+				|| (input[inputCount] == 'n')) 
+				&& (soundexCode[codeCount - 1] != 5) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 5;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if ((input[inputCount] == 'r') 
+				&& (soundexCode[codeCount - 1] != 6) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 6;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if ((input[inputCount] == 'a')
+				|| (input[inputCount] == 'e')
+				|| (input[inputCount] == 'i')
+				|| (input[inputCount] == 'o')
+				|| (input[inputCount] == 'u'))
+		{
+			lastWasVowel = true;
+		}
+
+		inputCount++;
 	}
 
-	size_t result = costs[n];
-	delete[] costs;
+	while (codeCount < 4)
+	{
+		soundexCode[codeCount] = 0;
+		codeCount++;
+	}
 
-	return result;
+	return soundexCode;
+	
 }
+
+size_t StringDistance(const std::string &s1, const std::string &s2, bool usePhonetic)
+{
+
+	// determine distance using levenshtein if wanted
+	if(!usePhonetic)
+		return levenshteinSSE::levenshtein(s1, s2);
+
+	
+	size_t output = 0;
+
+	// generate soundex codes 
+	std::string firstSoundexCode = GenerateSoundexCode(s1);
+	std::string secondSoundexCode = GenerateSoundexCode(s2);
+	
+	// check similarity between soundex codes
+	for (int i = 0; i < 4; i++) {
+		if (firstSoundexCode[i] != secondSoundexCode[i])
+			output += 1;
+	}
+
+	return output;
+}
+

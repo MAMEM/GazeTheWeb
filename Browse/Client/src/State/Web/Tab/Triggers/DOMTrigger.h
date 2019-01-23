@@ -13,6 +13,7 @@
 #include "src/Global.h"
 #include "src/Setup.h"
 #include "submodules/eyeGUI/include/eyeGUI.h"
+#include "src/Input/VoiceInput.h"
 #include <memory>
 
 template <class T>

@@ -25,7 +25,7 @@ public:
     // #############
 
     // Update. Returns which state should be active in next time step
-    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
+    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject);
 
     // Draw
     virtual void Draw() const;
