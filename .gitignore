@@ -20,3 +20,6 @@ build
 
 # Other
 *.orig
+
+# Unignore specific files
+!go-speech-recognition.dll
