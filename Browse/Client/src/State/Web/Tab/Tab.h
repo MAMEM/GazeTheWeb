@@ -168,7 +168,7 @@ public:
 
 	// searchs the nearest element from the "rectList" to the gaze coordinates in the "spInput" and updates the committed "spResultX", "spResultY" and "spResultDis"
 	// returns a bool indicating if a nearer (the distance is smaller than the committed "spResultDis") Rect has been found
-	bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, std::vector<Rect> rectList, std::shared_ptr<float> spResultX, std::shared_ptr<float> spResultY, std::shared_ptr<float> spResultDis);
+	bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis);
 
     // #################################
     // ### TAB INTERACTIVE INTERFACE ###

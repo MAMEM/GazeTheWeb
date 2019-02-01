@@ -446,7 +446,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 																															 // ### EYE INPUT ###
 	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
-	// ### VOICE INPUT ### Christopher
+	// ### VOICE INPUT ### 
 	_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput());
 	_spVoiceInputObject->Activate();
 
@@ -773,9 +773,6 @@ bool Master::threadsafe_MayTransferData()
 
 void Master::Loop()
 {
-	// Christopher
-	auto voiceStartedTime = std::chrono::steady_clock::now();
-
 	while (!_exit)
 	{
 		// Update the async computations
@@ -897,21 +894,11 @@ void Master::Loop()
 
 
 
-		// VOICE INPUT
-		
+		// VOICE INPUT		
 		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
-		if (!_spVoiceInputObject->IsStopping()) {
+		if (_spVoiceInputObject->GetState() == VoiceInputState::Active) {
 			spVoiceInput = _spVoiceInputObject->Update(tpf);
-
-			if (std::chrono::steady_clock::now() - voiceStartedTime > std::chrono::seconds(50)) {
-				_spVoiceInputObject->Deactivate();
-			}
 		}		
-
-		if (!_spVoiceInputObject->IsActive()) {
-			_spVoiceInputObject->Activate();
-			voiceStartedTime = std::chrono::steady_clock::now();
-		}
 
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))

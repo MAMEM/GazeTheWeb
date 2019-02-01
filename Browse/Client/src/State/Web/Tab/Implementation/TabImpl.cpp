@@ -214,17 +214,17 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		//else {
 
 			int index = 0;
-			auto spShortestDis = std::make_shared<float>(50.0);
-			auto spFinalLinkX = std::make_shared<float>(0.0);
-			auto spFinalLinkY = std::make_shared<float>(0.0);
+			float shortestDis = 50.0;
+			float finalLinkX = 0.0;
+			float finalLinkY = 0.0;
 
 			std::vector<Tab::DOMTextInputInfo> domTextList = this->RetrieveDOMTextInputInfos();
 			for (Tab::DOMTextInputInfo link : domTextList) {
-				if (FindNearest(spInput, link.rects, spFinalLinkX, spFinalLinkY, spShortestDis))
+				if (FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 					index = link.nodeId;
 			}
 				
-			if (*spShortestDis < 50.0) {
+			if (shortestDis < 50.0) {
 				this->ScheduleTextInputTrigger(index);
 				spVoiceInputObject->SetVoiceMode(VoiceMode::FREE);
 			}
@@ -243,9 +243,9 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		float gazeYOffset = spInput->gazeY + this->_scrollingOffsetY;
 		float gazeXOffset = spInput->gazeX - this->GetWebViewX();
 
-		auto spFinalLinkX = std::make_shared<float>(spInput->gazeX);
-		auto spFinalLinkY = std::make_shared<float>(spInput->gazeY);
-		auto spShortestDis = std::make_shared<float>(50.0);
+		float finalLinkX = spInput->gazeX;
+		float finalLinkY = spInput->gazeY;
+		float shortestDis = 50.0;
 
 
 		std::vector<Tab::DOMLinkInfo> domLinkList = this->RetrieveDOMLinkInfos();
@@ -267,8 +267,8 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 						int strDistance = StringDistance(spVoiceInput->parameter, linktext, true);
 						if (strDistance < strDistanceMax && strDistance != linktext.size()) {
 							LogInfo("shorter dis:", linktext, " . dis:", strDistance, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
-							*spFinalLinkX = rect.Center().x;
-							*spFinalLinkY = rect.Center().y;
+							finalLinkX = rect.Center().x;
+							finalLinkY = rect.Center().y;
 							strDistanceMax = strDistance;
 						}
 					}
@@ -278,26 +278,26 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		}
 		else {
 			for (Tab::DOMLinkInfo link : domLinkList) {
-				FindNearest(spInput, link.rects, spFinalLinkX, spFinalLinkY, spShortestDis);
+				FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
 			}
 		} 
 
-		this->EmulateLeftMouseButtonClick(*spFinalLinkX, *spFinalLinkY - this->_scrollingOffsetY);
+		this->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - this->_scrollingOffsetY);
 		
 	}
 	break;
 	case VoiceCommand::CHECK: 
 	{
 
-		auto spFinalLinkX = std::make_shared<float>(spInput->gazeX);
-		auto spFinalLinkY = std::make_shared<float>(spInput->gazeY);
-		auto spShortestDis = std::make_shared<float>(50.0);
+		float finalLinkX = spInput->gazeX;
+		float finalLinkY = spInput->gazeY;
+		float shortestDis = 50.0;
 
 		std::vector<Tab::DOMCheckboxInfo> domCheckBoxList = this->RetrieveDOMCheckboxInfos();
 		for (Tab::DOMCheckboxInfo link : domCheckBoxList) {
-			FindNearest(spInput, link.rects, spFinalLinkX, spFinalLinkY, spShortestDis);
+			FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
 		}
-		this->EmulateLeftMouseButtonClick(*spFinalLinkX, *spFinalLinkY - this->_scrollingOffsetY);
+		this->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - this->_scrollingOffsetY);
 		
 	}
 	break;
@@ -317,16 +317,16 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		}
 		else {
 			int index = 0;
-			auto spShortestDis = std::make_shared<float>(50.0);
-			auto spFinalLinkX = std::make_shared<float>(0.0);
-			auto spFinalLinkY = std::make_shared<float>(0.0);
+			float finalLinkX = spInput->gazeX;
+			float finalLinkY = spInput->gazeY;
+			float shortestDis = 50.0;
 
 			std::vector<Tab::DOMVideoInfo> domVideoList = this->RetrieveDOMVideoInfos();
 			for (Tab::DOMVideoInfo link : domVideoList) {	
-				if (FindNearest(spInput, link.rects, spFinalLinkX, spFinalLinkY, spShortestDis))
+				if (FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 						index = link.nodeId;
 			}
-			if (*spShortestDis < 50.f)
+			if (shortestDis < 50.f)
 				this->ScheduleVideoModeTrigger(index);
 			
 		}
@@ -1325,11 +1325,11 @@ std::vector<Tab::DOMVideoInfo> Tab::RetrieveDOMVideoInfos() const
 	return result;
 }
 
-bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, std::vector<Rect> rectList, std::shared_ptr<float> spResultX, std::shared_ptr<float> spResultY, std::shared_ptr<float> spResultDis) {
+bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, const std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis) {
 	
 	float gazeXOffset = spInput->gazeX - this->GetWebViewX();
 	float gazeYOffset = spInput->gazeY + this->_scrollingOffsetY;
-	bool foundBetter = false;
+	bool found = false;
 
 	for (Rect rect : rectList) {
 		float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
@@ -1341,11 +1341,11 @@ bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, std::vector<Re
 			*spResultX = rect.Center().x;
 			*spResultY = rect.Center().y;
 			*spResultDis = distance;
-			foundBetter = true;
+			found = true;
 		}
 	}
 
-	return foundBetter;
+	return found;
 }
 
 // increase the volumn of the video

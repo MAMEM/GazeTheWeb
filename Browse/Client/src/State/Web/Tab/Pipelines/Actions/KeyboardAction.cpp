@@ -433,6 +433,7 @@ bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spI
 	GetOutputValue("duration", duration);
 	SetOutputValue("duration", duration + tpf);
 
+
 	// Voice!
 	if ((spVoiceInput->command == VoiceCommand::PARAMETER_ONLY || spVoiceInput->command == VoiceCommand::TEXT) && !spVoiceInput->parameter.empty()) {
 		std::u16string paramU16;

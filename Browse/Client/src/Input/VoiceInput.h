@@ -24,6 +24,12 @@ enum class VoiceMode {
 	FREE		// change mode to COMMAND to use the transcription mode "default" (use for i.e. text input)
 };
 
+enum class VoiceInputState {
+	Inactive,	// VoiceInput hasn't started/shouldn't be running
+	Active,		// VoiceInput runs
+	Changing,	// VoiceInput is changing the VoiceMode
+	Restarting	// VoiceInput is in the process of deactivation and activation
+};
 
 enum class VoiceCommand {
 
@@ -168,13 +174,6 @@ public:
 	// Stop recording and transcribing process.
 	void Deactivate();
 
-	// Returns whether the recording and transcribing process is currently running.
-	bool IsActive() { return _active; }
-
-	// Returns whether the stopping process was initialized.
-	// The process is really deactivated if IsActive() == false && IsStopped() == true
-	bool IsStopping() { return _stopping; }
-
 	// Changes transcription mode/model
 	// input: VoiceMode
 	void SetVoiceMode(VoiceMode voiceMode);
@@ -183,6 +182,13 @@ public:
 
 	// Returns the how many pixel should be scrolled when using SCROLL_UP/SCROLL_DOWN
 	static double GetScrollDistance() { return double(350); }	
+
+	VoiceInputState GetState() { return _voiceInputState; }
+	
+	// seconds
+	std::chrono::seconds GetRunTimeLimit() { return _runTimeLimit; }
+
+	void Reactivate();
 
 private:
 
@@ -216,6 +222,12 @@ private:
 	*/
 	std::shared_ptr<ContinuousAudioRecord> _spAudioInput;
 
+	// Time
+	std::chrono::steady_clock::time_point _activationTime;
+
+	std::chrono::seconds _runTimeLimit = std::chrono::seconds(50);
+
+
 // [STREAMING]
 
 	// language to be transcribed
@@ -230,15 +242,9 @@ private:
 	// time to query audio in ms
 	int _queryTime = 1000;
 
+	// indicating the current state
+	VoiceInputState _voiceInputState = VoiceInputState::Inactive;
 
-	/*
-	state showing if the transcribing is activate (recording and streaming to google)
-	
-		Thread variable:
-			Read in: main
-			Manipulated in: main, _tReceiving
-	*/
-	std::atomic<bool> _active = false;
 
 	/*
 	state showing if recording and transcribing should be stopped (use to ensure you are only stopping once at the time)
@@ -269,11 +275,8 @@ private:
 	*/
 	std::atomic<bool> _isReceiving = false;
 
-
-
-	// thread handling the stopping (needed to prevent stopping the whole program)
-	std::unique_ptr<std::thread> _tStopping = nullptr;
-
+	// thread handling the reactivating (needed to prevent stopping the whole program)
+	std::unique_ptr<std::thread> _tReactivating = nullptr;
 
 // [PROCESSING TRANSCRIPT]
 
