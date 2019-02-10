@@ -315,11 +315,9 @@ void VoiceInput::SetVoiceMode(VoiceMode voiceMode) {
 
 	if (_voiceMode == VoiceMode::COMMAND) {
 		_model = "command_and_search";
-		_interimResults = 1;
 	}
 	else if (_voiceMode == VoiceMode::FREE) {
 		_model = "default";
-		_interimResults = 0;
 	}
 
 	this->Reactivate();
@@ -383,9 +381,7 @@ void VoiceInput::Activate() {
 			+ " | Sample Rate: " + std::to_string(_sampleRate)
 			+ " | Transcription Model: " + std::string(_model)
 			+ " | Max Alternatives: " + std::to_string(_maxAlternatives)
-			//	+ " | Interim Results: " + (_interimResults== GO_SPEECH_RECOGNITION_TRUE ? "true" : "false")
-			//	+ " | Interim Results: " + (_interimResults== 1 ? "true" : "false")
-
+			+ " | Interim Results: " + (_interimResults== GO_SPEECH_RECOGNITION_TRUE ? "true" : "false")
 		);
 
 		// [SETUP RECORDING]

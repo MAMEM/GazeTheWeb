@@ -170,7 +170,7 @@ public:
 	void SetMaxAlternatives(int maxAlternatives) { _maxAlternatives = maxAlternatives; }
 
 	// Sets if interim results should be received
-	void SetInterimResults(int interimResults) { _interimResults = interimResults;	}
+	void SetInterimResults(GO_SPEECH_RECOGNITION_BOOL interimResults) { _interimResults = interimResults;	}
 
 	// Update voice input
 	std::shared_ptr<VoiceAction> Update(float tpf, bool keyboardActive);
@@ -249,8 +249,8 @@ private:
 	// how many alternatives are received
 	int _maxAlternatives = 3;
 
-	// if you want to get interim results (0 or 1)
-	int _interimResults = 0;
+	// if you want to get interim results
+	GO_SPEECH_RECOGNITION_BOOL _interimResults = GO_SPEECH_RECOGNITION_FALSE;
 	
 	// time to query audio in ms
 	int _queryTime = 1000;
