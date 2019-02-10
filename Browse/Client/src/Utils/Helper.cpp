@@ -318,7 +318,7 @@ std::string GenerateSoundexCode(std::string input) {
 	
 }
 
-size_t StringDistance(const std::string &s1, const std::string &s2, bool usePhonetic)
+size_t StringDistance(const std::string s1, const std::string s2, bool usePhonetic)
 {
 
 	// determine distance using levenshtein if wanted

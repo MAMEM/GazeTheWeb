@@ -101,7 +101,7 @@ PivotMenuAction::~PivotMenuAction()
     _pTab->RemoveFloatingFrameFromOverlay(_pivotFrameIndex);
 }
 
-bool PivotMenuAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool PivotMenuAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
     return _done;
 }

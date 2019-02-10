@@ -52,6 +52,7 @@ std::vector<CommandStruct> commandStructList = {
 	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},										true),
 	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},											false),
 	CommandStruct(VoiceCommand::CLEAR,			std::vector<std::string> {"clear"/*, "Thalia", "Clea"*/},						false),
+	CommandStruct(VoiceCommand::SUBMIT,			std::vector<std::string> {"submit"},											false),
 	CommandStruct(VoiceCommand::CLOSE,			std::vector<std::string> {"close"},												false),
 	CommandStruct(VoiceCommand::QUIT,			std::vector<std::string> {"quit"},												false),
 	CommandStruct(VoiceCommand::PARAMETER_ONLY,	std::vector<std::string> {},													true),
@@ -141,8 +142,7 @@ VoiceInput::VoiceInput() {
 	}
 }
 
-
-// Problem! Deactivate runs in it's own thread
+		
 // Destructor
 VoiceInput::~VoiceInput() {
 	Deactivate();
@@ -162,27 +162,33 @@ TRANSCRIPT TO ACTION
 */
 
 // Returns the last transcribed audio as a VoiceAction object
-std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
+std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) {
 
 
 	// Initialize voiceResult (When there's no (matching) transcript from queue it'll be returned as is)
 	VoiceAction voiceResult = VoiceAction(VoiceCommand::NO_ACTION, "");
-	std::string transcript;
-	
+	std::string transcriptCandidatesStr;
+
 	// Better place?
 	// check if the time is up
 	if (std::chrono::steady_clock::now() - _activationTime > _runTimeLimit)
 		this->Reactivate();
+	
+	// Handle the keyboard activation/deactivation
+	if (keyboardActive && (_voiceMode != VoiceMode::FREE) && (_voiceInputState != VoiceInputState::Changing))
+		SetVoiceMode(VoiceMode::FREE);
+
+	else if (!keyboardActive && (_voiceMode != VoiceMode::COMMAND) && (_voiceInputState != VoiceInputState::Changing))
+		SetVoiceMode(VoiceMode::COMMAND);
 
 
 	// Take first transcript from queue
 	_transcriptGuard.lock();
 	if (!_recognitionResults.empty()) {
-		transcript = _recognitionResults.front();
+		transcriptCandidatesStr = _recognitionResults.front();
 		_recognitionResults.pop();
 	}
 	_transcriptGuard.unlock();
-
 
 
 	/*
@@ -191,95 +197,106 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf) {
 	*/
 
 	// Assignment of voice action begins
-	if (!transcript.empty()) {
+	if (!transcriptCandidatesStr.empty()) {
 
-		// Index representing the beginning of the parameter (index of the last word of a key + 1)
-		int voiceParameterIndex = 0;
 
-		// For comparing purpose split the transcript
-		std::vector<std::string> splittedTranscript = SplitBySeparator(transcript, ' ');
-		int splittedTranscriptLen = splittedTranscript.size();
 
-		// The current shortest shortest Levenshtein Distance in the transcript
-		int shortestStrDistance = INT32_MAX;
+		LogInfo("transcriptCandidatesStr: " + transcriptCandidatesStr);
 
-		// The best matching CommandStruct
-		CommandStruct commandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
+		std::vector<std::string> transcriptCandidatesList = SplitBySeparator(transcriptCandidatesStr, ';');
 
-		// iterate over all keys
-		for (CommandStruct currentCommandStruct : commandStructList) {
-			for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
+		// The first is the one with the highest confidence
+		for (int i = transcriptCandidatesList.size() - 1; i > 0; i--) {
+			LogInfo("transcript: " + transcriptCandidatesList[i]);
 
-				// distance between key and transcription
-				int strDistance = 0;
-				std::vector<std::string> splittedPhoneticVariant = SplitBySeparator(phoneticVariant, ' ');
-				int splittedPhoneticVariantLen = splittedPhoneticVariant.size();
+			// Index representing the beginning of the parameter (index of the last word of a key + 1)
+			int voiceParameterIndex = 0;
 
-				// iterate over the phonetic variant
-				for (int i = 0; i < splittedTranscriptLen; i++) {
+			// For comparing purpose split the transcript
+			std::vector<std::string> splittedTranscript = SplitBySeparator(transcriptCandidatesList[i], ' ');
+			int splittedTranscriptLen = splittedTranscript.size();
 
-					// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
-					strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0], true);
+			// The current shortest shortest Levenshtein Distance in the transcript
+			int shortestStrDistance = INT32_MAX;
 
-					// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
-					if (strDistance < 2 && strDistance < shortestStrDistance) {
+			// The best matching CommandStruct
+			CommandStruct commandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
 
-						// check if the following words are matching if the phonetic variant is longer than 1 word
-						if (splittedPhoneticVariantLen > 1) {
+			// iterate over all keys
+			for (CommandStruct currentCommandStruct : commandStructList) {
+				for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
-							// iterate over the rest of the splittedPhoneticVariant
-							for (int j = 1; j < splittedPhoneticVariantLen; j++) {
+					// distance between key and transcription
+					int strDistance = 0;
+					std::vector<std::string> splittedPhoneticVariant = SplitBySeparator(phoneticVariant, ' ');
+					int splittedPhoneticVariantLen = splittedPhoneticVariant.size();
 
-								// strDistance has to be < 2 for the whole key 
-								strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], true);
+					// iterate over the phonetic variant
+					for (int i = 0; i < splittedTranscriptLen; i++) {
 
-								// we found the currently best matching key
-								if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {
-									commandStruct = currentCommandStruct;
-									voiceParameterIndex = i + j + 1;
-									LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", strDistance);
-									shortestStrDistance = strDistance;
+						// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
+						strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0], true);
+
+						// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
+						if (strDistance < 2 && strDistance < shortestStrDistance) {
+
+							// check if the following words are matching if the phonetic variant is longer than 1 word
+							if (splittedPhoneticVariantLen > 1) {
+
+								// iterate over the rest of the splittedPhoneticVariant
+								for (int j = 1; j < splittedPhoneticVariantLen && i+j < splittedPhoneticVariantLen; j++) {
+
+									// strDistance has to be < 2 for the whole key 
+									strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], true);
+
+									// we found the currently best matching key
+									if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {
+										commandStruct = currentCommandStruct;
+										voiceParameterIndex = i + j + 1;
+										LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", strDistance);
+										shortestStrDistance = strDistance;
+									}
 								}
 							}
-						}
 
-						// the key is one word and the currently best matching one
+							// the key is one word and the currently best matching one
+							else {
+								commandStruct = currentCommandStruct;
+								voiceParameterIndex = i + 1;
+								LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", strDistance);
+								shortestStrDistance = strDistance;
+							}
+						}
+					}
+				}
+			}
+
+			// assign the found command to the voiceResult
+			if (commandStruct.command != VoiceCommand::NO_ACTION) {
+				voiceResult.command = commandStruct.command;
+
+				// assign parameter if needed
+				if (commandStruct.takesParameter) {
+
+					// add the transcripted words following the command to the voiceResult.parameter
+					for (int i = voiceParameterIndex; i < splittedTranscriptLen; i++) {
+						if (i == voiceParameterIndex) {
+							voiceResult.parameter += splittedTranscript[i];
+						}
 						else {
-							commandStruct = currentCommandStruct;
-							voiceParameterIndex = i + 1;
-							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", strDistance);
-							shortestStrDistance = strDistance;
+							voiceResult.parameter += " " + splittedTranscript[i];
 						}
 					}
+
 				}
+
+				LogInfo("voiceCommand: " + commandStruct.phoneticVariants[0] + " Parameter: " + voiceResult.parameter);
 			}
-		}
-
-		// assign the found command to the voiceResult
-		if (commandStruct.command != VoiceCommand::NO_ACTION) {
-			voiceResult.command = commandStruct.command;
-
-			// assign parameter if needed
-			if (commandStruct.takesParameter) {
-				
-				// add the transcripted words following the command to the voiceResult.parameter
-				for (int i = voiceParameterIndex; i < splittedTranscriptLen; i++) {
-					if (i == voiceParameterIndex) {
-						voiceResult.parameter += splittedTranscript[i];
-					}
-					else {
-						voiceResult.parameter += " " + splittedTranscript[i];
-					}			
-				}
-				
-			}
-
-			LogInfo("voiceCommand: " + commandStruct.phoneticVariants[0] + " Parameter: " + voiceResult.parameter);
-		}
-		else if (_voiceMode == VoiceMode::FREE) {
+			else if (_voiceMode == VoiceMode::FREE) {
 				voiceResult.command = VoiceCommand::PARAMETER_ONLY;
-				voiceResult.parameter = transcript;
+				voiceResult.parameter = transcriptCandidatesList[0];
 			}
+		}
 	}
 	
 
@@ -296,11 +313,14 @@ void VoiceInput::SetVoiceMode(VoiceMode voiceMode) {
 
 	_voiceMode = voiceMode; 
 
-	if (_voiceMode == VoiceMode::COMMAND)
+	if (_voiceMode == VoiceMode::COMMAND) {
 		_model = "command_and_search";
-
-	if (_voiceMode == VoiceMode::FREE)
+		_interimResults = 1;
+	}
+	else if (_voiceMode == VoiceMode::FREE) {
 		_model = "default";
+		_interimResults = 0;
+	}
 
 	this->Reactivate();
 }
@@ -353,13 +373,20 @@ void VoiceInput::Activate() {
 		_stopping = false;
 
 		// [STREAM INITIALIZATION]
-		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sampleRate, _model);
+		GO_SPEECH_RECOGNITION_BOOL initSuccess = GO_SPEECH_RECOGNITION_InitializeStream(_language, _sampleRate, _model, _maxAlternatives, _interimResults);
 		if (initSuccess != GO_SPEECH_RECOGNITION_TRUE || !IsPluginLoaded()) {
 			std::string log = GO_SPEECH_RECOGNITION_GetLog();
 			LogError("VoiceInput: " + log + " (INITIALIZING)");
 		}
 
-		LogInfo("VoiceInput: Stream was successfully initialized: Transcription Language: " + std::string(_language) + " | Sample Rate: " + std::to_string(_sampleRate) + " | Transcription Model" + std::string(_model));
+		LogInfo("VoiceInput: Stream was successfully initialized: Transcription Language: " + std::string(_language)
+			+ " | Sample Rate: " + std::to_string(_sampleRate)
+			+ " | Transcription Model: " + std::string(_model)
+			+ " | Max Alternatives: " + std::to_string(_maxAlternatives)
+			//	+ " | Interim Results: " + (_interimResults== GO_SPEECH_RECOGNITION_TRUE ? "true" : "false")
+			//	+ " | Interim Results: " + (_interimResults== 1 ? "true" : "false")
+
+		);
 
 		// [SETUP RECORDING]
 
@@ -513,13 +540,14 @@ void VoiceInput::Activate() {
 }
 
 void VoiceInput::Reactivate() {
-
-	if (_voiceInputState != VoiceInputState::Changing)
-		_voiceInputState = VoiceInputState::Restarting;
-
 	_tReactivating = std::make_unique<std::thread>([this] {
-		this->Deactivate();
-		this->Activate();
+
+		std::lock_guard<std::mutex> lock(_reactivateGuard);
+
+			if (_voiceInputState != VoiceInputState::Changing)
+				_voiceInputState = VoiceInputState::Restarting;
+			this->Deactivate();
+			this->Activate();
 	});
 }
 

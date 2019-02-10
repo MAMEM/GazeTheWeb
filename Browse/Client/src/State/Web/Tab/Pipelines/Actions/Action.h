@@ -26,7 +26,7 @@ public:
     virtual ~Action() = 0;
 
     // Update retuns whether finished with execution
-    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject) = 0;
+    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput) = 0;
 
     // Draw
     virtual void Draw() const = 0;

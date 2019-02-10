@@ -427,7 +427,7 @@ void Web::DemoModeReset()
 	// Settings?
 }
 
-StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive)
 {
     // Process jobs first
     while(!_jobs.empty())
@@ -566,20 +566,10 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std
 		}
 	}
 	break;
-	case VoiceCommand::REMOVE: {
-		if (_currentTabId >= 0)
-			_tabs.at(_currentTabId)->DeleteContentAtCursorInTextEdit("text_input_action_text_edit", -1);
-	}
-	break;
-	case VoiceCommand::CLEAR: {
-		if (_currentTabId >= 0)
-			_tabs.at(_currentTabId)->DeleteContentInTextEdit("text_input_action_text_edit");
-	}
-	break;
 	default:
 		break;
 	}
-
+	
 
 	// History
 	if (_upHistory->IsActive())
@@ -670,7 +660,7 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std
         eyegui::setElementActivity(_pWebLayout, "back", _tabs.at(_currentTabId)->CanGoBack(), true);
         eyegui::setElementActivity(_pWebLayout, "forward", _tabs.at(_currentTabId)->CanGoForward(), true);
 
-		_tabs.at(_currentTabId)->Update(tpf, spInput, spVoiceInput, spVoiceInputObject);
+		_tabs.at(_currentTabId)->Update(tpf, spInput, spVoiceInput, keyboardActive);
     }
 
     // Decide what to do next

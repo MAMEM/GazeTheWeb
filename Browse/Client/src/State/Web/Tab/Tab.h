@@ -69,7 +69,7 @@ public:
     virtual ~Tab();
 
     // Update
-    void Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject);
+	void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive);
 
     // Draw
     void Draw() const;
@@ -321,6 +321,9 @@ public:
 	// >>> Implemented in TabActionImpl.cpp >>>
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+	// Sets
+	virtual void NotifyKeyboardActivation(bool keyboardActive) { _keyboardActive = keyboardActive; }
+
     // Push back an pipeline
     virtual void PushBackPipeline(std::unique_ptr<Pipeline> upPipeline);
 
@@ -473,6 +476,9 @@ public:
 	virtual void Debug_DrawLine(glm::vec2 originCoordinate, glm::vec2 targetCoordinate, glm::vec3 color) const;
 
 private:
+
+	bool _keyboardActive = false;
+
 	int _lastVideoId = 0;
 	// Enumeration for icon state of tab
 	enum class IconState { LOADING, ICON_NOT_FOUND, FAVICON };

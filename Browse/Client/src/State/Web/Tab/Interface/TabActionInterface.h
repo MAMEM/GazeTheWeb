@@ -21,6 +21,7 @@ class TabActionInterface
 {
 public:
 
+
     // Push back a pipeline
     virtual void PushBackPipeline(std::unique_ptr<Pipeline> upPipeline) = 0;
 
@@ -75,7 +76,9 @@ public:
     }
 
     // Set WebViewParameters for web view
-    virtual void SetWebViewParameters(WebViewParameters parameters) = 0;
+	virtual void SetWebViewParameters(WebViewParameters parameters) = 0;
+
+	virtual void NotifyKeyboardActivation(bool keyboardActive) = 0;
 
 protected:
 

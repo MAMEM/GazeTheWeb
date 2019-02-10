@@ -450,7 +450,6 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput());
 	_spVoiceInputObject->Activate();
 
-
 	// ### FRAMEBUFFER ###
 	_upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
 	_upFramebuffer->Bind();
@@ -897,7 +896,7 @@ void Master::Loop()
 		// VOICE INPUT		
 		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
 		if (_spVoiceInputObject->GetState() == VoiceInputState::Active) {
-			spVoiceInput = _spVoiceInputObject->Update(tpf);
+			spVoiceInput = _spVoiceInputObject->Update(tpf, _keyboardActive);
 		}		
 
 		// Record how long super calibration layout has been visible
@@ -1058,11 +1057,11 @@ void Master::Loop()
 		switch (_currentState)
 		{
 		case StateType::WEB:
-			nextState = _upWeb->Update(tpf, spInput, spVoiceInput, _spVoiceInputObject);
+			nextState = _upWeb->Update(tpf, spInput, spVoiceInput, &_keyboardActive);
 			_upWeb->Draw();
 			break;
 		case StateType::SETTINGS:
-			nextState = _upSettings->Update(tpf, spInput, spVoiceInput, _spVoiceInputObject);
+			nextState = _upSettings->Update(tpf, spInput, spVoiceInput, &_keyboardActive);
 			_upSettings->Draw();
 			break;
 		}

@@ -134,9 +134,11 @@ GO_SPEECH_RECOGNITION_BOOL:
 And now you are able to call the functions provided by the library.
 First initialize the stream :
 (provide a [BCP-47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) language tag to set the language to be transcribed and the Samplerate of the audio recording as an integer value)
-(add which transcription model to use, it can be either "video", "phone_call", "command_and_search" or "default" - see [Documentation](https://cloud.google.com/speech-to-text/docs/basics)):
+(add which transcription model to use, it can be either "video", "phone_call", "command_and_search" or "default" - see [Documentation](https://cloud.google.com/speech-to-text/docs/basics)
+(add how much alternatives you want to receive (range 0-30 while 0 and 1 return 1 alternative))
+(add if you want to receive interim results)):
 ```
-GO_SPEECH_RECOGNITION_BOOL success = InitializeStream(language, sample_rate, model);
+GO_SPEECH_RECOGNITION_BOOL success = InitializeStream(language, sampleRate, model, maxAlternatives, interimResults);
 if (success != GO_SPEECH_RECOGNITION_TRUE) {
 	std::string log = GetLog();
 	std::cout << "Error:" << log << std::endl;

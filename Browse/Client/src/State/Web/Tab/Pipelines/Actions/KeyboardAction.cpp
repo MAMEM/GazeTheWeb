@@ -426,7 +426,7 @@ KeyboardAction::~KeyboardAction()
 	_pTab->UnregisterButtonListenerInOverlay(_overlayExtraKeyId);
 }
 
-bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	// Update duration
 	float duration = 0.f;
@@ -434,22 +434,23 @@ bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spI
 	SetOutputValue("duration", duration + tpf);
 
 
-	// Voice!
-	if ((spVoiceInput->command == VoiceCommand::PARAMETER_ONLY || spVoiceInput->command == VoiceCommand::TEXT) && !spVoiceInput->parameter.empty()) {
+	/* 
+		VOICE INPUT 
+	*/
+
+	// We put the transcribed text in the Text Field (only when user says no command or the "text" command)
+	if ((spVoiceInput->command == VoiceCommand::PARAMETER_ONLY 
+		|| spVoiceInput->command == VoiceCommand::TEXT) 
+		&& !spVoiceInput->parameter.empty()) {
+		
 		std::u16string paramU16;
-		eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, paramU16);
-
-		SetOutputValue("text", paramU16);
-
-		// Submit text directly if wished
-		SetOutputValue("submit", _submit);
-		JSMailer::instance().Send("submit");
-
-		// Action is now finished
-		return true;
+		eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter + " ", paramU16);
+		_pTab->AddContentAtCursorInTextEdit(_overlayTextEditId, paramU16);
 	}
 
-
+	// When the user says "submit" the process is complete
+	_complete = (spVoiceInput->command == VoiceCommand::SUBMIT);
+		
 
 	// When classification timer is set, it is decremented at each update.
 	// When timer is zero, selection is ALWAYS accepted. Please change as required.
@@ -502,6 +503,9 @@ void KeyboardAction::Draw() const
 
 void KeyboardAction::Activate()
 {
+	// Notify Tab that the keyboard was activated
+	_pTab->NotifyKeyboardActivation(true);
+
 	// Set visibility of floating frame
     _pTab->SetVisibilityOfFloatingFrameInOverlay(_overlayFrameIndex, true);
 
@@ -509,12 +513,16 @@ void KeyboardAction::Activate()
 	std::u16string text;
 	GetInputValue<std::u16string>("text", text);
 
+
 	// Put text into preview
 	_pTab->AddContentAtCursorInTextEdit(_overlayTextEditId, text); // TODO: set content would be better here
 }
 
 void KeyboardAction::Deactivate()
 {
+	// Notify Tab that the keyboard was deactivated
+	_pTab->NotifyKeyboardActivation(false);
+
 	// Set visibility of floating frame
     _pTab->SetVisibilityOfFloatingFrameInOverlay(_overlayFrameIndex, false);
 }

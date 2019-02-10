@@ -23,7 +23,7 @@ ReplyJSDialogAction::~ReplyJSDialogAction()
 	if (!_executed) { _pTab->ReplyJSDialog(false, ""); }
 }
 
-bool ReplyJSDialogAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool ReplyJSDialogAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	// Get values out of slots
 	int clickedOk;

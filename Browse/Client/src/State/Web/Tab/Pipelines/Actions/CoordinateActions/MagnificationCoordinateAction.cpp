@@ -18,7 +18,7 @@ MagnificationCoordinateAction::MagnificationCoordinateAction(TabInteractionInter
     AddVec2OutputSlot("coordinate");
 }
 
-bool MagnificationCoordinateAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool MagnificationCoordinateAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	// Function transforms coordinate from relative WebView coordinates to CEFPixel coordinates on page
 	const std::function<void(const float&, const glm::vec2&, const glm::vec2&, glm::vec2&)> pageCoordinate

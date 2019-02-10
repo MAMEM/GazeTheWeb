@@ -61,6 +61,7 @@ enum class VoiceCommand {
 	TEXT,			// activate text input ?[parameter]
 	REMOVE,			// remove last inputted word
 	CLEAR,			// clear the entire text input field
+	SUBMIT,			// submits inputted text
 	CLOSE,			// close the current view and return to the page view
 	QUIT,			// quit the browser
 	PARAMETER_ONLY	// use when only the parameter is needed i.e. when using text input
@@ -165,8 +166,14 @@ public:
 	// Change transcription model [Can be either "video", "phone_call", "command_and_search", "default" (see https://cloud.google.com/speech-to-text/docs/basics)]
 	void SetModel(char* model) { _model = model; }
 
+	// Set how many alternatives are received
+	void SetMaxAlternatives(int maxAlternatives) { _maxAlternatives = maxAlternatives; }
+
+	// Sets if interim results should be received
+	void SetInterimResults(int interimResults) { _interimResults = interimResults;	}
+
 	// Update voice input
-	std::shared_ptr<VoiceAction> Update(float tpf);
+	std::shared_ptr<VoiceAction> Update(float tpf, bool keyboardActive);
 
 	// Start recording and transcribing process.
 	void Activate();
@@ -239,6 +246,12 @@ private:
 	// transcription model to be used
 	char* _model = "command_and_search";
 
+	// how many alternatives are received
+	int _maxAlternatives = 3;
+
+	// if you want to get interim results (0 or 1)
+	int _interimResults = 0;
+	
 	// time to query audio in ms
 	int _queryTime = 1000;
 
@@ -277,6 +290,10 @@ private:
 
 	// thread handling the reactivating (needed to prevent stopping the whole program)
 	std::unique_ptr<std::thread> _tReactivating = nullptr;
+	// only one restart at the time
+	mutable std::mutex _reactivateGuard;
+
+
 
 // [PROCESSING TRANSCRIPT]
 

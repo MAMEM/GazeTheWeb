@@ -328,6 +328,7 @@ private:
 
 	// Voice input
 	std::shared_ptr<VoiceInput> _spVoiceInputObject;
+	bool _keyboardActive = false;
 
     // Id of dictionary in eyeGUI
     unsigned int _dictonaryId = 0;

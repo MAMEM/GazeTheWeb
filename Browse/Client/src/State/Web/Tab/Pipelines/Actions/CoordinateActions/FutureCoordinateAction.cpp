@@ -53,7 +53,7 @@ FutureCoordinateAction::FutureCoordinateAction(TabInteractionInterface* pTab, bo
     AddVec2OutputSlot("coordinate");
 }
 
-bool FutureCoordinateAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool FutureCoordinateAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	// ###################
 	// ### DEFINITIONS ###

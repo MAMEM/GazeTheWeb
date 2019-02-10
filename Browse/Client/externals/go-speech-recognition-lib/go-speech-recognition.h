@@ -31,12 +31,16 @@ cSampleRate
 use at least 16kHz)
 cTranscriptionModel
 (the requested model to use: can be either "video", "phone_call", "command_and_search", "default" (see https://cloud.google.com/speech-to-text/docs/basics))
+cMaxAlternatives
+(the requested maximum number of recognition hypotheses: Valid values are 0-30, 0 or 1 return only 1)
+cInterimResults
+(set GO_SPEECH_RECOGNITION_TRUE if you want to get interim results)
 
 Return:
 GO_SPEECH_RECOGNITION_TRUE if successful
 GO_SPEECH_RECOGNITION_FALSE if failed (error log can be retrieved with "GetLog()")
 */
-typedef GO_SPEECH_RECOGNITION_BOOL(*GO_SPEECH_RECOGNITION_INITIALIZE_STREAM)(char* cTranscriptLanguage, int cSampleRate, char* cTranscriptionModel);
+typedef GO_SPEECH_RECOGNITION_BOOL(*GO_SPEECH_RECOGNITION_INITIALIZE_STREAM)(char* cTranscriptLanguage, int cSampleRate, char* cTranscriptionModel, int cMaxAlternatives, GO_SPEECH_RECOGNITION_BOOL cInterimResults);
 
 /*
 GO_SPEECH_RECOGNITION_BOOL SendAudio(const short* recording, int recording_size):
@@ -61,7 +65,7 @@ ReceiveTranscript (char**):
 retrieves and saves the current final transcripts from Google
 
 Return:
-(per reference [char* (current transcript)])
+(per reference [char* (current transcript)] alternatives will be splitted using ';' characters)
 GO_SPEECH_RECOGNITION_TRUE if successful
 GO_SPEECH_RECOGNITION_FALSE if failed (error log can be retrieved with "GetLog()")
 */

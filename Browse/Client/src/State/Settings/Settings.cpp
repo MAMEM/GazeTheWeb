@@ -66,7 +66,7 @@ Settings::~Settings()
 	// Delete layouts?
 }
 
-StateType Settings::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+StateType Settings::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive)
 {
     if (_goToWeb)
 	{

@@ -25,7 +25,7 @@ TextInputAction::~TextInputAction()
     // Nothing to do
 }
 
-bool TextInputAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool TextInputAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	// Fetch input values
 	std::u16string text;

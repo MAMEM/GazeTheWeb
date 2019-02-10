@@ -33,7 +33,7 @@ public:
     virtual ~Pipeline() = 0;
 
     // Update retuns whether finished with execution
-    bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject);
+    bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
 
     // Draw
     void Draw() const;

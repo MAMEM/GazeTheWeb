@@ -19,7 +19,7 @@ DynamicDriftCorrectionAction::DynamicDriftCorrectionAction(TabInteractionInterfa
     AddVec2OutputSlot("coordinate");
 }
 
-bool DynamicDriftCorrectionAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+bool DynamicDriftCorrectionAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	// TODO
 	// - incoporate raw gaze data

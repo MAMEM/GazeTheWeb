@@ -145,10 +145,13 @@ Tab::~Tab()
     _pMaster->RemoveLayout(_pDebugLayout);
 }
 
-void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject)
+void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive)
 {
 	// Store tpf
 	_lastTimePerFrame = tpf;
+
+	// Update the keyboardActivePointer
+	*keyboardActive = _keyboardActive;
 
 	// Poll mediator to update DOM nodes (computed styles etc.)
 	if (setup::USE_DOM_NODE_POLLING)
@@ -172,6 +175,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	// #######################
 	// ### UPDATE WEB VIEW ###
 	// #######################
+
 
 
 	// VoiceInput
@@ -201,18 +205,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	break;
 	case VoiceCommand::TEXT:
 	{
-		//if (!spVoiceInput->parameter.empty()) {
-		//	try
-		//	{
-		//		int index = std::stoi(spVoiceInput->parameter);
-		//		this->ScheduleTextInputTrigger(index - 1);
-		//	}
-		//	catch (const char *exception) {
-		//		_pMaster->PushNotification(u"The number is not valid", MasterNotificationInterface::Type::WARNING, false);
-		//	}
-		//}
-		//else {
-
+		if (spVoiceInput->parameter.empty()) {
 			int index = 0;
 			float shortestDis = 50.0;
 			float finalLinkX = 0.0;
@@ -223,13 +216,18 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 				if (FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 					index = link.nodeId;
 			}
-				
-			if (shortestDis < 50.0) {
+
+			if (shortestDis < 50.0)
 				this->ScheduleTextInputTrigger(index);
-				spVoiceInputObject->SetVoiceMode(VoiceMode::FREE);
-			}
-				
-		//}
+		}
+	}
+	break;
+	case VoiceCommand::REMOVE: {
+			this->DeleteContentAtCursorInTextEdit("text_input_action_text_edit", -1);
+	}
+	break;
+	case VoiceCommand::CLEAR: {
+			this->DeleteContentInTextEdit("text_input_action_text_edit");
 	}
 	break;
 	case VoiceCommand::CLOSE: {
@@ -333,50 +331,43 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	}
 	break;
 	case VoiceCommand::PLAY: {;
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		if (videoId >= 0)
-			this->PlayVideo(videoId);
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->PlayVideo(_lastVideoId);
 	}
 	break;
 	case VoiceCommand::PAUSE: {
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		if (this->getVideoId() >= 0 && videoId >= 0)
-			this->StopVideo(videoId);
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->StopVideo(_lastVideoId);
 	}
 	break;
 	case VoiceCommand::STOP: {
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		if (videoId >= 0)
-			this->StopVideo(videoId);
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->StopVideo(_lastVideoId);
 	}
 	break;
 	case VoiceCommand::INCREASE: {
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		if (videoId >= 0)
-			this->IncreaseVideoVolume(videoId);
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->IncreaseVideoVolume(_lastVideoId);
 	}
 	break;
 	case VoiceCommand::DECREASE: {
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		if ( videoId >= 0)
-			this->DecreaseVideoVolume(videoId);
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->DecreaseVideoVolume(_lastVideoId);
 	} break;
 	case VoiceCommand::MUTE: {
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		if (videoId >= 0)
-			this->MuteVideo(videoId);
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->MuteVideo(_lastVideoId);
 	}
 	break;
 	case VoiceCommand::UNMUTE: {
-		int videoId = this->getVideoId();
-		LogInfo("video id ", videoId);
-		this->UnmuteVideo(videoId);
+		LogInfo("video id ", _lastVideoId);
+		this->UnmuteVideo(_lastVideoId);
 	}
 	break;
 	default:
@@ -534,7 +525,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		eyegui::setInputUsageOfLayout(_pPipelineAbortLayout, true);
 
 		// Update current pipeline (if there is one)
-		if (_pipelines.front()->Update(tpf, spTabInput, spVoiceInput, spVoiceInputObject))
+		if (_pipelines.front()->Update(tpf, spTabInput, spVoiceInput))
 		{
 			// Remove front element from pipelines
 			_pipelines.front()->Deactivate();
