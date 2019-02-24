@@ -427,7 +427,7 @@ void Web::DemoModeReset()
 	// Settings?
 }
 
-StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive)
+StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive)
 {
     // Process jobs first
     while(!_jobs.empty())

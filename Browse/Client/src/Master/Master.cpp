@@ -1057,11 +1057,11 @@ void Master::Loop()
 		switch (_currentState)
 		{
 		case StateType::WEB:
-			nextState = _upWeb->Update(tpf, spInput, spVoiceInput, &_keyboardActive);
+			nextState = _upWeb->Update(tpf, spInput, spVoiceInput, _keyboardActive);
 			_upWeb->Draw();
 			break;
 		case StateType::SETTINGS:
-			nextState = _upSettings->Update(tpf, spInput, spVoiceInput, &_keyboardActive);
+			nextState = _upSettings->Update(tpf, spInput, spVoiceInput, _keyboardActive);
 			_upSettings->Draw();
 			break;
 		}

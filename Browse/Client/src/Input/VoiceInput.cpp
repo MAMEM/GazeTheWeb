@@ -199,13 +199,12 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 	// Assignment of voice action begins
 	if (!transcriptCandidatesStr.empty()) {
 
-
-
 		LogInfo("transcriptCandidatesStr: " + transcriptCandidatesStr);
 
 		std::vector<std::string> transcriptCandidatesList = SplitBySeparator(transcriptCandidatesStr, ';');
 
-		// The first is the one with the highest confidence
+		// Because the first candidate has the highest confidence and the process will always overwrite the current best result
+		// when found a new one, therefore we iterate back to front through the list
 		for (int i = transcriptCandidatesList.size() - 1; i > 0; i--) {
 			LogInfo("transcript: " + transcriptCandidatesList[i]);
 
@@ -222,8 +221,9 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			// The best matching CommandStruct
 			CommandStruct commandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
 
-			// iterate over all keys
+			// iterate over all possible keys
 			for (CommandStruct currentCommandStruct : commandStructList) {
+				// iterate over all phonetic variants
 				for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
 					// distance between key and transcription
@@ -244,7 +244,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 							if (splittedPhoneticVariantLen > 1) {
 
 								// iterate over the rest of the splittedPhoneticVariant
-								for (int j = 1; j < splittedPhoneticVariantLen && i+j < splittedPhoneticVariantLen; j++) {
+								for (int j = 1; j < splittedPhoneticVariantLen && i+j < splittedTranscriptLen; j++) {
 
 									// strDistance has to be < 2 for the whole key 
 									strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], true);

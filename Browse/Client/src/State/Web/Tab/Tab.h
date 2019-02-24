@@ -43,6 +43,7 @@
 #include <map>
 #include <set>
 #include <future>
+#include <utility>
 
 // Forward declaration
 class Master;
@@ -69,7 +70,7 @@ public:
     virtual ~Tab();
 
     // Update
-	void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive);
+	void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive);
 
     // Draw
     void Draw() const;
@@ -168,7 +169,13 @@ public:
 
 	// searchs the nearest element from the "rectList" to the gaze coordinates in the "spInput" and updates the committed "spResultX", "spResultY" and "spResultDis"
 	// returns a bool indicating if a nearer (the distance is smaller than the committed "spResultDis") Rect has been found
-	bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis);
+	bool Tab::FindNearest(const float gazeX, const float gazeY, std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis);
+
+	// We store (coordinate, retrieving time stamp) in a vector and will remove the ones that are longer stored than t seconds
+	std::deque<std::pair<float, std::chrono::steady_clock::time_point> > _gazeQueueX;
+	std::deque<std::pair<float, std::chrono::steady_clock::time_point> > _gazeQueueY;
+	std::chrono::milliseconds _storeTime = std::chrono::milliseconds(2500);
+
 
     // #################################
     // ### TAB INTERACTIVE INTERFACE ###

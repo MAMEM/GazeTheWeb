@@ -13,6 +13,7 @@
 #include <algorithm>
 
 
+
 Tab::Tab(
 	Master* pMaster,
 	Mediator* pCefMediator,
@@ -145,13 +146,13 @@ Tab::~Tab()
     _pMaster->RemoveLayout(_pDebugLayout);
 }
 
-void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool *keyboardActive)
+void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive)
 {
 	// Store tpf
 	_lastTimePerFrame = tpf;
 
 	// Update the keyboardActivePointer
-	*keyboardActive = _keyboardActive;
+	keyboardActive = _keyboardActive;
 
 	// Poll mediator to update DOM nodes (computed styles etc.)
 	if (setup::USE_DOM_NODE_POLLING)
@@ -172,6 +173,21 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		}
 	}
 	
+	// TODO: needs to find a better place in the future
+
+	while (_gazeQueueX.size() > 0 && (std::chrono::steady_clock::now() - _gazeQueueX.front().second > _storeTime)) {
+		_gazeQueueX.pop_front();
+	}
+	
+	while (_gazeQueueX.size() > 0 && (std::chrono::steady_clock::now() - _gazeQueueY.front().second > _storeTime)) {
+		_gazeQueueY.pop_front();
+	}
+
+	_gazeQueueX.push_back(std::make_pair(spInput->gazeX, std::chrono::steady_clock::now()));
+	_gazeQueueY.push_back(std::make_pair(spInput->gazeY, std::chrono::steady_clock::now()));
+
+
+
 	// #######################
 	// ### UPDATE WEB VIEW ###
 	// #######################
@@ -213,7 +229,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 
 			std::vector<Tab::DOMTextInputInfo> domTextList = this->RetrieveDOMTextInputInfos();
 			for (Tab::DOMTextInputInfo link : domTextList) {
-				if (FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
+				if (FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 					index = link.nodeId;
 			}
 
@@ -241,8 +257,8 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		float gazeYOffset = spInput->gazeY + this->_scrollingOffsetY;
 		float gazeXOffset = spInput->gazeX - this->GetWebViewX();
 
-		float finalLinkX = spInput->gazeX;
-		float finalLinkY = spInput->gazeY;
+		float finalLinkX = _gazeQueueX.front().first;
+		float finalLinkY = _gazeQueueY.front().first;
 		float shortestDis = 50.0;
 
 
@@ -276,7 +292,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		}
 		else {
 			for (Tab::DOMLinkInfo link : domLinkList) {
-				FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
+				FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
 			}
 		} 
 
@@ -293,7 +309,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 
 		std::vector<Tab::DOMCheckboxInfo> domCheckBoxList = this->RetrieveDOMCheckboxInfos();
 		for (Tab::DOMCheckboxInfo link : domCheckBoxList) {
-			FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
+			FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
 		}
 		this->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - this->_scrollingOffsetY);
 		
@@ -321,7 +337,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 
 			std::vector<Tab::DOMVideoInfo> domVideoList = this->RetrieveDOMVideoInfos();
 			for (Tab::DOMVideoInfo link : domVideoList) {	
-				if (FindNearest(spInput, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
+				if (FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 						index = link.nodeId;
 			}
 			if (shortestDis < 50.f)
@@ -1316,10 +1332,10 @@ std::vector<Tab::DOMVideoInfo> Tab::RetrieveDOMVideoInfos() const
 	return result;
 }
 
-bool Tab::FindNearest(const std::shared_ptr<const Input> spInput, const std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis) {
+bool Tab::FindNearest(const float gazeX, const float gazeY, const std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis) {
 	
-	float gazeXOffset = spInput->gazeX - this->GetWebViewX();
-	float gazeYOffset = spInput->gazeY + this->_scrollingOffsetY;
+	float gazeXOffset = gazeX - this->GetWebViewX();
+	float gazeYOffset = gazeY + this->_scrollingOffsetY;
 	bool found = false;
 
 	for (Rect rect : rectList) {
