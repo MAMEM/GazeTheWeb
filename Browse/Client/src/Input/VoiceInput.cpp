@@ -205,7 +205,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 		// Because the first candidate has the highest confidence and the process will always overwrite the current best result
 		// when found a new one, therefore we iterate back to front through the list
-		for (int i = transcriptCandidatesList.size() - 1; i > 0; i--) {
+		for (int i = transcriptCandidatesList.size() - 1; i >= 0; i--) {
 			LogInfo("transcript: " + transcriptCandidatesList[i]);
 
 			// Index representing the beginning of the parameter (index of the last word of a key + 1)
@@ -219,7 +219,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			int shortestStrDistance = INT32_MAX;
 
 			// The best matching CommandStruct
-			CommandStruct commandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
+			CommandStruct bestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
 
 			// iterate over all possible keys
 			for (CommandStruct currentCommandStruct : commandStructList) {
@@ -251,7 +251,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 									// we found the currently best matching key
 									if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {
-										commandStruct = currentCommandStruct;
+										bestCommandStruct = currentCommandStruct;
 										voiceParameterIndex = i + j + 1;
 										LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", strDistance);
 										shortestStrDistance = strDistance;
@@ -261,7 +261,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 							// the key is one word and the currently best matching one
 							else {
-								commandStruct = currentCommandStruct;
+								bestCommandStruct = currentCommandStruct;
 								voiceParameterIndex = i + 1;
 								LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", strDistance);
 								shortestStrDistance = strDistance;
@@ -272,12 +272,12 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			}
 
 			// assign the found command to the voiceResult
-			if (commandStruct.command != VoiceCommand::NO_ACTION) {
-				voiceResult.command = commandStruct.command;
+			if (bestCommandStruct.command != VoiceCommand::NO_ACTION) {
+				voiceResult.command = bestCommandStruct.command;
 
 				// assign parameter if needed
-				if (commandStruct.takesParameter) {
-
+				if (bestCommandStruct.takesParameter) {
+					voiceResult.parameter = "";
 					// add the transcripted words following the command to the voiceResult.parameter
 					for (int i = voiceParameterIndex; i < splittedTranscriptLen; i++) {
 						if (i == voiceParameterIndex) {
@@ -290,7 +290,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 				}
 
-				LogInfo("voiceCommand: " + commandStruct.phoneticVariants[0] + " Parameter: " + voiceResult.parameter);
+				LogInfo("voiceCommand: " + bestCommandStruct.phoneticVariants[0] + (!voiceResult.parameter.empty() ? " Parameter: " + voiceResult.parameter : ""));
 			}
 			else if (_voiceMode == VoiceMode::FREE) {
 				voiceResult.command = VoiceCommand::PARAMETER_ONLY;

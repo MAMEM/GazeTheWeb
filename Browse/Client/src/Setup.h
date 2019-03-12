@@ -10,6 +10,7 @@
 
 #include "src/Input/Filters/FilterKernel.h"
 #include <string>
+#include <chrono>
 
 namespace setup
 {	
@@ -89,6 +90,7 @@ namespace setup
 	static const bool	USE_DOM_NODE_POLLING = !DEBUG_MODE;
 	static const float	DOM_POLLING_FREQUENCY = 1.0f; // times per second
 	static const int	DOM_POLLING_PARTITION_NUMBER = 8;
+	static const std::chrono::milliseconds STORING_TIME = std::chrono::milliseconds(2500); // time to store the queue of GazeCoordinates to use past values
 }
 
 #endif // SETUP_H_

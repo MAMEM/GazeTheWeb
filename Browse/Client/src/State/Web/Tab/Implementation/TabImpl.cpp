@@ -173,18 +173,12 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		}
 	}
 	
-	// TODO: needs to find a better place in the future
-
-	while (_gazeQueueX.size() > 0 && (std::chrono::steady_clock::now() - _gazeQueueX.front().second > _storeTime)) {
-		_gazeQueueX.pop_front();
+	// store the current gazevalues and remove the ones that are to old - needed to get coordinates from the past
+	while (_gazeQueue.size() > 0 && (std::chrono::steady_clock::now() - std::get<2>(_gazeQueue.front()) > setup::STORING_TIME)) {
+		_gazeQueue.pop_front();
 	}
 	
-	while (_gazeQueueX.size() > 0 && (std::chrono::steady_clock::now() - _gazeQueueY.front().second > _storeTime)) {
-		_gazeQueueY.pop_front();
-	}
-
-	_gazeQueueX.push_back(std::make_pair(spInput->gazeX, std::chrono::steady_clock::now()));
-	_gazeQueueY.push_back(std::make_pair(spInput->gazeY, std::chrono::steady_clock::now()));
+	_gazeQueue.push_back(std::make_tuple(spInput->gazeX, spInput->gazeY, std::chrono::steady_clock::now()));
 
 
 
@@ -224,12 +218,12 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		if (spVoiceInput->parameter.empty()) {
 			int index = 0;
 			float shortestDis = 50.0;
-			float finalLinkX = 0.0;
-			float finalLinkY = 0.0;
+			float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+			float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
 
 			std::vector<Tab::DOMTextInputInfo> domTextList = this->RetrieveDOMTextInputInfos();
 			for (Tab::DOMTextInputInfo link : domTextList) {
-				if (FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
+				if (FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 					index = link.nodeId;
 			}
 
@@ -254,11 +248,11 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	{
 		float thresholdY = 50.0;
 		float thresholdX = 100.0;
-		float gazeYOffset = spInput->gazeY + this->_scrollingOffsetY;
-		float gazeXOffset = spInput->gazeX - this->GetWebViewX();
+		float gazeXOffset = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+		float gazeYOffset = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
 
-		float finalLinkX = _gazeQueueX.front().first;
-		float finalLinkY = _gazeQueueY.front().first;
+		float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+		float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
 		float shortestDis = 50.0;
 
 
@@ -292,7 +286,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		}
 		else {
 			for (Tab::DOMLinkInfo link : domLinkList) {
-				FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
+				FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis);
 			}
 		} 
 
@@ -303,13 +297,13 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	case VoiceCommand::CHECK: 
 	{
 
-		float finalLinkX = spInput->gazeX;
-		float finalLinkY = spInput->gazeY;
+		float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+		float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
 		float shortestDis = 50.0;
 
 		std::vector<Tab::DOMCheckboxInfo> domCheckBoxList = this->RetrieveDOMCheckboxInfos();
 		for (Tab::DOMCheckboxInfo link : domCheckBoxList) {
-			FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis);
+			FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis);
 		}
 		this->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - this->_scrollingOffsetY);
 		
@@ -337,7 +331,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 
 			std::vector<Tab::DOMVideoInfo> domVideoList = this->RetrieveDOMVideoInfos();
 			for (Tab::DOMVideoInfo link : domVideoList) {	
-				if (FindNearest(_gazeQueueX.front().first, _gazeQueueY.front().first, link.rects, &finalLinkX, &finalLinkY, &shortestDis))
+				if (FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis))
 						index = link.nodeId;
 			}
 			if (shortestDis < 50.f)
