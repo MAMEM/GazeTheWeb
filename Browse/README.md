@@ -24,9 +24,9 @@ On a clean Ubuntu 17.04 installation, following packages are required:
 Since the CEF3 binaries for Windows and Linux do not like each other, one has to copy them manually into the cloned project. Just follow these easy steps:
 
 1. Clone this repository.
-2. Download either Windows 32bit or Linux 64bit CEF 3.x binaries in standard distribution from [here](http://opensource.spotify.com/cefbuilds/index.html)
- * Windows Version: CEF 3.3071.1634.g9cc59c8 / Chromium 59.0.3071.82
- * Linux Version: CEF 3.3071.1636.g2718da5 / Chromium 59.0.3071.82
+2. Download either Windows 32bit or Linux 64bit CEF binaries in standard distribution from [here](http://opensource.spotify.com/cefbuilds/index.html)
+ * Windows Version: CEF 73.1.12+gee4b49f+chromium-73.0.3683.75 / Chromium 73.0.3683.75
+ * Linux Version: *currently not supported*
 3. Extract the downloaded files and copy following content into the locally cloned repository:
  * include
  * libcef_dll
