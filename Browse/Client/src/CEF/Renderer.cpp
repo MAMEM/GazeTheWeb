@@ -15,7 +15,7 @@ Renderer::Renderer(Mediator* pMediator)
     _mediator = pMediator;
 }
 
-bool Renderer::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
+void Renderer::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 {
     int width = 0, height = 0;
     _mediator->GetResolution(browser, width, height);
@@ -24,7 +24,6 @@ bool Renderer::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
     {
         LogDebug("Renderer: GetViewRect size equal zero!");
     }
-    return true;
 }
 
 void Renderer::OnPaint(
