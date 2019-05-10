@@ -32,6 +32,7 @@
 #include "src/State/Web/Tab/Triggers/VideoModeTrigger.h"
 #include "src/Utils/glmWrapper.h"
 #include "src/Input/Input.h"
+#include "src/Input/VoiceInput.h"
 #include "src/Global.h"
 #include "src/State/Web/Tab/Pipelines/PointingEvaluationPipeline.h"
 #include "submodules/eyeGUI/include/eyeGUI.h"
@@ -42,6 +43,7 @@
 #include <map>
 #include <set>
 #include <future>
+
 
 // Forward declaration
 class Master;
@@ -68,7 +70,7 @@ public:
     virtual ~Tab();
 
     // Update
-    void Update(float tpf, const std::shared_ptr<const Input> spInput);
+	void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive);
 
     // Draw
     void Draw() const;
@@ -128,6 +130,31 @@ public:
 	};
 	std::vector<DOMLinkInfo> RetrieveDOMLinkInfos() const;
 
+	// Retrieve all Checkbox's,
+	struct DOMCheckboxInfo
+	{
+		DOMCheckboxInfo(std::vector<Rect> rects) : rects(rects) {}
+		std::vector<Rect> rects;
+	};
+	std::vector<DOMCheckboxInfo> RetrieveDOMCheckboxInfos() const;
+
+	// Retrieve all Textinputs.,
+	struct DOMTextInputInfo
+	{
+		DOMTextInputInfo(std::vector<Rect> rects, int nodeId) : rects(rects), nodeId(nodeId) {}
+		std::vector<Rect> rects;
+		int nodeId;
+	};
+	std::vector<DOMTextInputInfo> RetrieveDOMTextInputInfos() const;
+	
+	struct DOMVideoInfo
+	{
+		DOMVideoInfo(std::vector<Rect> rects, int nodeId) : rects(rects), nodeId(nodeId) {}
+		std::vector<Rect> rects;
+		int nodeId;
+	};
+	std::vector<DOMVideoInfo> RetrieveDOMVideoInfos() const;
+
 	// Getter for URL
 	std::string GetURL() const { return _url; }
 
@@ -139,6 +166,16 @@ public:
 
 	// Update award icon
 	void SetAwardIcon(Award award); 
+
+	// searchs the nearest element from the "rectList" to the gaze coordinates in the "spInput" and updates the committed "spResultX", "spResultY" and "spResultDis"
+	// returns a bool indicating if a nearer (the distance is smaller than the committed "spResultDis") Rect has been found
+	bool Tab::FindNearest(const float gazeX, const float gazeY, std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis);
+
+	// We store (x, y, retrieving time stamp) in a vector and will remove the ones that are longer stored than STORING_TIME seconds (defined in "setup.h")
+	std::deque<std::tuple<float, float, std::chrono::steady_clock::time_point> > _gazeQueue;
+
+	
+
 
     // #################################
     // ### TAB INTERACTIVE INTERFACE ###
@@ -290,6 +327,9 @@ public:
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	// >>> Implemented in TabActionImpl.cpp >>>
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	// Sets
+	virtual void NotifyKeyboardActivation(bool keyboardActive) { _keyboardActive = keyboardActive; }
 
     // Push back an pipeline
     virtual void PushBackPipeline(std::unique_ptr<Pipeline> upPipeline);
@@ -444,6 +484,9 @@ public:
 
 private:
 
+	bool _keyboardActive = false;
+
+	int _lastVideoId = 0;
 	// Enumeration for icon state of tab
 	enum class IconState { LOADING, ICON_NOT_FOUND, FAVICON };
 
@@ -556,6 +599,22 @@ private:
 	// Exit video mode
 	void ExitVideoMode(bool immediately = false);
 
+	// increase the volumn of the video
+	virtual void IncreaseVideoVolume(int videoModeId);
+	// decrease the volumn of the video
+	virtual void DecreaseVideoVolume(int videoModeId);
+	// play the video
+	virtual void PlayVideo(int videoModeId);
+	// stop the video
+	virtual void StopVideo(int videoModeId);
+	// mute the video
+	virtual void MuteVideo(int videoModeId);
+	// unmute the video
+	virtual void UnmuteVideo(int videoModeId);
+	// jump to some seconds of the video
+	virtual void JumpToVideo(float seconds, int videoModeId);
+
+	int getVideoId() const { return _lastVideoId; }
 	// Start social record
 	void StartSocialRecord(std::string URL, SocialPlatform platform);
 

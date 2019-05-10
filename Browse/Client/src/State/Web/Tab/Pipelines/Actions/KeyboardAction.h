@@ -14,6 +14,7 @@
 #include "src/State/Web/Tab/Pipelines/Actions/Action.h"
 #include "src/Singletons/LabStreamMailer.h"
 
+
 class KeyboardAction : public Action
 {
 public:
@@ -25,7 +26,7 @@ public:
     virtual ~KeyboardAction();
 
     // Update retuns whether finished with execution
-    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput);
+    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
 
     // Draw
     virtual void Draw() const;

@@ -16,6 +16,8 @@
 #include "src/Input/Input.h"
 #include <memory>
 #include <vector>
+#include "src/Input/VoiceInput.h"
+
 
 // Forward declaration
 class TabInteractionInterface;
@@ -31,7 +33,7 @@ public:
     virtual ~Pipeline() = 0;
 
     // Update retuns whether finished with execution
-    bool Update(float tpf, const std::shared_ptr<const TabInput> spInput);
+    bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
 
     // Draw
     void Draw() const;

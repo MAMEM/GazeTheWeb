@@ -10,7 +10,7 @@ DelayAction::DelayAction(TabInteractionInterface *pTab, float seconds) : Action(
 	_time = seconds;
 }
 
-bool DelayAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool DelayAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	_time -= tpf;
 	bool done = _time < 0;

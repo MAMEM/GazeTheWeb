@@ -12,6 +12,8 @@
 #include "src/State/Web/Tab/SocialRecord.h"
 #include <algorithm>
 
+
+
 Tab::Tab(
 	Master* pMaster,
 	Mediator* pCefMediator,
@@ -86,7 +88,7 @@ Tab::Tab(
 	eyegui::registerButtonListener(_pPanelLayout, "dashboard", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "play", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "pause", _spTabButtonListener);
-	eyegui::registerButtonListener(_pVideoModeLayout, "volume_up", _spTabButtonListener);
+	eyegui::registerButtonListener(_pVideoModeLayout, "volume_up", _spTabButtonListener) ;
 	eyegui::registerButtonListener(_pVideoModeLayout, "volume_down", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "mute", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "exit", _spTabButtonListener);
@@ -144,10 +146,13 @@ Tab::~Tab()
     _pMaster->RemoveLayout(_pDebugLayout);
 }
 
-void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput)
+void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive)
 {
 	// Store tpf
 	_lastTimePerFrame = tpf;
+
+	// Update the keyboardActivePointer
+	keyboardActive = _keyboardActive;
 
 	// Poll mediator to update DOM nodes (computed styles etc.)
 	if (setup::USE_DOM_NODE_POLLING)
@@ -168,10 +173,218 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput)
 		}
 	}
 	
+	// store the current gazevalues and remove the ones that are to old - needed to get coordinates from the past
+	while (_gazeQueue.size() > 0 && (std::chrono::steady_clock::now() - std::get<2>(_gazeQueue.front()) > setup::STORING_TIME)) {
+		_gazeQueue.pop_front();
+	}
+	
+	_gazeQueue.push_back(std::make_tuple(spInput->gazeX, spInput->gazeY, std::chrono::steady_clock::now()));
+
+
+
 	// #######################
 	// ### UPDATE WEB VIEW ###
 	// #######################
 
+
+
+	// VoiceInput
+	switch (spVoiceInput->command)
+	{
+	case VoiceCommand::NO_ACTION:
+	break;
+	case VoiceCommand::SCROLL_UP:
+	{
+		this->EmulateMouseWheelScrolling(0, VoiceInput::GetScrollDistance());
+	}
+	break;
+	case VoiceCommand::SCROLL_DOWN:
+	{
+		this->EmulateMouseWheelScrolling(0, -VoiceInput::GetScrollDistance());
+	}
+	break;
+	case VoiceCommand::TOP:
+	{
+		this->EmulateMouseWheelScrolling(0, this->_pageHeight);
+	}
+	break;
+	case VoiceCommand::BOTTOM:
+	{
+		this->EmulateMouseWheelScrolling(0, - this->_pageHeight);
+	}
+	break;
+	case VoiceCommand::TEXT:
+	{
+		if (spVoiceInput->parameter.empty()) {
+			int index = 0;
+			float shortestDis = 50.0;
+			float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+			float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
+
+			std::vector<Tab::DOMTextInputInfo> domTextList = this->RetrieveDOMTextInputInfos();
+			for (Tab::DOMTextInputInfo link : domTextList) {
+				if (FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis))
+					index = link.nodeId;
+			}
+
+			if (shortestDis < 50.0)
+				this->ScheduleTextInputTrigger(index);
+		}
+	}
+	break;
+	case VoiceCommand::REMOVE: {
+			this->DeleteContentAtCursorInTextEdit("text_input_action_text_edit", -1);
+	}
+	break;
+	case VoiceCommand::CLEAR: {
+			this->DeleteContentInTextEdit("text_input_action_text_edit");
+	}
+	break;
+	case VoiceCommand::CLOSE: {
+		// TODO: CLOSE i.e. textinput		
+	}
+	break;
+	case VoiceCommand::CLICK: 
+	{
+		float thresholdY = 50.0;
+		float thresholdX = 100.0;
+		float gazeXOffset = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+		float gazeYOffset = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
+
+		float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+		float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
+		float shortestDis = 50.0;
+
+
+		std::vector<Tab::DOMLinkInfo> domLinkList = this->RetrieveDOMLinkInfos();
+		int strDistanceMax = 20;
+
+		//generalizing?
+
+		//get the lev distance between text of link and transcription
+		if (!spVoiceInput->parameter.empty()) {
+			for (Tab::DOMLinkInfo link : domLinkList) {
+				std::vector<Rect> rectList = link.rects;
+				for (Rect rect : rectList) {
+					std::transform(spVoiceInput->parameter.begin(), spVoiceInput->parameter.end(), spVoiceInput->parameter.begin(), ::tolower);
+					// gaze must be within (threshold  + the area of link )
+					if ((glm::abs(rect.top - gazeYOffset) < thresholdY || glm::abs(rect.bottom - gazeYOffset) < thresholdY) &&
+						(glm::abs(rect.right - gazeXOffset) < thresholdX || glm::abs(rect.left - gazeXOffset) < thresholdX)) {
+						std::string linktext = link.text;
+						std::transform(linktext.begin(), linktext.end(), linktext.begin(), ::tolower);
+						int strDistance = StringDistance(spVoiceInput->parameter, linktext, true);
+						if (strDistance < strDistanceMax && strDistance != linktext.size()) {
+							LogInfo("shorter dis:", linktext, " . dis:", strDistance, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
+							finalLinkX = rect.Center().x;
+							finalLinkY = rect.Center().y;
+							strDistanceMax = strDistance;
+						}
+					}
+				}
+
+			}
+		}
+		else {
+			for (Tab::DOMLinkInfo link : domLinkList) {
+				FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis);
+			}
+		} 
+
+		this->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - this->_scrollingOffsetY);
+		
+	}
+	break;
+	case VoiceCommand::CHECK: 
+	{
+
+		float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
+		float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
+		float shortestDis = 50.0;
+
+		std::vector<Tab::DOMCheckboxInfo> domCheckBoxList = this->RetrieveDOMCheckboxInfos();
+		for (Tab::DOMCheckboxInfo link : domCheckBoxList) {
+			FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis);
+		}
+		this->EmulateLeftMouseButtonClick(finalLinkX, finalLinkY - this->_scrollingOffsetY);
+		
+	}
+	break;
+	// ###############################
+	// ### VIDEO CONTROL       ###
+	// ###############################
+	case VoiceCommand::VIDEO_INPUT: {
+		if (!spVoiceInput->parameter.empty()) {
+			try
+			{	
+				int index = std::stoi(spVoiceInput->parameter);
+				this->ScheduleVideoModeTrigger(index - 1);
+			}
+			catch (const char *exception) {
+				_pMaster->PushNotification(u"The number is not valid", MasterNotificationInterface::Type::WARNING, false);
+			}
+		}
+		else {
+			int index = 0;
+			float finalLinkX = spInput->gazeX;
+			float finalLinkY = spInput->gazeY;
+			float shortestDis = 50.0;
+
+			std::vector<Tab::DOMVideoInfo> domVideoList = this->RetrieveDOMVideoInfos();
+			for (Tab::DOMVideoInfo link : domVideoList) {	
+				if (FindNearest(std::get<0>(_gazeQueue.front()), std::get<1>(_gazeQueue.front()), link.rects, &finalLinkX, &finalLinkY, &shortestDis))
+						index = link.nodeId;
+			}
+			if (shortestDis < 50.f)
+				this->ScheduleVideoModeTrigger(index);
+			
+		}
+	}
+	break;
+	case VoiceCommand::PLAY: {;
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->PlayVideo(_lastVideoId);
+	}
+	break;
+	case VoiceCommand::PAUSE: {
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->StopVideo(_lastVideoId);
+	}
+	break;
+	case VoiceCommand::STOP: {
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->StopVideo(_lastVideoId);
+	}
+	break;
+	case VoiceCommand::INCREASE: {
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->IncreaseVideoVolume(_lastVideoId);
+	}
+	break;
+	case VoiceCommand::DECREASE: {
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->DecreaseVideoVolume(_lastVideoId);
+	} break;
+	case VoiceCommand::MUTE: {
+		LogInfo("video id ", _lastVideoId);
+		if (_lastVideoId >= 0)
+			this->MuteVideo(_lastVideoId);
+	}
+	break;
+	case VoiceCommand::UNMUTE: {
+		LogInfo("video id ", _lastVideoId);
+		this->UnmuteVideo(_lastVideoId);
+	}
+	break;
+	default:
+		break;
+	}
+
+	
 	// Update WebView (get values from eyeGUI layout directly)
 	const auto webViewInGUI = eyegui::getAbsolutePositionAndSizeOfElement(_pPanelLayout, "web_view");
 	_upWebView->Update(
@@ -322,7 +535,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput)
 		eyegui::setInputUsageOfLayout(_pPipelineAbortLayout, true);
 
 		// Update current pipeline (if there is one)
-		if (_pipelines.front()->Update(tpf, spTabInput))
+		if (_pipelines.front()->Update(tpf, spTabInput, spVoiceInput))
 		{
 			// Remove front element from pipelines
 			_pipelines.front()->Deactivate();
@@ -920,6 +1133,21 @@ void Tab::EndSocialRecord()
 	}
 }
 
+std::vector<Tab::DOMCheckboxInfo> Tab::RetrieveDOMCheckboxInfos() const
+{
+	std::vector<Tab::DOMCheckboxInfo> result;
+	result.reserve(_CheckboxMap.size());
+	for (const auto& rLink : _CheckboxMap)
+	{
+		if (!rLink.second->GetRects().empty()) // there is at least one rectangle
+		{
+			//bool checkStates = rLink.second->GetCheckedState();
+			result.push_back(Tab::DOMCheckboxInfo(rLink.second->GetRects()));
+		}
+	}
+	return result;
+}
+
 void Tab::UpdateAccentColor(float tpf)
 {
 	// Move accent color accent towards target accent color
@@ -1066,5 +1294,115 @@ void Tab::SetAwardIcon(Award award)
 	case Award::GOLD:
 		eyegui::setIconOfIconElement(_pPanelLayout, "dashboard", "icons/Award_gold.png");
 		break;
+	}
+}
+std::vector<Tab::DOMTextInputInfo> Tab::RetrieveDOMTextInputInfos() const
+{
+	std::vector<Tab::DOMTextInputInfo> result;
+	result.reserve(_TextInputMap.size());
+	for (const auto& rLink : _TextInputMap)
+	{
+		LogInfo("id", rLink.first);
+		if (!rLink.second->GetRects().empty()) // there is at least one rectangle
+		{
+			result.push_back(Tab::DOMTextInputInfo(rLink.second->GetRects(), rLink.first));
+		}
+	}
+	return result;
+}
+
+std::vector<Tab::DOMVideoInfo> Tab::RetrieveDOMVideoInfos() const
+{
+	std::vector<Tab::DOMVideoInfo> result;
+	result.reserve(_VideoMap.size());
+	for (const auto& rLink : _VideoMap)
+	{
+		if (!rLink.second->GetRects().empty()) // there is at least one rectangle
+		{
+			result.push_back(Tab::DOMVideoInfo(rLink.second->GetRects(), rLink.first));
+
+		}
+	}
+	return result;
+}
+
+bool Tab::FindNearest(const float gazeX, const float gazeY, const std::vector<Rect> rectList, float *spResultX, float *spResultY, float *spResultDis) {
+	
+	float gazeXOffset = gazeX - this->GetWebViewX();
+	float gazeYOffset = gazeY + this->_scrollingOffsetY;
+	bool found = false;
+
+	for (Rect rect : rectList) {
+		float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
+		float dy = glm::max(glm::abs(gazeYOffset - rect.Center().y) - (rect.Height() / 2.f), 0.f);
+		float distance = glm::sqrt((dx * dx) + (dy * dy));
+		LogInfo("checkbox: ", distance, "  ,x:", rect.Center().x, " ,y:", rect.Center().y);
+		
+		if (*spResultDis > distance) {
+			*spResultX = rect.Center().x;
+			*spResultY = rect.Center().y;
+			*spResultDis = distance;
+			found = true;
+		}
+	}
+
+	return found;
+}
+
+// increase the volumn of the video
+void Tab::IncreaseVideoVolume(int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->ChangeVolume(0.25f);
+	}
+}
+
+// decrease the volumn of the video
+void Tab::DecreaseVideoVolume(int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->ChangeVolume(-0.25f);
+	}
+}
+// play the video
+void Tab::PlayVideo(int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->TogglePlayPause();
+	}
+}
+// stop the video
+void Tab::StopVideo(int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->TogglePlayPause();
+	}
+}
+// mute the video
+void Tab::MuteVideo(int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->ToggleMuted();
+	}
+}
+// unmute the video
+void Tab::UnmuteVideo(int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->ToggleMuted();
+	}
+}
+// jump to some seconds of the video
+void Tab::JumpToVideo(float seconds, int videoModeId) {
+	auto iter = _VideoMap.find(videoModeId);
+	if (iter != _VideoMap.end()) // search for DOMVideo corresponding to videoModeId
+	{
+		iter->second->JumpToSecond(seconds);
 	}
 }

@@ -50,7 +50,7 @@ HintAction::~HintAction()
     _pTab->UnregisterButtonListenerInOverlay(_overlayButtonId);
 }
 
-bool HintAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput)
+bool HintAction::Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput)
 {
 	if(_done)
 	{

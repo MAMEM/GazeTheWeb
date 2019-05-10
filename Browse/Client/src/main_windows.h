@@ -10,7 +10,7 @@
 #endif
 
 // Forward declaration of common main
-int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory);
+int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory, bool useVoice);
 
 // Platform specific shutdown
 void shutdown()
@@ -28,7 +28,10 @@ int APIENTRY wWinMain(
 	int       nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+	
+	// Check commandline args
+	LPTSTR check = L"--voice-input";
+	bool useVoice = (lpCmdLine && (lstrcmpW(check, lpCmdLine) == 0));
 
 	// Enable High-DPI support on Windows 7 or newer.
 	// CefEnableHighDPISupport();
@@ -138,5 +141,5 @@ int APIENTRY wWinMain(
 	userDirectory.append("\\");
 
 	// Use common main now.
-	return CommonMain(main_args, settings, mainProcessApp, sandbox_info, userDirectory);
+	return CommonMain(main_args, settings, mainProcessApp, sandbox_info, userDirectory, useVoice);
 }

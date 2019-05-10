@@ -20,7 +20,9 @@ public:
 	virtual ~TextInputTrigger();
 
 	// Update
-	virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput);
+	//virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput, std::shared_ptr<VoiceInput> spVoiceInputObject);
+	bool TextInputTrigger::Update(float tpf, const std::shared_ptr<const TabInput> spInput);
+
 };
 
 #endif // TEXTINPUTTRIGGER_H_

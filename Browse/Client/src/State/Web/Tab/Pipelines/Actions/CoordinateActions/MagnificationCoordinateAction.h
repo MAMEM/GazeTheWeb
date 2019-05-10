@@ -21,7 +21,7 @@ public:
 	MagnificationCoordinateAction(TabInteractionInterface* pTab, bool doDimming = true);
 
     // Update retuns whether finished with execution
-    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput);
+    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput);
 
     // Draw
     virtual void Draw() const;

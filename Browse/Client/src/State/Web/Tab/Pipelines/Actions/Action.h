@@ -10,6 +10,7 @@
 
 #include "src/Input/Input.h"
 #include "src/State/Web/Tab/Pipelines/Actions/ActionDataMap.h"
+#include "src/Input/VoiceInput.h"
 
 // Forward declaration
 class TabInteractionInterface;
@@ -25,7 +26,7 @@ public:
     virtual ~Action() = 0;
 
     // Update retuns whether finished with execution
-    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput) = 0;
+    virtual bool Update(float tpf, const std::shared_ptr<const TabInput> spInput, std::shared_ptr<VoiceAction> spVoiceInput) = 0;
 
     // Draw
     virtual void Draw() const = 0;

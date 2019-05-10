@@ -13,6 +13,7 @@
 #include "src/State/Web/Managers/HistoryManager.h"
 #include "src/State/Web/Screens/URLInput.h"
 #include "src/State/Web/Screens/History.h"
+#include "src/Input/VoiceInput.h"
 #include <map>
 #include <vector>
 #include <memory>
@@ -89,8 +90,8 @@ public:
     // #############
 
     // Update. Returns which state should be active in next time step
-    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput);
-
+    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive);
+	
     // Draw
     virtual void Draw() const;
 
@@ -216,6 +217,9 @@ private:
 
 	// Validate URL. Returns true if recognized as URL
 	bool ValidateURL(const std::string& rURL) const;
+
+	bool CreateBookmark();
+
 
     // Maps id to Tab
     std::map<int, std::unique_ptr<Tab> > _tabs;

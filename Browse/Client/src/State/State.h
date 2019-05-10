@@ -10,6 +10,7 @@
 
 #include "submodules/eyeGUI/include/eyeGUI.h"
 #include "src/Input/Input.h"
+#include "src/Input/VoiceInput.h"
 
 // Forward declaration
 class Master;
@@ -31,7 +32,7 @@ public:
     virtual ~State() = 0;
 
     // Update. Returns which state should be active in next time step
-    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput) = 0;
+    virtual StateType Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive) = 0;
 
     // Draw
     virtual void Draw() const = 0;

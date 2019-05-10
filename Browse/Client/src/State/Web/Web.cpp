@@ -427,7 +427,7 @@ void Web::DemoModeReset()
 	// Settings?
 }
 
-StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput)
+StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std::shared_ptr<VoiceAction> spVoiceInput, bool &keyboardActive)
 {
     // Process jobs first
     while(!_jobs.empty())
@@ -436,6 +436,140 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput)
         _jobs.pop_back();
         upJob->Execute(this);
     }
+
+	switch (spVoiceInput->command)
+	{
+	case VoiceCommand::NO_ACTION:
+		break;
+
+	// ###############################
+	// ### TAB       CONTROL       ###
+	// ###############################
+	case VoiceCommand::QUIT:
+	{
+		_pMaster->Exit(false);
+	}
+	break;
+	case VoiceCommand::BOOKMARK:
+	{
+		if (_currentTabId >= 0)
+			this->CreateBookmark();
+	}
+	break;
+	case VoiceCommand::BACK:
+	{
+		if (_currentTabId >= 0)
+		{
+			_tabs.at(_currentTabId)->GoBack();
+		}
+	}
+	break;
+	case VoiceCommand::REFRESH:
+	{
+		if (_currentTabId >= 0)
+			_tabs.at(_currentTabId)->Reload();
+	}
+	break;
+	case VoiceCommand::FORWARD:
+	{
+		if (_currentTabId >= 0)
+		{
+			_tabs.at(_currentTabId)->GoForward();
+		}
+	}
+	break;
+	case VoiceCommand::GO_TO:
+	{
+		if (!spVoiceInput->parameter.empty())
+		{
+			if (spVoiceInput->parameter.find(".com") == std::string::npos) {
+				spVoiceInput->parameter.append(".com");
+			}
+
+			std::u16string url16;
+			eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, url16);
+			url16 = u"Going to " + url16;
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+			if (_currentTabId >= 0)
+				_tabs.at(_currentTabId)->OpenURL(spVoiceInput->parameter);
+		}
+		else {
+			std::u16string url16 = u"\"Go To\" awaits a page to visit!";
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+		}
+	}
+	break;
+	case VoiceCommand::NEW_TAB:
+	{
+		if (!spVoiceInput->parameter.empty()) 
+		{
+			if (spVoiceInput->parameter.find(".com") == std::string::npos) {
+				spVoiceInput->parameter.append(".com");
+			}
+
+			std::u16string url16;
+			eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, url16);
+			url16 = u"Going to " + url16;
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+			int tabId = AddTab(spVoiceInput->parameter, true);
+
+		}
+		else {
+			// Add tab
+			int tabId = AddTab(BLANK_PAGE_URL, true);
+
+			// Close tab overview
+			ShowTabOverview(false);
+
+			// Open URLInput to type in URL which should be loaded in new tab
+			_upURLInput->Activate(tabId);
+
+			JSMailer::instance().Send("new_tab");
+			LabStreamMailer::instance().Send("Open new tab");
+		}
+	}
+	break;
+	case VoiceCommand::ZOOM: {
+		// TODO
+	}
+	break;
+	case VoiceCommand::TAB_OVERVIEW: {
+		this->ShowTabOverview(true);
+	}
+	break;
+	case VoiceCommand::SHOW_BOOKMARKS: {
+	}
+	break;
+	case VoiceCommand::CLOSE: {
+		if(eyegui::isLayoutVisible(_pTabOverviewLayout))
+			this->ShowTabOverview(false);
+	}
+	break;
+	// ###############################
+	// ### INPUT     CONTROL       ###
+	// ###############################
+	case VoiceCommand::SEARCH: {
+		if (!spVoiceInput->parameter.empty()) {
+			std::u16string s16;
+			eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, s16);
+			//TODO:: 
+			//_tabs.at(_currentTabId)->SetContentOfTextBlock("text_block", s16);
+
+			std::string _overlayTextEditId = "text_input_action_text_edit";
+			//std::string _overlayWordSuggestId = "text_input_action_word_suggest";
+			// Add content from keyboard
+			_tabs.at(_currentTabId)->AddContentAtCursorInTextEdit(_overlayTextEditId, s16);
+		}
+		else {
+			std::u16string url16 = u"\"Search\" awaits a search word!";
+			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+	
 
 	// History
 	if (_upHistory->IsActive())
@@ -526,7 +660,7 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput)
         eyegui::setElementActivity(_pWebLayout, "back", _tabs.at(_currentTabId)->CanGoBack(), true);
         eyegui::setElementActivity(_pWebLayout, "forward", _tabs.at(_currentTabId)->CanGoForward(), true);
 
-		_tabs.at(_currentTabId)->Update(tpf, spInput);
+		_tabs.at(_currentTabId)->Update(tpf, spInput, spVoiceInput, keyboardActive);
     }
 
     // Decide what to do next
@@ -1037,28 +1171,14 @@ void Web::WebButtonListener::down(eyegui::Layout* pLayout, std::string id)
 				// URL
 				std::string URL = _pWeb->_tabs.at(currentTab)->GetURL();
 
-				// Add as bookmark
-				bool success = _pWeb->_upBookmarkManager->AddBookmark(URL);
-
-				// Display it on icon. Even if not successful, because that means it was already a bookmark
-				eyegui::setIconOfIconElement(_pWeb->_pTabOverviewLayout, "bookmark_tab", "icons/BookmarkTab_true.png");
-
-				// Display notification
+				bool success = _pWeb->CreateBookmark();
 				if (success)
 				{
-					_pWeb->_pMaster->PushNotificationByKey("notification:bookmark_added_success", MasterNotificationInterface::Type::SUCCESS, false);
-				}
-				else
-				{
-					_pWeb->_pMaster->PushNotificationByKey("notification:bookmark_added_existing", MasterNotificationInterface::Type::NEUTRAL, false);
-				}
-
-				if (success)
-				{
-					nlohmann::json record = { { "url", URL } };
+					nlohmann::json record = { { "url", _pWeb->_tabs.at(currentTab)->GetURL() } };
 					_pWeb->_pMaster->SimplePushBackAsyncJob(FirebaseIntegerKey::GENERAL_BOOKMARK_ADDING_COUNT, FirebaseJSONKey::GENERAL_BOOKMARK_ADDING, record);
 				}
 			}
+			
 
 			JSMailer::instance().Send("bookmark_add");
 		}
@@ -1171,4 +1291,26 @@ void Web::WebButtonListener::up(eyegui::Layout* pLayout, std::string id)
 			_pWeb->_pMaster->SetDataTransfer(true);
 		}
 	}
+}
+
+bool Web::CreateBookmark() {
+
+
+	// Add as bookmark
+	bool success = _upBookmarkManager->AddBookmark(_tabs.at(_currentTabId)->GetURL());
+
+	// Display it on icon. Even if not successful, because that means it was already a bookmark
+	eyegui::setIconOfIconElement(_pTabOverviewLayout, "bookmark_tab", "icons/BookmarkTab_true.png");
+
+	// Display notification
+	if (success)
+	{
+		_pMaster->PushNotificationByKey("notification:bookmark_added_success", MasterNotificationInterface::Type::SUCCESS, false);
+	}
+	else
+	{
+		_pMaster->PushNotificationByKey("notification:bookmark_added_existing", MasterNotificationInterface::Type::NEUTRAL, false);
+	}
+
+	return success;
 }

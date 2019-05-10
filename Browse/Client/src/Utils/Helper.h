@@ -32,4 +32,7 @@ std::string GetDate();
 // Simple getter of timestamp (in miliseconds)
 std::string GetTimestamp();
 
+// Get distance of two different strings, if usePhonetic is true soundex algorithm is used, otherwise levenshtein algorithm
+size_t StringDistance(const std::string s1, const std::string s2, bool usePhonetic);
+
 #endif // HELPER_H_

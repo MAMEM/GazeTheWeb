@@ -147,7 +147,16 @@ else() # Linux
 	find_package(CURL REQUIRED)
 endif()
 include_directories(${CURL_INCLUDE_DIR}) 
-	
+
+# go-speech-recognition-lib
+if(WIN32) # Windows
+	set(GO_SPEECH_DIRECTORY "${EXTERNALS_DIR}/go-speech-recognition-lib")
+	set(GO_SPEECH_INCLUDE_DIR "${GO_SPEECH_DIRECTORY}")
+else() # Linux
+	# TODO future
+endif()
+include_directories(${GO_SPEECH_INCLUDE_DIR})
+
 ### SUBMODULES #################################################################
 
 # Set path to submodules

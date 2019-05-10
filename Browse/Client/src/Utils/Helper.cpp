@@ -11,28 +11,30 @@
 #include <vector>
 #include <ctime>
 #include <chrono>
+#include "submodules/eyeGUI/externals/levenshtein-sse/levenshtein-sse.hpp"
+
 
 std::string RGBAToHexString(glm::vec4 color)
 {
-    // Clamp color
-    glm::clamp(color, glm::vec4(0,0,0,0), glm::vec4(1,1,1,1));
+	// Clamp color
+	glm::clamp(color, glm::vec4(0, 0, 0, 0), glm::vec4(1, 1, 1, 1));
 
-    // Get 8-Bits out of it
-    unsigned int r = (unsigned int) (color.r * 255);
-    unsigned int g = (unsigned int) (color.g * 255);
-    unsigned int b = (unsigned int) (color.b * 255);
-    unsigned int a = (unsigned int) (color.a * 255);
+	// Get 8-Bits out of it
+	unsigned int r = (unsigned int)(color.r * 255);
+	unsigned int g = (unsigned int)(color.g * 255);
+	unsigned int b = (unsigned int)(color.b * 255);
+	unsigned int a = (unsigned int)(color.a * 255);
 
-    // Create hexadecimal out of it
-    unsigned int hexNumber = ((r & 0xff) << 24) + ((g & 0xff) << 16) + ((b & 0xff) << 8) + (a & 0xff);
+	// Create hexadecimal out of it
+	unsigned int hexNumber = ((r & 0xff) << 24) + ((g & 0xff) << 16) + ((b & 0xff) << 8) + (a & 0xff);
 
-    // Make string out of it
-    std::stringstream ss;
-    ss << std::showbase // show the 0x prefix
-        << std::internal // fill between the prefix and the number
-        << std::setfill('0'); // set filling
-    ss << std::hex << std::setw(10) << hexNumber; // create 10 chars long string
-    return ss.str();
+	// Make string out of it
+	std::stringstream ss;
+	ss << std::showbase // show the 0x prefix
+		<< std::internal // fill between the prefix and the number
+		<< std::setfill('0'); // set filling
+	ss << std::hex << std::setw(10) << hexNumber; // create 10 chars long string
+	return ss.str();
 }
 
 std::string ShortenURL(std::string URL)
@@ -40,7 +42,7 @@ std::string ShortenURL(std::string URL)
 	// Get rid of http
 	std::string delimiter = "http://";
 	size_t pos = 0;
-	if((pos = URL.find(delimiter)) != std::string::npos)
+	if ((pos = URL.find(delimiter)) != std::string::npos)
 	{
 		URL.erase(0, pos + delimiter.length());
 	}
@@ -48,7 +50,7 @@ std::string ShortenURL(std::string URL)
 	// Get rid of https
 	delimiter = "https://";
 	pos = 0;
-	if((pos = URL.find(delimiter)) != std::string::npos)
+	if ((pos = URL.find(delimiter)) != std::string::npos)
 	{
 		URL.erase(0, pos + delimiter.length());
 	}
@@ -56,7 +58,7 @@ std::string ShortenURL(std::string URL)
 	// Get rid of www.
 	delimiter = "www.";
 	pos = 0;
-	if((pos = URL.find(delimiter)) != std::string::npos)
+	if ((pos = URL.find(delimiter)) != std::string::npos)
 	{
 		URL.erase(0, pos + delimiter.length());
 	}
@@ -65,7 +67,7 @@ std::string ShortenURL(std::string URL)
 	delimiter = "/";
 	pos = 0;
 	std::string shortURL = URL;
-	if((pos = URL.find(delimiter)) != std::string::npos)
+	if ((pos = URL.find(delimiter)) != std::string::npos)
 	{
 		return URL.substr(0, pos);
 	}
@@ -221,3 +223,121 @@ std::string GetTimestamp()
 	std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	return std::to_string(ms.count());
 }
+
+std::string GenerateSoundexCode(std::string input) {
+
+
+	// implementation of the soundex algortihm (american soundex) [https://en.wikipedia.org/wiki/Soundex]
+	// TODO: maybe implement alternative behaviour for different languages (needs different rating of appearing chars) 
+
+
+	// initialization
+	std::string soundexCode = "";
+	soundexCode[0] = input[0];
+
+	int inputCount = 1;
+	int codeCount = 1;
+	bool lastWasVowel = false;
+
+	// generate the soundex code by rating the current char in the input string
+	while ((inputCount < input.length()) && (codeCount < 4))
+	{
+		if (((input[inputCount] == 'b')
+			|| (input[inputCount] == 'p')
+			|| (input[inputCount] == 'v')
+			|| (input[inputCount] == 'f'))
+			&& (soundexCode[codeCount - 1] != 1) || lastWasVowel)	// in soundex code two adjacent with the same rating will only be counted once except a vowel is in between them
+		{
+			soundexCode[codeCount] = 1;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if (((input[inputCount] == 'c')
+			|| (input[inputCount] == 'g')
+			|| (input[inputCount] == 'j')
+			|| (input[inputCount] == 'k')
+			|| (input[inputCount] == 'q')
+			|| (input[inputCount] == 's')
+			|| (input[inputCount] == 'x')
+			|| (input[inputCount] == 'z'))
+			&& (soundexCode[codeCount - 1] != 2) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 2;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if (((input[inputCount] == 'd')
+			|| (input[inputCount] == 't'))
+			&& (soundexCode[codeCount - 1] != 3) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 3;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if ((input[inputCount] == 'l')
+			&& (soundexCode[codeCount - 1] != 4) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 4;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if (((input[inputCount] == 'm')
+			|| (input[inputCount] == 'n'))
+			&& (soundexCode[codeCount - 1] != 5) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 5;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if ((input[inputCount] == 'r')
+			&& (soundexCode[codeCount - 1] != 6) || lastWasVowel)
+		{
+			soundexCode[codeCount] = 6;
+			codeCount++;
+			lastWasVowel = false;
+		}
+		else if ((input[inputCount] == 'a')
+			|| (input[inputCount] == 'e')
+			|| (input[inputCount] == 'i')
+			|| (input[inputCount] == 'o')
+			|| (input[inputCount] == 'u'))
+		{
+			lastWasVowel = true;
+		}
+
+		inputCount++;
+	}
+
+	while (codeCount < 4)
+	{
+		soundexCode[codeCount] = 0;
+		codeCount++;
+	}
+
+	return soundexCode;
+
+}
+
+size_t StringDistance(const std::string s1, const std::string s2, bool usePhonetic)
+{
+
+	// determine distance using levenshtein if wanted
+	if (!usePhonetic)
+		return levenshteinSSE::levenshtein(s1, s2);
+
+
+	size_t output = 0;
+
+	// generate soundex codes 
+	std::string firstSoundexCode = GenerateSoundexCode(s1);
+	std::string secondSoundexCode = GenerateSoundexCode(s2);
+
+	// check similarity between soundex codes
+	for (int i = 0; i < 4; i++) {
+		if (firstSoundexCode[i] != secondSoundexCode[i])
+			output += 1;
+	}
+
+	return output;
+}
+
