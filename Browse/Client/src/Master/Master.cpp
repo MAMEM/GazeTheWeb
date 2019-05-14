@@ -896,9 +896,9 @@ void Master::Loop()
 
 
 
-							 // VOICE INPUT
+		// VOICE INPUT
 		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
-		if (_useVoice) {
+		if (_spVoiceInputObject) {
 			if (_spVoiceInputObject->GetState() == VoiceInputState::Active) {
 				spVoiceInput = _spVoiceInputObject->Update(tpf, _keyboardActive);
 			}

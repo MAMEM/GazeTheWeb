@@ -12,11 +12,19 @@ DOMNode.prototype.setCppReady = function(){
 DOMNode.prototype.isCppReady = function(){
     return this.cppReady;
 }
-DOMNode.prototype.getAdjustedClientRects = function(altNode){
+DOMNode.prototype.getAdjustedClientRects = function (altNode) {
+
     var rects = (altNode === undefined) ? this.node.getClientRects() : altNode.getClientRects();
 
+    console.log(Object.getOwnPropertyNames(rects).filter(function (p) {
+        return typeof rects[p] === 'function';
+    }));
+    
+    if (rects[0]) {
+        console.log(typeof (rects[0].map))
+    }
     if (typeof(rects.map) !== "function")
-    {
+    {  
         console.log("Something went wrong in DOMNode.getAdjustedClientRects: rects.map function not available. Aborting.");
         return [];
     }
