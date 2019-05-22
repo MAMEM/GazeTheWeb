@@ -1,6 +1,7 @@
 //============================================================================
 // Distributed under the Apache License, Version 2.0.
 // Author: Daniel Mueller (muellerd@uni-koblenz.de)
+//         Christopher Dreide (cdreide@uni-koblenz.de)
 //============================================================================
 
 // Helper function for console output
@@ -138,10 +139,10 @@ function CefGetPageResolution()
     }
 }
 
-if(ClientRectList.prototype.map === undefined)
+if(DOMRectList.prototype.map === undefined)
 {
-    ConsolePrint("JS: Extending JS ClientRectList by own map function.");
-    ClientRectList.prototype.map = function(f){
+    ConsolePrint("JS: Extending JS DOMRectList by own map function.");
+    DOMRectList.prototype.map = function(f){
         var output = [];
         for(var i = 0, n = this.length; i < n; i++)
         {

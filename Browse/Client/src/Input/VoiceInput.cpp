@@ -15,9 +15,9 @@
 #include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
 
 /*
-	Thread variable:
-		Read in: main, _tStopping
-		Manipulated in: main, _tStopping
+Thread variable:
+Read in: main, _tStopping
+Manipulated in: main, _tStopping
 */
 PaStream* _pInputStream = nullptr;
 HINSTANCE pluginHandle;
@@ -142,7 +142,7 @@ VoiceInput::VoiceInput() {
 	}
 }
 
-		
+
 // Destructor
 VoiceInput::~VoiceInput() {
 	Deactivate();
@@ -173,7 +173,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 	// check if the time is up
 	if (std::chrono::steady_clock::now() - _activationTime > _runTimeLimit)
 		this->Reactivate();
-	
+
 	// Handle the keyboard activation/deactivation
 	if (keyboardActive && (_voiceMode != VoiceMode::FREE) && (_voiceInputState != VoiceInputState::Changing))
 		SetVoiceMode(VoiceMode::FREE);
@@ -192,8 +192,8 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 
 	/*
-		TODO:
-			Maybe change the following process if the requirements are more specific.
+	TODO:
+	Maybe change the following process if the requirements are more specific.
 	*/
 
 	// Assignment of voice action begins
@@ -244,7 +244,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 							if (splittedPhoneticVariantLen > 1) {
 
 								// iterate over the rest of the splittedPhoneticVariant
-								for (int j = 1; j < splittedPhoneticVariantLen && i+j < splittedTranscriptLen; j++) {
+								for (int j = 1; j < splittedPhoneticVariantLen && i + j < splittedTranscriptLen; j++) {
 
 									// strDistance has to be < 2 for the whole key 
 									strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], true);
@@ -298,20 +298,20 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			}
 		}
 	}
-	
+
 
 	return std::make_shared<VoiceAction>(voiceResult);
 
 }
 
-void VoiceInput::SetVoiceMode(VoiceMode voiceMode) { 
+void VoiceInput::SetVoiceMode(VoiceMode voiceMode) {
 	_voiceInputState = VoiceInputState::Changing;
 
 	// voice mode hasn't changed - nothing to do
 	if (voiceMode == _voiceMode)
 		return;
 
-	_voiceMode = voiceMode; 
+	_voiceMode = voiceMode;
 
 	if (_voiceMode == VoiceMode::COMMAND) {
 		_model = "command_and_search";
@@ -381,7 +381,7 @@ void VoiceInput::Activate() {
 			+ " | Sample Rate: " + std::to_string(_sampleRate)
 			+ " | Transcription Model: " + std::string(_model)
 			+ " | Max Alternatives: " + std::to_string(_maxAlternatives)
-			+ " | Interim Results: " + (_interimResults== GO_SPEECH_RECOGNITION_TRUE ? "true" : "false")
+			+ " | Interim Results: " + (_interimResults == GO_SPEECH_RECOGNITION_TRUE ? "true" : "false")
 		);
 
 		// [SETUP RECORDING]
@@ -409,8 +409,14 @@ void VoiceInput::Activate() {
 
 		// Set up stream
 		PaStreamParameters parameters;
+
 		parameters.device = Pa_GetDefaultInputDevice();
 
+		if (parameters.device == paNoDevice)
+		{
+			LogError("PortAudio error: Have not found an input audio device");
+			return;
+		}
 		// Get and log name of used device 
 		std::string deviceName = Pa_GetDeviceInfo(parameters.device)->name;
 		LogInfo("PortAudio: Chosen input audio device: " + deviceName);
@@ -420,15 +426,11 @@ void VoiceInput::Activate() {
 		parameters.suggestedLatency = Pa_GetDeviceInfo(parameters.device)->defaultLowInputLatency;
 		parameters.hostApiSpecificStreamInfo = NULL;
 
-		if (parameters.device == paNoDevice)
-		{
-			LogError("PortAudio error: Have not found an input audio device");
-			return;
-		}
+
 
 		PaError err; // Variable to fetch errors
 
-		// Open stream
+					 // Open stream
 		err = Pa_OpenStream(&_pInputStream, &parameters, NULL, AUDIO_INPUT_SAMPLE_RATE,
 			paFramesPerBufferUnspecified, paClipOff, audioStreamRecordCallback, _spAudioInput.get());
 		if (err != paNoError)
@@ -540,10 +542,10 @@ void VoiceInput::Reactivate() {
 
 		std::lock_guard<std::mutex> lock(_reactivateGuard);
 
-			if (_voiceInputState != VoiceInputState::Changing)
-				_voiceInputState = VoiceInputState::Restarting;
-			this->Deactivate();
-			this->Activate();
+		if (_voiceInputState != VoiceInputState::Changing)
+			_voiceInputState = VoiceInputState::Restarting;
+		this->Deactivate();
+		this->Activate();
 	});
 }
 
@@ -592,7 +594,7 @@ void VoiceInput::Deactivate() {
 
 
 	LogInfo("VoiceInput: Stopped audio recording and transcribing process.");
-	
+
 
 	if (_voiceInputState == VoiceInputState::Active)
 		_voiceInputState = VoiceInputState::Inactive;

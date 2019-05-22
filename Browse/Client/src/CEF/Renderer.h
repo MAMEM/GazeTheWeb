@@ -25,7 +25,7 @@ public:
     Renderer(Mediator* pMediator);
 
     // Called by CEF to determine render size
-    bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) OVERRIDE;
+    void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) OVERRIDE;
 
     // Called when paint happens, copy pixels over RAM to texture
     void OnPaint(

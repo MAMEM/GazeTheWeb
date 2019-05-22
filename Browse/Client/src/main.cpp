@@ -16,10 +16,10 @@
 
 
 // Execute function to have Master object on stack which might be faster than on heap
-bool Execute(CefRefPtr<MainCefApp> app, std::string userDirectory) // returns whether system should shut down
+bool Execute(CefRefPtr<MainCefApp> app, std::string userDirectory, bool useVoice) // returns whether system should shut down
 {
     // Initialize master
-    Master master(app.get(), userDirectory);
+    Master master(app.get(), userDirectory, useVoice);
 
 	// Give app poiner to master (only functions exposed through interface are accessible)
 	app->SetMaster(&master);
@@ -31,7 +31,7 @@ bool Execute(CefRefPtr<MainCefApp> app, std::string userDirectory) // returns wh
 }
 
 // Common main for linux and windows
-int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory)
+int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory, bool useVoice)
 {
 
 #ifdef CLIENT_DEPLOYMENT
@@ -75,7 +75,7 @@ int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefA
     LogInfo("..done.");
 
     // Execute our code
-    bool shutdownOnExit = Execute(app, userDirectory);
+    bool shutdownOnExit = Execute(app, userDirectory, useVoice);
 
     // Shutdown CEF
     LogInfo("Shutdown CEF...");

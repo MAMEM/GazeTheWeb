@@ -105,11 +105,12 @@ const std::string simpleFragmentShaderSource =
 "   fragColor = texture(tex, uv);\n"
 "}\n";
 
-Master::Master(Mediator* pCefMediator, std::string userDirectory)
+Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 {
 	// Save members
 	_pCefMediator = pCefMediator;
 	_userDirectory = userDirectory;
+	_useVoice = useVoice;
 
 	// ### GLFW AND OPENGL ###
 
@@ -447,8 +448,10 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory)
 	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
 	// ### VOICE INPUT ### 
-	_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput());
-	_spVoiceInputObject->Activate();
+	if (_useVoice) {
+		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput());
+		_spVoiceInputObject->Activate();
+	}
 
 	// ### FRAMEBUFFER ###
 	_upFramebuffer = std::unique_ptr<Framebuffer>(new Framebuffer(_width, _height));
@@ -893,12 +896,13 @@ void Master::Loop()
 
 
 
-		// VOICE INPUT		
+		// VOICE INPUT
 		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
-		if (_spVoiceInputObject->GetState() == VoiceInputState::Active) {
-			spVoiceInput = _spVoiceInputObject->Update(tpf, _keyboardActive);
-		}		
-
+		if (_spVoiceInputObject) {
+			if (_spVoiceInputObject->GetState() == VoiceInputState::Active) {
+				spVoiceInput = _spVoiceInputObject->Update(tpf, _keyboardActive);
+			}
+		}
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
 		{

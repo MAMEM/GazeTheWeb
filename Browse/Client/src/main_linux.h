@@ -7,7 +7,7 @@
 #include "include/base/cef_logging.h"
 
 // Forward declaration of common main
-int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory);
+int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory, bool useVoice);
 
 // Platform specific shutdown
 void shutdown()

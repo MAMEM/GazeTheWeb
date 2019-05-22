@@ -13,7 +13,7 @@
 #include <chrono>
 
 namespace setup
-{	
+{
 	// Make modes available at runtime as booleans
 #ifdef CLIENT_DEBUG
 	static const bool	DEBUG_MODE = true;
@@ -48,11 +48,11 @@ namespace setup
 	static const float	MAX_AGE_OF_USED_GAZE = 0.25f; // only accept gaze as input that is not older than one second (TODO: this is not used by filter but by master to determine when to stop taking gaze input as serious)
 	static const float	DURATION_BEFORE_SUPER_CALIBRATION = 30.f; // duration until recalibration is offered after receiving no gaze samples
 	static const bool	PAUSED_AT_STARTUP = false | DEMO_MODE;
-	static const bool	SUPER_CALIBRATION_AT_STARTUP =  DEPLOYMENT && !DEMO_MODE;
+	static const bool	SUPER_CALIBRATION_AT_STARTUP = DEPLOYMENT && !DEMO_MODE;
 	static const float	LINK_CORRECTION_MAX_PIXEL_DISTANCE = 5.f;
 	static const int	TEXT_SELECTION_MARGIN = 4; // area which is selected before / after zoom coordinate in CEFPixels
 
-	// Gaze filtering
+												   // Gaze filtering
 	static const int	FILTER_GAZE_FIXATION_PIXEL_RADIUS = 30;
 	static const int	FILTER_MEMORY_SIZE = 1000; // how many samples are kept in memory of the filters
 	static const FilterKernel FILTER_KERNEL = FilterKernel::GAUSSIAN;
@@ -64,7 +64,7 @@ namespace setup
 	static const float	EYEINPUT_DISTORT_GAZE_BIAS_X = 64.f; // pixels
 	static const float	EYEINPUT_DISTORT_GAZE_BIAS_Y = 32.f; // pixels
 
-	// Experiments
+															 // Experiments
 	static const bool			ENABLE_EYEGUI_DRIFT_MAP_ACTIVATION = !DEMO_MODE;
 	static const std::string	LAB_STREAM_OUTPUT_NAME = "GazeTheWebOutput";
 	static const std::string	LAB_STREAM_OUTPUT_SOURCE_ID = CLIENT_VERSION; // use client version as source id
@@ -74,7 +74,7 @@ namespace setup
 	static const std::string	DASHBOARD_URL = "gtw.mamem.eu/home"; // without slash at the end
 	static const double			INACTIVITY_SHUTDOWN_TIME = 60.0*60.0*3.0; // shutting down after three hours of inactivity (determined by the time the super calibration layout is visible, in seconds)
 
-	// Firebase
+																		  // Firebase
 	static const bool			FIREBASE_MAILING = !DEMO_MODE; // on/off switch for sending data to Firebase
 	static const std::string	FIREBASE_API_KEY = "AIzaSyBMa9gSXsoDo27S7P959QZYf3rJBGDGEIA"; // API key for our Firebase
 	static const std::string	FIREBASE_PROJECT_ID = "mamem-phase2-fall17"; // Project Id of our Firebase

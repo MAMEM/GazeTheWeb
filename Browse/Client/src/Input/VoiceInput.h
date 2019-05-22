@@ -69,10 +69,10 @@ enum class VoiceCommand {
 
 // Needed to assign Transcripts to VoiceCommands
 struct CommandStruct {
-	
+
 	// The command itself
 	VoiceCommand command;
-	
+
 	// Possible string representations of the command
 	std::vector<std::string> phoneticVariants;
 
@@ -83,10 +83,10 @@ struct CommandStruct {
 	/*
 	Needed to assign Transcripts to VoiceCommands
 
-		Parameter:
-			VoiceCommand - a command from the VoiceCommand enum
-			phoneticVariants - a vector of strings triggering the VoiceCommand (for logging purpose: first should be the intended key word)
-			takesParameter - indicates if the VoiceCommand should take a parameter
+	Parameter:
+	VoiceCommand - a command from the VoiceCommand enum
+	phoneticVariants - a vector of strings triggering the VoiceCommand (for logging purpose: first should be the intended key word)
+	takesParameter - indicates if the VoiceCommand should take a parameter
 	*/
 	CommandStruct(VoiceCommand command, std::vector<std::string> phoneticVariants, bool takesParameter) {
 		this->command = command;
@@ -170,7 +170,7 @@ public:
 	void SetMaxAlternatives(int maxAlternatives) { _maxAlternatives = maxAlternatives; }
 
 	// Sets if interim results should be received
-	void SetInterimResults(GO_SPEECH_RECOGNITION_BOOL interimResults) { _interimResults = interimResults;	}
+	void SetInterimResults(GO_SPEECH_RECOGNITION_BOOL interimResults) { _interimResults = interimResults; }
 
 	// Update voice input
 	std::shared_ptr<VoiceAction> Update(float tpf, bool keyboardActive);
@@ -188,10 +188,10 @@ public:
 	VoiceMode GetVoiceMode() { return _voiceMode; }
 
 	// Returns the how many pixel should be scrolled when using SCROLL_UP/SCROLL_DOWN
-	static double GetScrollDistance() { return double(350); }	
+	static double GetScrollDistance() { return double(350); }
 
 	VoiceInputState GetState() { return _voiceInputState; }
-	
+
 	// seconds
 	std::chrono::seconds GetRunTimeLimit() { return _runTimeLimit; }
 
@@ -209,23 +209,23 @@ private:
 	GO_SPEECH_RECOGNITION_CLOSE_STREAM GO_SPEECH_RECOGNITION_CloseStream;
 	GO_SPEECH_RECOGNITION_IS_INITIALIZED GO_SPEECH_RECOGNITION_IsInitialized;
 
-// [RECORDING]
+	// [RECORDING]
 
 	static const int AUDIO_INPUT_SAMPLE_RATE = 16000;
 	static const int AUDIO_INPUT_CHANNEL_COUNT = 1;
 	static const unsigned int AUDIO_INPUT_MAX_INPUT_SECONDS = 3;
-	
+
 	/*
-		Thread variable:
-			Read in: main, _tStopping
-			Manipulated in: main
+	Thread variable:
+	Read in: main, _tStopping
+	Manipulated in: main
 	*/
 	std::atomic<bool> _portAudioInitialized = false;
-	
+
 	/*
-		Thread variable:
-			Read in:  _tSending
-			Manipulated in: main
+	Thread variable:
+	Read in:  _tSending
+	Manipulated in: main
 	*/
 	std::shared_ptr<ContinuousAudioRecord> _spAudioInput;
 
@@ -235,7 +235,7 @@ private:
 	std::chrono::seconds _runTimeLimit = std::chrono::seconds(50);
 
 
-// [STREAMING]
+	// [STREAMING]
 
 	// language to be transcribed
 	char* _language = "en-US";
@@ -251,7 +251,7 @@ private:
 
 	// if you want to get interim results
 	GO_SPEECH_RECOGNITION_BOOL _interimResults = GO_SPEECH_RECOGNITION_FALSE;
-	
+
 	// time to query audio in ms
 	int _queryTime = 1000;
 
@@ -261,10 +261,10 @@ private:
 
 	/*
 	state showing if recording and transcribing should be stopped (use to ensure you are only stopping once at the time)
-		
-		Thread variable:
-			Read in: _tSending, _tReceiving
-			Manipulated in: _tStopping
+
+	Thread variable:
+	Read in: _tSending, _tReceiving
+	Manipulated in: _tStopping
 	*/
 	std::atomic<bool> _stopping = true;
 
@@ -272,9 +272,9 @@ private:
 	std::unique_ptr<std::thread> _tSending = nullptr;
 
 	/*
-		Thread variable:
-			Read in: _tStopping
-			Manipulated in: _tSending
+	Thread variable:
+	Read in: _tStopping
+	Manipulated in: _tSending
 	*/
 	std::atomic<bool> _isSending = false;
 
@@ -282,9 +282,9 @@ private:
 	std::unique_ptr<std::thread> _tReceiving = nullptr;
 
 	/*
-		Thread variable:
-			Read in: _tStopping
-			Manipulated in: _tReceiving
+	Thread variable:
+	Read in: _tStopping
+	Manipulated in: _tReceiving
 	*/
 	std::atomic<bool> _isReceiving = false;
 
@@ -295,14 +295,14 @@ private:
 
 
 
-// [PROCESSING TRANSCRIPT]
+	// [PROCESSING TRANSCRIPT]
 
 	/*
 	last recognized speech as text
-		
-		Thread variable (access secured by mutex):
-			Read in: main
-			Manipulated in: main, _tReceiving
+
+	Thread variable (access secured by mutex):
+	Read in: main
+	Manipulated in: main, _tReceiving
 	*/
 	std::queue<std::string> _recognitionResults;
 

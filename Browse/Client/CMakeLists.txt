@@ -5,7 +5,7 @@ set(CEF_TARGET Client)
 message(STATUS "*** CLIENT ***")
 
 set(CLIENT_MAJOR_VERSION "1")
-set(CLIENT_MINOR_VERSION "3")
+set(CLIENT_MINOR_VERSION "4")
 add_definitions(-DCLIENT_MAJOR_VERSION=${CLIENT_MAJOR_VERSION})
 add_definitions(-DCLIENT_MINOR_VERSION=${CLIENT_MINOR_VERSION})
 add_definitions(-DCLIENT_VERSION="${CLIENT_MAJOR_VERSION}.${CLIENT_MINOR_VERSION}")
@@ -156,7 +156,16 @@ else() # Linux
 	# TODO future
 endif()
 include_directories(${GO_SPEECH_INCLUDE_DIR})
-	
+
+# go-speech-recognition-lib
+if(WIN32) # Windows
+	set(GO_SPEECH_DIRECTORY "${EXTERNALS_DIR}/go-speech-recognition-lib")
+	set(GO_SPEECH_INCLUDE_DIR "${GO_SPEECH_DIRECTORY}")
+else() # Linux
+	# TODO future
+endif()
+include_directories(${GO_SPEECH_INCLUDE_DIR})
+
 ### SUBMODULES #################################################################
 
 # Set path to submodules

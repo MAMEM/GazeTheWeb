@@ -31,9 +31,10 @@ macro(PRINT_CEF_CONFIG)
   endif()
 
   if(OS_WINDOWS)
-    message(STATUS "CEF Windows sandbox:          ${USE_SANDBOX}")
     message(STATUS "Visual Studio ATL support:    ${USE_ATL}")
   endif()
+
+  message(STATUS "CEF sandbox:                  ${USE_SANDBOX}")
 
   set(_libraries ${CEF_STANDARD_LIBS})
   if(OS_WINDOWS AND USE_SANDBOX)
@@ -101,7 +102,19 @@ macro(COPY_FILES target file_list source_dir target_dir)
     set(source_file ${source_dir}/${FILENAME})
     get_filename_component(target_name ${FILENAME} NAME)
     set(target_file ${target_dir}/${target_name})
-    if(IS_DIRECTORY ${source_file})
+
+    string(FIND ${source_file} "$<CONFIGURATION>" _pos)
+    if(NOT ${_pos} EQUAL -1)
+      # Must test with an actual configuration directory.
+      string(REPLACE "$<CONFIGURATION>" "Release" existing_source_file ${source_file})
+      if(NOT EXISTS ${existing_source_file})
+        string(REPLACE "$<CONFIGURATION>" "Debug" existing_source_file ${source_file})
+      endif()
+    else()
+      set(existing_source_file ${source_file})
+    endif()
+
+    if(IS_DIRECTORY ${existing_source_file})
       add_custom_command(
         TARGET ${target}
         POST_BUILD
@@ -172,22 +185,6 @@ endif(OS_LINUX)
 #
 
 if(OS_MACOSX)
-
-# Fix the framework rpath in the helper executable.
-macro(FIX_MACOSX_HELPER_FRAMEWORK_RPATH target)
-  # The helper is in $app_name.app/Contents/Frameworks/$app_name Helper.app/Contents/MacOS/
-  # so set rpath up to Contents/ so that the loader can find Frameworks/.
-  set_target_properties(${target} PROPERTIES INSTALL_RPATH "@executable_path/../../../..")
-  set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-endmacro()
-
-# Fix the framework rpath in the main executable.
-macro(FIX_MACOSX_MAIN_FRAMEWORK_RPATH target)
-  # The main app is at $app_name.app/Contents/MacOS/$app_name
-  # so set rpath up to Contents/ so that the loader can find Frameworks/.
-  set_target_properties(${target} PROPERTIES INSTALL_RPATH "@executable_path/..")
-  set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-endmacro()
 
 # Manually process and copy over resource files.
 macro(COPY_MACOSX_RESOURCES resource_list prefix_list target source_dir app_path)

@@ -449,7 +449,8 @@ bool KeyboardAction::Update(float tpf, const std::shared_ptr<const TabInput> spI
 	}
 
 	// When the user says "submit" the process is complete
-	_complete = (spVoiceInput->command == VoiceCommand::SUBMIT);
+	if (spVoiceInput->command == VoiceCommand::SUBMIT)
+		_complete = true;
 		
 
 	// When classification timer is set, it is decremented at each update.

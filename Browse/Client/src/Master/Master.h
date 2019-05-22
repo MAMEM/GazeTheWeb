@@ -36,40 +36,40 @@ class Master : public MasterNotificationInterface, public MasterThreadsafeInterf
 {
 public:
 
-    // Constructor takes pointer to CefMediator
-    Master(Mediator* pMediator, std::string userDirectory);
+	// Constructor takes pointer to CefMediator
+	Master(Mediator* pMediator, std::string userDirectory, bool useVoice);
 
-    // Destructor
-    virtual ~Master();
+	// Destructor
+	virtual ~Master();
 
-    // Run the master which updates CEF. Returns whether computer should shut down
-    bool Run();
+	// Run the master which updates CEF. Returns whether computer should shut down
+	bool Run();
 
-    // Getter for window width and height
-    int GetWindowWidth() const { return _width; }
-    int GetWindowHeight() const { return _height; }
+	// Getter for window width and height
+	int GetWindowWidth() const { return _width; }
+	int GetWindowHeight() const { return _height; }
 
 	// Getter for screen width and height
 	int GetScreenWidth() const;
 	int GetScreenHeight() const;
 
-    // Get time provided by GLFW
-    double GetTime() const;
+	// Get time provided by GLFW
+	double GetTime() const;
 
 	// Get whether paused
 	bool IsPaused() const { return _paused; }
 
-    // Exit
-    void Exit(bool shutdown = false);
+	// Exit
+	void Exit(bool shutdown = false);
 
-    // Get id of dictionary
-    unsigned int GetDictionary() const { return _dictonaryId; }
+	// Get id of dictionary
+	unsigned int GetDictionary() const { return _dictonaryId; }
 
 	// Get user directory location
 	std::string GetUserDirectory() const { return _userDirectory; }
 
 	// Register JavaScript callback
-	void RegisterJavascriptCallback(std::string prefix, std::function<void (std::string)>& callbackFunction)
+	void RegisterJavascriptCallback(std::string prefix, std::function<void(std::string)>& callbackFunction)
 	{
 		_pCefMediator->RegisterJavascriptCallback(prefix, callbackFunction);
 	};
@@ -105,13 +105,13 @@ public:
 	void PushBackAsyncJob(std::function<bool()> job);
 	void SimplePushBackAsyncJob(FirebaseIntegerKey countKey, FirebaseJSONKey recordKey, nlohmann::json record = nlohmann::json()); // automatically adds start index and date
 
-    // ### EYEGUI DELEGATION ###
+																																   // ### EYEGUI DELEGATION ###
 
-    // Add layout to eyeGUI
-    eyegui::Layout* AddLayout(std::string filepath, int layer, bool visible);
+																																   // Add layout to eyeGUI
+	eyegui::Layout* AddLayout(std::string filepath, int layer, bool visible);
 
-    // Remove layout from eyeGUI
-    void RemoveLayout(eyegui::Layout* pLayout);
+	// Remove layout from eyeGUI
+	void RemoveLayout(eyegui::Layout* pLayout);
 
 	// Fetch localization string by key
 	std::u16string FetchLocalization(std::string key) const;
@@ -197,27 +197,27 @@ public:
 
 private:
 
-    // Give listener full access
-    friend class MasterButtonListener;
+	// Give listener full access
+	friend class MasterButtonListener;
 
-    // Listener for GUI
-    class MasterButtonListener: public eyegui::ButtonListener
-    {
-    public:
+	// Listener for GUI
+	class MasterButtonListener : public eyegui::ButtonListener
+	{
+	public:
 
-        MasterButtonListener(Master* pMaster) { _pMaster = pMaster; }
-        virtual void hit(eyegui::Layout* pLayout, std::string id) {}
-        virtual void down(eyegui::Layout* pLayout, std::string id);
-        virtual void up(eyegui::Layout* pLayout, std::string id);
+		MasterButtonListener(Master* pMaster) { _pMaster = pMaster; }
+		virtual void hit(eyegui::Layout* pLayout, std::string id) {}
+		virtual void down(eyegui::Layout* pLayout, std::string id);
+		virtual void up(eyegui::Layout* pLayout, std::string id);
 		virtual void selected(eyegui::Layout* pLayout, std::string id) {}
 
-    private:
+	private:
 
-        Master* _pMaster;
-    };
+		Master* _pMaster;
+	};
 
-    // Instance of listener
-    std::shared_ptr<MasterButtonListener> _spMasterButtonListener;
+	// Instance of listener
+	std::shared_ptr<MasterButtonListener> _spMasterButtonListener;
 
 	// Notification struct
 	struct Notification
@@ -245,7 +245,7 @@ private:
 
 		// Execute
 		virtual void Execute() = 0;
-	
+
 	protected:
 
 		// Members
@@ -274,70 +274,71 @@ private:
 	// List jobs as friends with benefits
 	friend class PushEyetrackerStatusThreadJob;
 
-    // Loop of master
-    void Loop();
+	// Loop of master
+	void Loop();
 
 	// Update async jobs
 	void UpdateAsyncJobs(bool wait); // wait indicates that it should block the thread until all async jobs are finished
 
-	// Show super calibration layout
+									 // Show super calibration layout
 	void ShowSuperCalibrationLayout();
 
 	// Persist drift grid of drift grid map in Firebase
 	enum class PersistDriftGridReason { EXIT, RECALIBRATION, MANUAL };
 	void PersistDriftGrid(PersistDriftGridReason reason);
 
-    // Callbacks
-    void GLFWKeyCallback(int key, int scancode, int action, int mods);
-    void GLFWMouseButtonCallback(int button, int action, int mods);
-    void GLFWCursorPosCallback(double xpos, double ypos);
-    void GLFWResizeCallback(int width, int height);
-    void GUIResizeCallback(int width, int height);
-    void GUIPrintCallback(std::string message) const;
+	// Callbacks
+	void GLFWKeyCallback(int key, int scancode, int action, int mods);
+	void GLFWMouseButtonCallback(int button, int action, int mods);
+	void GLFWCursorPosCallback(double xpos, double ypos);
+	void GLFWResizeCallback(int width, int height);
+	void GUIResizeCallback(int width, int height);
+	void GUIPrintCallback(std::string message) const;
 
-    // States
-    std::unique_ptr<Web> _upWeb;
-    std::unique_ptr<Settings> _upSettings;
+	// States
+	std::unique_ptr<Web> _upWeb;
+	std::unique_ptr<Settings> _upSettings;
 
-    // GLFW window
-    GLFWwindow* _pWindow;
+	// GLFW window
+	GLFWwindow* _pWindow;
 
-    // Layer between framework and CEF
-    Mediator* _pCefMediator;
+	// Layer between framework and CEF
+	Mediator* _pCefMediator;
 
-    // Pointer to eyeGUI
-    eyegui::GUI* _pGUI;
-    eyegui::GUI* _pSuperGUI; // extra GUI for example for pause overlay since it needs seperate input consumption
+	// Pointer to eyeGUI
+	eyegui::GUI* _pGUI;
+	eyegui::GUI* _pSuperGUI; // extra GUI for example for pause overlay since it needs seperate input consumption
 
-    // Time
-    double _lastTime;
+							 // Time
+	double _lastTime;
 
-    // Window resolution
-    int _width = setup::INITIAL_WINDOW_WIDTH;
-    int _height = setup::INITIAL_WINDOW_HEIGHT;
+	// Window resolution
+	int _width = setup::INITIAL_WINDOW_WIDTH;
+	int _height = setup::INITIAL_WINDOW_HEIGHT;
 
-    // GLFW callback reminder
-    bool _leftMouseButtonPressed = false;
-    bool _enterKeyPressed = false;
+	// GLFW callback reminder
+	bool _leftMouseButtonPressed = false;
+	bool _enterKeyPressed = false;
 
-    // Current state
-    StateType _currentState;
+	// Current state
+	StateType _currentState;
 
-    // Eye input
-    std::unique_ptr<EyeInput> _upEyeInput;
+	// Eye input
+	std::unique_ptr<EyeInput> _upEyeInput;
 
 	// Voice input
+	bool _useVoice = false;
 	std::shared_ptr<VoiceInput> _spVoiceInputObject;
 	bool _keyboardActive = false;
 
-    // Id of dictionary in eyeGUI
-    unsigned int _dictonaryId = 0;
+	// Id of dictionary in eyeGUI
+	unsigned int _dictonaryId = 0;
 
-    // Time until input is accepted
-    float _timeUntilInput = setup::DURATION_BEFORE_INPUT;
+	// Time until input is accepted
+	float _timeUntilInput = setup::DURATION_BEFORE_INPUT;
 
-    // Layout for pause button etc.
-    eyegui::Layout* _pSuperLayout;
+	// Layout for pause button etc.
+	eyegui::Layout* _pSuperLayout;
 
 	// Layout to trigger calibration etc.
 	eyegui::Layout* _pSuperCalibrationLayout;
@@ -345,27 +346,27 @@ private:
 	// Layout to display notifications
 	eyegui::Layout* _pSuperNotificationLayout;
 
-    // Emtpy layout to handle cursor floating frame that may not take input
-    eyegui::Layout* _pCursorLayout;
+	// Emtpy layout to handle cursor floating frame that may not take input
+	eyegui::Layout* _pCursorLayout;
 
-    // Floating frame index of cursor
-    unsigned int _cursorFrameIndex = 0;
+	// Floating frame index of cursor
+	unsigned int _cursorFrameIndex = 0;
 
 	// Floating frame indices for eyes in trackbox display of super calibration layout
 	unsigned int _trackboxLeftFrameIndex = 0;
 	unsigned int _trackboxRightFrameIndex = 0;
 
-    // Bool to indicate pause (PAUSED_AT_STARTUP used in constructor). Pauses input, not application!
-    bool _paused = false;
+	// Bool to indicate pause (PAUSED_AT_STARTUP used in constructor). Pauses input, not application!
+	bool _paused = false;
 
-    // Lerp value to show pause as dimming of whole screen
-    LerpValue _pausedDimming;
+	// Lerp value to show pause as dimming of whole screen
+	LerpValue _pausedDimming;
 
-    // Framebuffer for complete rendering
-    std::unique_ptr<Framebuffer> _upFramebuffer;
+	// Framebuffer for complete rendering
+	std::unique_ptr<Framebuffer> _upFramebuffer;
 
-    // Render item to render screenfilling quad
-    std::unique_ptr<RenderItem> _upScreenFillingQuad;
+	// Render item to render screenfilling quad
+	std::unique_ptr<RenderItem> _upScreenFillingQuad;
 
 	// Directory for bookmarks etc
 	std::string _userDirectory;
@@ -400,7 +401,7 @@ private:
 	// Asyncronous calls, e.g. persist Firebase entries
 	std::vector<std::future<bool> > _asyncJobs; // abuse async calls since it is easier to determine whether finished or not
 
-	// Indicator whether computer should shut down at exit
+												// Indicator whether computer should shut down at exit
 	bool _shouldShutdownAtExit = false;
 
 	// Last calibration points
