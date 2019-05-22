@@ -10,6 +10,7 @@
 #include <map>
 #include <windows.h>
 #include <iterator>
+#include "src/Setup.h"
 
 // Use portaudio library coming with eyeGUI. Bad practice, but eyeGUI would be needed to be linked dynamically otherwise
 #include "submodules/eyeGUI/externals/PortAudio/include/portaudio.h"
@@ -60,8 +61,9 @@ std::vector<CommandStruct> commandStructList = {
 };
 
 // Constructor - initializes Portaudio, loads go-speech-recognition.dll and it's functions
-VoiceInput::VoiceInput() {
-
+VoiceInput::VoiceInput(bool allowRestart, bool &finished) {
+	
+	_allowRestart = allowRestart;
 	PaError err;
 	err = Pa_Initialize();
 	if (err != paNoError)
@@ -83,7 +85,8 @@ VoiceInput::VoiceInput() {
 		// Check plugin
 		if (!pluginHandle)
 		{
-			LogInfo("VoiceInput: Failed to load go-speech-recognition plugin.");
+			LogError("VoiceInput: Failed to load go-speech-recognition plugin.");
+			finished = false;
 			return;
 		}
 
@@ -140,15 +143,17 @@ VoiceInput::VoiceInput() {
 			LogError("VoiceInput: go-speech-recognition.dll is not properly loaded.");
 		}
 	}
+	
+	finished = true;
 }
 
 
 // Destructor
 VoiceInput::~VoiceInput() {
-	Deactivate();
-	if (pluginHandle) {
+	if (IsPluginLoaded())
+		Deactivate();
+	if (pluginHandle)
 		FreeLibrary(pluginHandle);
-	}
 }
 
 bool VoiceInput::IsPluginLoaded() {
@@ -171,7 +176,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 	// Better place?
 	// check if the time is up
-	if (std::chrono::steady_clock::now() - _activationTime > _runTimeLimit)
+	if (setPERIODICAL_VOICE_RESTART  std::chrono::steady_clock::now() - _activationTime > _runTimeLimit)
 		this->Reactivate();
 
 	// Handle the keyboard activation/deactivation
