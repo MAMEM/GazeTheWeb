@@ -274,7 +274,13 @@ if(OS_WINDOWS) # Windows
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		"${LIBLSL_DIRECTORY}/lib-vs2015_x86_release/liblsl32.dll"
 		$<TARGET_FILE_DIR:${CEF_TARGET}>)
-		
+
+	# Copy Go speech library to output folder
+	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		"${GO_SPEECH_DIRECTORY}/go-speech-recognition.dll"
+		$<TARGET_FILE_DIR:${CEF_TARGET}>)
+
 	# Copy Sensor Lib library and dependencies to output folder (relies on liblsl.dll provided by GTW)
 	if(${CLIENT_SENSOR_LIB_INTEGRATION})
 	
