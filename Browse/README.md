@@ -41,6 +41,7 @@ Since the CEF3 binaries for Windows and Linux do not like each other, one has to
 5. If prototype (probably not) should be built too, one has to include its subdirectory in the main CMakeLists, line 532.
 6. Create a build folder somewhere and execute CMake to generate a project, which can be compiled.
 7. Compile the project (with Visual Studio under Windows and make under Linux)
+8. When starting the program you can use the voice command mode using the "`--voice-input`" commandline argument.
 
 ## Notes
 This project uses the _Chromium Embedded Framework_. Please visit https://bitbucket.org/chromiumembedded/cef for more information about that project!
