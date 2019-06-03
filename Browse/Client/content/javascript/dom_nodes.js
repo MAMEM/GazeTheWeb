@@ -27,7 +27,8 @@ function DOMNode(node, id, type, cef_hidden=false)
 
     if(typeof(node.setAttribute) !== "function")
     {
-        console.log("Error: Given node does not suffice DOMNode object criteria! id="+id+", type="+type);
+        
+("Error: Given node does not suffice DOMNode object criteria! id="+id+", type="+type);
         return;
     }
 

@@ -176,7 +176,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 	// Better place?
 	// check if the time is up
-	if (setPERIODICAL_VOICE_RESTART  std::chrono::steady_clock::now() - _activationTime > _runTimeLimit)
+	if (setup::PERIODICAL_VOICE_RESTART && std::chrono::steady_clock::now() - _activationTime > _runTimeLimit)
 		this->Reactivate();
 
 	// Handle the keyboard activation/deactivation
