@@ -11,6 +11,9 @@ Please refer to the Readme in the [parent folder](https://github.com/MAMEM/GazeT
 * ESC: Exit application
 * Tab: Toggle pause
 
+## Commandline Arguments
+* "--voice-input": Enables voice input mode
+
 ## Validation
 A file named _log.txt_ is created in user folder (_~/AppData/Roaming/GazeTheWeb/Browse_ for Windows and _~/.config/GazeTheWeb/Browse_ for Linux), containing information about the current and last runs. If anything wents not as expected, one should take a look into it.
 
