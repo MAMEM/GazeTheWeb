@@ -79,3 +79,4 @@ text-csv: https://github.com/roman-kashitsyn/text-csv
 TinyXML2 (used one from eyeGUI library): https://github.com/leethomason/tinyxml2
 curl: https://github.com/curl/curl
 JSON: https://github.com/nlohmann/json
+go-speech-recognition-lib: https://github.com/Drizzy3D/go-speech-recognition-lib
