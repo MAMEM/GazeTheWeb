@@ -47,6 +47,12 @@ if(${CLIENT_DEPLOYMENT})
 	add_definitions(-DCLIENT_DEPLOYMENT)
 endif()
 
+# Create Installer prepares Script to create an installer.
+set(CLIENT_CREATE_INSTALLER OFF CACHE BOOL "Setup for installer creation.")
+if(${CLIENT_CREATE_INSTALLER})
+	add_definitions(-DCLIENT_CREATE_INSTALLER)
+endif()
+
 # Debug mode
 set(CLIENT_DEBUG OFF CACHE BOOL "Setup for Debugging.")
 if(${CLIENT_DEBUG})
@@ -157,14 +163,6 @@ else() # Linux
 endif()
 include_directories(${GO_SPEECH_INCLUDE_DIR})
 
-# go-speech-recognition-lib
-if(WIN32) # Windows
-	set(GO_SPEECH_DIRECTORY "${EXTERNALS_DIR}/go-speech-recognition-lib")
-	set(GO_SPEECH_INCLUDE_DIR "${GO_SPEECH_DIRECTORY}")
-else() # Linux
-	# TODO future
-endif()
-include_directories(${GO_SPEECH_INCLUDE_DIR})
 
 ### SUBMODULES #################################################################
 
@@ -413,6 +411,23 @@ if(CLIENT_DEPLOYMENT)
 		
 endif(CLIENT_DEPLOYMENT)
 
+if(CLIENT_CREATE_INSTALLER)
+
+	configure_file(InstallerCreator.in ${CMAKE_BINARY_DIR}/InstallerCreator.nsi @ONLY)
+	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD # then, copy it to specific binary folder (direct creation there does not work)
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_BINARY_DIR}/InstallerCreator.nsi
+		$<TARGET_FILE_DIR:${CEF_TARGET}>/InstallerCreator.nsi)
+	
+	configure_file(LICENSE ${CMAKE_BINARY_DIR}/LICENSE COPYONLY)
+	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_BINARY_DIR}/LICENSE
+		$<TARGET_FILE_DIR:${CEF_TARGET}>/LICENSE)
+		
+endif(CLIENT_CREATE_INSTALLER)
+
+ 
 ### EYETRACKER PLUGINS #########################################################
 
 set(EYETRACKER_PLUGIN_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/plugins/Eyetracker")
