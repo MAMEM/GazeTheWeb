@@ -1,0 +1,113 @@
+/* 
+  NSIS script to create an installer for the GazeTheWeb-Browser
+  Run this script using NSIS(https://nsis.sourceforge.io/Download)
+  The GazeTheWeb project needs to be compiled in Release mode
+  Run with "makensis.exe InstallerCreator.nsi" (when NSIS is added to Path)
+  Author: Christopher Dreide
+*/
+
+# Proper displaying of languages
+Unicode true
+
+# Modern UI
+!include "MUI2.nsh"
+
+
+# Define names and directories
+Name "GazeTheWeb"
+!define INSTALLATIONNAME "GazeTheWeb"
+OutFile "GazeTheWebInstall.exe"
+InstallDir $APPDATA\${INSTALLATIONNAME}\Client_@CLIENT_MAJOR_VERSION@_@CLIENT_MINOR_VERSION@
+
+VIAddVersionKey "ProductName" "GazeTheWeb"
+VIAddVersionKey "FileDescription" "A gaze controlled web browser"
+VIAddVersionKey "FileVersion" "@CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@"
+VIProductVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
+VIFileVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
+
+; Choose the installer language and remember for uninstall
+!define REGISTRY_ROOT_KEY "HKCU"
+!define REGISTRY_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${INSTALLATIONNAME}" 
+!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
+
+# ----------------------------------------------------------
+# INSTALLER PAGES
+# Show welcome page
+!insertmacro MUI_PAGE_WELCOME
+# Show license
+!insertmacro MUI_PAGE_LICENSE "LICENSE"
+# Show component selection
+!insertmacro MUI_PAGE_COMPONENTS
+# Show installation process
+!insertmacro MUI_PAGE_INSTFILES
+# Let the user decide whether he wants to start the program after installation
+!define MUI_FINISHPAGE_RUN "$INSTDIR\Client.exe"
+!insertmacro MUI_PAGE_FINISH
+
+# ----------------------------------------------------------
+# UNINSTALLER PAGES 
+# Confirm that you really want to uninstall the software
+!insertmacro MUI_UNPAGE_CONFIRM
+# Show uninstalling process
+!insertmacro MUI_UNPAGE_INSTFILES
+
+# List of languages to choose from
+!insertmacro MUI_LANGUAGE "English"
+!insertmacro MUI_LANGUAGE "German"
+
+# Installation
+Section ""
+  SetOutPath $INSTDIR
+  File /r .\Client\Release\*.*
+  WriteUninstaller $INSTDIR\uninstall.exe
+  
+  WriteRegStr ${REGISTRY_ROOT_KEY} "${REGISTRY_KEY}" "DisplayName" ${INSTALLATIONNAME}
+  WriteRegStr ${REGISTRY_ROOT_KEY} "${REGISTRY_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  WriteRegDWORD ${REGISTRY_ROOT_KEY} "${REGISTRY_KEY}" "NoModify" 1
+  WriteRegDWORD ${REGISTRY_ROOT_KEY} "${REGISTRY_KEY}" "NoRepair" 1
+SectionEnd
+
+# Create Start Menu Shortcuts
+Section "Start Menu Shortcuts"
+  CreateDirectory "$SMPROGRAMS\${INSTALLATIONNAME}"
+  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Client.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+SectionEnd
+
+# Create Desktop Shortcut
+Section "Desktop Shortcut"
+  CreateShortCut "$DESKTOP\Client.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+SectionEnd
+
+# Start when running installer
+Function .onInit
+  # Show language selection
+  !insertmacro MUI_LANGDLL_DISPLAY
+
+  ReadRegStr $R0 ${REGISTRY_ROOT_KEY} ${REGISTRY_KEY} "UninstallString"
+  StrCmp $R0 "" done
+ 
+  MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
+  "${INSTALLATIONNAME} is already installed.
+  $\n$\nClick `OK` to remove the previous version or `Cancel` to cancel this installation." \
+  IDOK uninst
+  Abort
+ 
+# Run the uninstaller
+uninst:
+  ClearErrors
+  Exec $R0 
+ 
+done:
+
+FunctionEnd
+
+# Uninstall
+Section "Uninstall"
+  DeleteRegKey ${REGISTRY_ROOT_KEY} ${REGISTRY_KEY}
+  Delete $INSTDIR\uninstall.exe
+  RMDir /r $INSTDIR
+  Delete "$SMPROGRAMS\${INSTALLATIONNAME}\*.*"
+  RMDir "$SMPROGRAMS\${INSTALLATIONNAME}"
+  Delete "$DESKTOP\Client.lnk"
+SectionEnd
