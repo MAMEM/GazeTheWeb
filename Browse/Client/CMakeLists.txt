@@ -49,9 +49,6 @@ endif()
 
 # Create Installer prepares Script to create an installer.
 set(CLIENT_CREATE_INSTALLER OFF CACHE BOOL "Setup for installer creation.")
-if(${CLIENT_CREATE_INSTALLER})
-	add_definitions(-DCLIENT_CREATE_INSTALLER)
-endif()
 
 # Debug mode
 set(CLIENT_DEBUG OFF CACHE BOOL "Setup for Debugging.")
