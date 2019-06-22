@@ -12,12 +12,11 @@ Unicode true
 # Modern UI
 !include "MUI2.nsh"
 
-
 # Define names and directories
 Name "GazeTheWeb"
 !define INSTALLATIONNAME "GazeTheWeb"
 OutFile "GazeTheWebInstall.exe"
-InstallDir $APPDATA\${INSTALLATIONNAME}\Client_@CLIENT_MAJOR_VERSION@_@CLIENT_MINOR_VERSION@
+InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
 
 VIAddVersionKey "ProductName" "GazeTheWeb"
 VIAddVersionKey "FileDescription" "A gaze controlled web browser"
@@ -42,6 +41,8 @@ VIFileVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
 !insertmacro MUI_PAGE_INSTFILES
 # Let the user decide whether he wants to start the program after installation
 !define MUI_FINISHPAGE_RUN "$INSTDIR\Client.exe"
+# Let the user decide whether he wants to read the Readme after installation
+!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.txt"
 !insertmacro MUI_PAGE_FINISH
 
 # ----------------------------------------------------------
@@ -58,7 +59,8 @@ VIFileVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
 # Installation
 Section ""
   SetOutPath $INSTDIR
-  File /r .\Client\Release\*.*
+  #File /r .\Client\Release\*.*
+  File /r /x *.exp /x *.lib  .\Client\Release\*.*
   WriteUninstaller $INSTDIR\uninstall.exe
   
   WriteRegStr ${REGISTRY_ROOT_KEY} "${REGISTRY_KEY}" "DisplayName" ${INSTALLATIONNAME}
@@ -72,11 +74,13 @@ Section "Start Menu Shortcuts"
   CreateDirectory "$SMPROGRAMS\${INSTALLATIONNAME}"
   CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Client.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+    CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Client-Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
 SectionEnd
 
-# Create Desktop Shortcut
-Section "Desktop Shortcut"
-  CreateShortCut "$DESKTOP\Client.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+# Create Desktop Shortcuts
+Section "Desktop Shortcuts"
+  CreateShortCut "$DESKTOP\GazeTheWebBrowse.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+  CreateShortCut "$DESKTOP\GazeTheWebBrowse-Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
 SectionEnd
 
 # Start when running installer
@@ -88,7 +92,7 @@ Function .onInit
   StrCmp $R0 "" done
  
   MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-  "${INSTALLATIONNAME} is already installed.
+  "${INSTALLATIONNAME} is already installed. \
   $\n$\nClick `OK` to remove the previous version or `Cancel` to cancel this installation." \
   IDOK uninst
   Abort
