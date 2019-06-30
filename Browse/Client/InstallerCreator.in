@@ -18,7 +18,7 @@ Name "GazeTheWeb"
 OutFile "GazeTheWebInstall.exe"
 InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
 
-VIAddVersionKey "ProductName" "GazeTheWeb"
+VIAddVersionKey "ProductName" "GazeTheWeb - Browse"
 VIAddVersionKey "FileDescription" "A gaze controlled web browser"
 VIAddVersionKey "FileVersion" "@CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@"
 VIProductVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
@@ -73,14 +73,14 @@ SectionEnd
 Section "Start Menu Shortcuts"
   CreateDirectory "$SMPROGRAMS\${INSTALLATIONNAME}"
   CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Client.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
-    CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Client-Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
+  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Browse.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+    CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Browse - Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
 SectionEnd
 
 # Create Desktop Shortcuts
 Section "Desktop Shortcuts"
-  CreateShortCut "$DESKTOP\GazeTheWebBrowse.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
-  CreateShortCut "$DESKTOP\GazeTheWebBrowse-Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
+  CreateShortCut "$DESKTOP\GazeTheWeb - Browse.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
+  CreateShortCut "$DESKTOP\GazeTheWeb - Browse (Voice).lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
 SectionEnd
 
 # Start when running installer
