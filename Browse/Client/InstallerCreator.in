@@ -13,7 +13,7 @@ Unicode true
 !include "MUI2.nsh"
 
 # Define names and directories
-Name "GazeTheWeb"
+Name "GazeTheWeb - Browse"
 !define INSTALLATIONNAME "GazeTheWeb"
 OutFile "GazeTheWebInstall.exe"
 InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
@@ -82,6 +82,7 @@ Section "Desktop Shortcuts"
   CreateShortCut "$DESKTOP\GazeTheWeb - Browse.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
   CreateShortCut "$DESKTOP\GazeTheWeb - Browse (Voice).lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
 SectionEnd
+
 
 # Start when running installer
 Function .onInit
