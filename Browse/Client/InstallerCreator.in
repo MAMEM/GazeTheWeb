@@ -17,6 +17,7 @@ Name "GazeTheWeb - Browse"
 !define INSTALLATIONNAME "GazeTheWeb"
 OutFile "GazeTheWebInstall.exe"
 InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
+!define InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
 
 VIAddVersionKey "ProductName" "GazeTheWeb - Browse"
 VIAddVersionKey "FileDescription" "A gaze controlled web browser"
@@ -37,6 +38,13 @@ VIFileVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
 !insertmacro MUI_PAGE_LICENSE "LICENSE"
 # Show component selection
 !insertmacro MUI_PAGE_COMPONENTS
+
+# Show Destination Directory
+!define MUI_WELCOMEPAGE_TITLE "Destination Folder"
+!define MUI_WELCOMEPAGE_TEXT "GazeTheWeb - Browse will be installed in the following directory: $\n \
+                              $\"${InstallDir}$\""
+!insertmacro MUI_PAGE_WELCOME
+
 # Show installation process
 !insertmacro MUI_PAGE_INSTFILES
 # Let the user decide whether he wants to start the program after installation
@@ -54,7 +62,6 @@ VIFileVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
 
 # List of languages to choose from
 !insertmacro MUI_LANGUAGE "English"
-!insertmacro MUI_LANGUAGE "German"
 
 # Installation
 Section ""
