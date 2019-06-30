@@ -42,7 +42,7 @@ VIFileVersion @CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.0.0
 # Show Destination Directory
 !define MUI_WELCOMEPAGE_TITLE "Destination Folder"
 !define MUI_WELCOMEPAGE_TEXT "GazeTheWeb - Browse will be installed in the following directory: $\n \
-                              $\"${InstallDir}$\""
+  $\"${InstallDir}$\""
 !insertmacro MUI_PAGE_WELCOME
 
 # Show installation process
