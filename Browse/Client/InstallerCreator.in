@@ -15,7 +15,7 @@ Unicode true
 # Define names and directories
 Name "GazeTheWeb - Browse"
 !define INSTALLATIONNAME "GazeTheWeb"
-OutFile "GazeTheWebInstall.exe"
+OutFile "GazeTheWebInstall_@CLIENT_MAJOR_VERSION@.@CLIENT_MINOR_VERSION@.exe"
 InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
 !define InstallDir $APPDATA\${INSTALLATIONNAME}\Browse
 
