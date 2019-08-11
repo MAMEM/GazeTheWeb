@@ -1,17 +1,21 @@
 <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
   <div class="container-fluid">
     <div class="navbar-header">
-      <!--<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
         <span class="sr-only">Toggle navigation</span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
-      </button>-->
+      </button>
       {%- if site.title-img -%}
-      <a class="navbar-brand navbar-brand-logo" href="{{ '' | absolute_url }}"><img src="{{ site.title-img }}" /></a>
+      <!--<a class="navbar-brand navbar-brand-logo" href="{{ '' | absolute_url }}"><img src="{{ site.title-img }}" /></a>-->
       {%- else -%}
-      <!--<a class="navbar-brand" href="{{ '' | absolute_url }}">{{ site.title }}</a>-->
-      <div class="navbar-brand"></div>
+      <a class="navbar-brand navbar-brand-logo" href="{{ '' | absolute_url }}"><img src="/img/Logo.png" />
+        <!--<div class="navbar-brand">
+          GazeTheWeb
+        </div>-->
+      </a>
+
       {%- endif -%}
     </div>
 
@@ -20,17 +24,17 @@
         {%- for link in site.navbar-links -%}
         {%- if link[1].first %}
         <li class="navlinks-container">
-          <a class="navlinks-parent" href="javascript:void(0)">{{ link[0] }}</a>
+          <a class="navlinks-parent" href="#{{ link[0] }}">{{ link[0] }}</a>
           <div class="navlinks-children">
             {%- for childlink in link[1] -%}
             {%- for linkparts in childlink %}
-            <a href="{{ linkparts[1] | relative_url }}">{{ linkparts[0] }}</a>
+            <a href="#{{ linkparts[1] }}">{{ linkparts[0] }}</a>
             {%- endfor -%}
             {%- endfor %}
           </div>
         </li>
         {% else %}
-        <li><a href="{{ link[1] | relative_url }}">{{ link[0] }}</a></li>
+        <li><a href="#{{ link[1] }}">{{ link[0] }}</a></li>
         {%- endif -%}
         {%- endfor -%}
       </ul>
