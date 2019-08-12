@@ -15,7 +15,7 @@ body {
   position: relative;
   /*background-color: {{ site.page-col }};*/
   /*background-image: linear-gradient(#ffad00c5, white);*/
-  background-image: url("img/Background.svg");
+  background-image: url("../img/Background.svg");
   background-size: cover;
   {% if site.page-img %}
   /*background-image: url({{ site.page-img | relative_url }});*/
