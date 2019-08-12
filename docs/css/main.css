@@ -31,6 +31,11 @@ h1,h2,h3,h4,h5,h6 {
   font-weight: 800;
   text-align: center;
 }
+
+h2 {
+  font-size: 38px;
+}
+
 a {
   color: {{ site.link-col }};
 }
@@ -924,4 +929,8 @@ hr {
 
 .framework {
   width: 60%;
+}
+
+#download {
+  padding-top: 50px;
 }

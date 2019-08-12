@@ -20,7 +20,7 @@ description: A page that you can use to download the newest release of the GazeT
 
 # List of links in the navigation bar
 navbar-links:
-  Downloads: "download-area"
+  Download: "download"
   What is it?: "whatIsIt"
   Story: "story"
   Impact: "impact"
