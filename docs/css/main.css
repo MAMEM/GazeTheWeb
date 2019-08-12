@@ -913,4 +913,15 @@ hr {
   border-top: 1px solid #000000;
 }
 
+#people {
+  text-align: center;
+}
 
+.names {
+  width: 450px;
+  padding-bottom: 60px;
+}
+
+.framework {
+  width: 60%;
+}
