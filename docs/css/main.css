@@ -916,6 +916,7 @@ pre {
 hr {
   margin-top: 80px;
   border-top: 1px solid #000000;
+  DOMTextInput (id: 0) tries to gain focus...
 }
 
 #people {
