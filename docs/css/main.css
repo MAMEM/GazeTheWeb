@@ -36,6 +36,10 @@ h2 {
   font-size: 38px;
 }
 
+.requirements h3 {
+  text-align: left;
+}
+
 a {
   color: {{ site.link-col }};
 }
@@ -95,10 +99,6 @@ img::-moz-selection {
   background: transparent;
 }
 
-img {
-  max-width: 100%;
-}
-
 .disqus-comments {
   margin-top: 30px;
 }
@@ -147,35 +147,12 @@ img {
 
 .navbar-custom .navbar-brand-logo {
   padding-top: 0;
-  -webkit-transition: padding .5s ease-in-out;
-  -moz-transition: padding .5s ease-in-out;
-  transition: padding .5s ease-in-out;
 }
 .navbar-custom .navbar-brand-logo img {
   height: 50px;
-  -webkit-transition: height .5s ease-in-out;
-  -moz-transition: height .5s ease-in-out;
-  transition: height .5s ease-in-out;
-}
-.navbar-custom.top-nav-short .navbar-brand-logo {
-  padding-top: 5px;
-}
-.navbar-custom.top-nav-short .navbar-brand-logo img {
-  height: 40px;
 }
 
-@media only screen and (min-width: 768px) {
-  .navbar-custom {
-    padding: 20px 0;
-    -webkit-transition: background .5s ease-in-out,padding .5s ease-in-out;
-    -moz-transition: background .5s ease-in-out,padding .5s ease-in-out;
-    transition: background .5s ease-in-out,padding .5s ease-in-out;
-  }
 
-  .navbar-custom.top-nav-short {
-    padding: 0;
-  }
-}
 
 .navbar-custom .avatar-container {
   position: absolute;
@@ -207,7 +184,6 @@ img {
 
   .navbar-custom .avatar-container  .avatar-img-border {
     width: 100%;
-
   }
 
   .navbar-custom .avatar-container  .avatar-img {
@@ -805,17 +781,28 @@ pre {
   color: white;
   border-radius: 10px;
   font-family: Arial, 'Open Sans', 'Helvetica Neue', Helvetica , sans-serif;
-  font-size: xx-large;
   text-align: center;
+  vertical-align: middle;
   float: left;
   margin-top: 110px;
+  opacity: 1.0;
+}
+
+.download-button:hover {
+  opacity: 0.7;
+}
+
+#latestRelease {
+  height: 70px;
+  line-height: 70px;
+  font-size: 26px;
 }
 
 .information {
   font-family: Arial, 'Open Sans', 'Helvetica Neue', Helvetica , sans-serif;
 }
 
-.information div {
+.information > div {
   padding-top: 50px;
 }
 
@@ -904,6 +891,10 @@ pre {
   to {transform:scale(1)}
 }
 
+img {
+  max-width: 100%;
+}
+
 
 /* 100% Image Width on Smaller Screens */
 @media only screen and (max-width: 700px){
@@ -914,9 +905,9 @@ pre {
 } 
 
 hr {
-  margin-top: 80px;
+  margin-top: 70px;
   border-top: 1px solid #000000;
-  DOMTextInput (id: 0) tries to gain focus...
+  margin-bottom: 0px;
 }
 
 #people {
@@ -935,3 +926,28 @@ hr {
 #download {
   padding-top: 50px;
 }
+
+#flyerDownload {
+  text-align: center;
+}
+
+/*
+.imgCenter {
+  /*
+  position: absolute;
+  top: -9999px;
+  bottom: -9999px;
+  left: -9999px;
+  right: -9999px;
+  margin: auto;
+  *//*
+  display: block;
+  margin: 0 auto;
+}
+
+/*
+#imgContainer {
+  position: relative;
+  height: auto;
+}
+*/

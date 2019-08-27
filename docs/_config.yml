@@ -21,7 +21,7 @@ description: A page that you can use to download the newest release of the GazeT
 # List of links in the navigation bar
 navbar-links:
   Download: "download"
-  What is it?: "whatIsIt"
+  What is GazeTheWeb?: "whatIsGTW"
   Story: "story"
   Impact: "impact"
   People: "people"
@@ -69,8 +69,8 @@ author:
 social-network-links:
 #  rss: false
 #  email: "someone@example.com"
-  facebook: InstituteWeST
-  github: Institute-Web-Science-and-Technologies
+  facebook: gazetheweb
+  github: MAMEM/GazeTheWeb
 #  twitter: daattali
 #  reddit: yourname
 #  linkedin: daattali

@@ -19,7 +19,10 @@ layout: page
   <h2>Download</h2>
   <a href="https://github.com/MAMEM/GazeTheWeb/releases/latest">
     <button class="download-button">
-      Download
+      <img style="float:left;height: 50px; margin-top: 10px;" src="/img/down-arrow.svg" alt="down-arrow">
+      <span id="latestRelease">
+        Latest Release
+      </span>
     </button>
   </a>
   <div class="requirements">
@@ -47,11 +50,100 @@ layout: page
   </div>
 </div>
 
+
+
+<style>
+  .github-corner:hover .octo-arm {
+    animation: octocat-wave 560ms ease-in-out
+  }
+
+  @keyframes octocat-wave {
+
+    0%,
+    100% {
+      transform: rotate(0)
+    }
+
+    20%,
+    60% {
+      transform: rotate(-25deg)
+    }
+
+    40%,
+    80% {
+      transform: rotate(10deg)
+    }
+  }
+
+  @media (max-width:500px) {
+    .github-corner:hover .octo-arm {
+      animation: none
+    }
+
+    .github-corner .octo-arm {
+      animation: octocat-wave 560ms ease-in-out
+    }
+  }
+</style>
 <div class="information">
 
-  <div id="whatIsIt" class="whatIsIt">
-    <h2>What is it?</h2>
-    <img class="zoomable" src="img/GTW-Flyer_inside_noGTW.svg" alt="Eye-Tracking visualized">
+  <div id="whatIsGTW" class="whatIsGTW">
+    <h2>What is GazeTheWeb?</h2>
+    <p>
+      <h3>INTRODUCTION</h3>
+      Information access and communication are among the main challenges that people aﬀected by severe
+      disabilities have to face. World Wide Web provides a large amount of information to people, and it helps them to
+      connect and communicate with society. In this regard, the <i>World Wide Web Consortium’s Web Accessibility
+        Initiative</i>
+      (WAI) states: “<i>Web accessibility means that people with disabilities can perceive, understand, navigate, and
+        interact with the Web, and that they can contribute to the Web</i>”. However, these operations on Web interfaces
+      are
+      usually performed through conventional browser applications, controlled by input devices such as mouse or
+      keyboard. In this regard, eye gaze
+      interaction provides a novel tool to build hands-free Web interfaces, and to increase Web accessibility for
+      cases where motor impairments hinder easy hand and body motion. Most graphical user interfaces (e.g., browsers)
+      for Web access are not designed for use with eye tracking devices, which often have limited accuracy or may
+      require unconventional selection techniques that interfere with access to information. Different interaction
+      techniques like reading, scrolling, and clicking have been studied for precise eye-based access. However a
+      major challenge to imply these interactions on Web is to identify the interactive Web elements and to include eye
+      tracking events with the Web technology. The Text 2.0 framework provides a pertinent guideline for the Web
+      developers to integrate eye gaze interactions in their Web application. But it does not resolve the problem of
+      browsing the current Web with eye-based interactions. For this purpose, users have to rely on gaze emulation of
+      mouse and keyboard to operate current desktop browsers, which suﬀers from low usability in the sophisticated
+      scenario of Web browsing. Furthermore, there have been some approaches to develop prototypes of gaze-controlled
+      Web browsers with very limited functionalities. To the best of our knowledge, there are no available browsers
+      providing a wholesome gaze-adapted interface with automatic extraction and handling for complete and smooth Web
+      access via gaze commands. In this work, we propose <i>GazeTheWeb</i>, an open source framework to adopt Web
+      interfaces
+      for gaze interaction, where the input events (which are typically composed of mouse and keyboard interactions in
+      generic applications) are revised to eye movements. In comparison to current approaches of additional browser
+      extensions to include eye gaze events, we peruse a novel methodology of expending <i>Chromium Embedded
+        Framework</i>
+      (CEF), which provides more utility and control to build eye controllable interfaces.
+
+      <h3>GAZE THE WEB</h3>
+      GazeTheWeb supports unobtrusive gaze-based Web access by a browser incorporating efficient interface
+      design and Web engineering. The browser interface is built upon gaze interaction paradigm, i.e., interface
+      components such as size, shape, appearance and feedback, which are vital to compensate eye tracking accuracy for
+      input control.
+      Additionally, the usage frequency of Web navigation (e.g., back, forward, click) has been considered for
+      placement and positioning of elements. The Web engineering aspect examines the location of selectable objects on
+      webpages, such as text input ﬁelds, hyperlinks, scrollable sections, select ﬁelds, etc. The extracted elements are
+      then represented with explicit/implicit indicators to be accessed by eye gaze input. GazeTheWeb browser has been
+      released under an open source license, available on GitHub.
+    </p>
+    <div id="flyerDownload">
+      <a href="downloads/PLACEHOLDER.pdf">
+        Download our flyer here
+      </a>
+    </div>
+
+
+    <div id="imgContainer">
+      <img class="imgCenter" src="img/GTW-Flyer_inside_noGTW.svg" style="" alt="Eye-Tracking visualized">
+    </div>
+
+
 
     <div class="gtwVideo">
       <iframe allowFullScreen="allowFullScreen"
@@ -64,13 +156,16 @@ layout: page
         <script>function execute_YTvideo() { return youtube.query({ ids: "channel==MINE", startDate: "2019-01-01", endDate: "2019-12-31", metrics: "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained", dimensions: "day", sort: "day" }).then(function (e) { }, function (e) { console.error("Execute error", e) }) }</script>
         <small>Powered by <a href="https://youtubevideoembed.com/ ">Embed YouTube Video</a></small>
       </iframe>
+
+
+
     </div>
     <hr>
   </div>
 
   <div id="whatIsEyeTracking" class="whatIsEyeTracking">
     <h2>What is Eye-Tracking?</h2>
-    <img class="zoomable" src="img/Eyetracking.svg" alt="What is Eye-Tracking">
+    <img src="img/Eyetracking.svg" alt="What is Eye-Tracking">
     <p>The eye-tracker illuminates the eyes of the user with infrared light and a camera records the eye movements. A
       calibraton provides an estimation of fixations of the user on the screen. We use the fixations for interaction
       with virtual buttions in the graphical interface of GazeTheWeb.
@@ -91,7 +186,7 @@ layout: page
       At the first trial phase in February 2017, 18 participants with motor impairment succesfully performed dictated
       tasks in the World Wide Web. <br>
       <br>
-      <img class="zoomable" src="img/phase1.svg" alt="phase1">
+      <img src="img/phase1.svg" alt="phase1">
       <br>
       <br>
       The second phase has taken place in spring 2018, wheere 30 participants with motor impairment operated
@@ -102,7 +197,7 @@ layout: page
       and
       retrieve information.<br>
       <br>
-      <img class="zoomable" src="img/phase2.jpg" alt="phase2">
+      <img src="img/phase2.jpg" alt="phase2">
       <br>
     </p>
     <div id="mamemVideo" class="mamemVideo">
