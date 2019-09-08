@@ -126,7 +126,7 @@ int APIENTRY wWinMain(
 	}
 
     // Create application folder.
-	userDirectory.append("\\Browse");
+	userDirectory.append("\\BrowseData");
 	if (CreateDirectoryA(userDirectory.c_str(), NULL) ||
 		ERROR_ALREADY_EXISTS == GetLastError())
 	{

@@ -155,7 +155,7 @@ class VoiceInput
 public:
 
 	// Constructor
-	VoiceInput();
+	VoiceInput(bool allowRestart, bool &finished);
 
 	// Destructor
 	virtual ~VoiceInput();
@@ -196,7 +196,7 @@ public:
 	std::chrono::seconds GetRunTimeLimit() { return _runTimeLimit; }
 
 	void Reactivate();
-
+	
 private:
 
 	// Returns whether the plugin itself and all the respective functions are loaded.
@@ -234,6 +234,7 @@ private:
 
 	std::chrono::seconds _runTimeLimit = std::chrono::seconds(50);
 
+	bool _allowRestart = false;
 
 	// [STREAMING]
 

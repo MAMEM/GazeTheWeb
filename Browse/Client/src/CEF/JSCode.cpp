@@ -33,14 +33,12 @@ std::string GetJSCode(JSFile file)
     if (findJSFile.find(file) != findJSFile.end())
     {
         const std::string filePath = findJSFile.at(file);
+
         std::ifstream t(filePath);
         if (t.is_open())
         {
-            t.seekg(0, std::ios::end);
-            size_t size = t.tellg();
-            std::string buffer(size, ' ');
-            t.seekg(0);
-            t.read(&buffer[0], size);
+			std::string buffer((std::istreambuf_iterator<char>(t)),
+				std::istreambuf_iterator<char>());
             return buffer;
         }
         else

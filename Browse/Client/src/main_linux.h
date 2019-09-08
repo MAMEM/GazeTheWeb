@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
     }
 
     // Create .config folder, which should already exist.
-    userDirectory.append("/Browse");
+    userDirectory.append("/BrowseData");
     dir_err = mkdir(userDirectory.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_err)
     {

@@ -449,8 +449,11 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 
 	// ### VOICE INPUT ### 
 	if (_useVoice) {
-		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput());
-		_spVoiceInputObject->Activate();
+		bool finished = false;
+		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput(setup::PERIODICAL_VOICE_RESTART,finished));
+		if (finished) {
+			_spVoiceInputObject->Activate();
+		}
 	}
 
 	// ### FRAMEBUFFER ###
@@ -898,7 +901,7 @@ void Master::Loop()
 
 		// VOICE INPUT
 		auto spVoiceInput = std::make_shared<VoiceAction>(VoiceCommand::NO_ACTION, "");
-		if (_spVoiceInputObject) {
+		if (_spVoiceInputObject && _useVoice) {
 			if (_spVoiceInputObject->GetState() == VoiceInputState::Active) {
 				spVoiceInput = _spVoiceInputObject->Update(tpf, _keyboardActive);
 			}

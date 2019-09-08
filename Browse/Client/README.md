@@ -11,6 +11,9 @@ Please refer to the Readme in the [parent folder](https://github.com/MAMEM/GazeT
 * ESC: Exit application
 * Tab: Toggle pause
 
+## Commandline Arguments
+* "--voice-input": Enables voice input mode
+
 ## Validation
 A file named _log.txt_ is created in user folder (_~/AppData/Roaming/GazeTheWeb/Browse_ for Windows and _~/.config/GazeTheWeb/Browse_ for Linux), containing information about the current and last runs. If anything wents not as expected, one should take a look into it.
 
@@ -34,6 +37,7 @@ __externals__:
   * Boost: https://github.com/boostorg/boost
 * curl: https://github.com/curl/curl
 * SensorLib: https://github.com/MAMEM/SensorLib
+* go-speech-recognition-lib: https://github.com/Drizzy3D/go-speech-recognition-lib
 	
 __submodules__:
 * eyeGUI: https://github.com/raphaelmenges/eyeGUI
@@ -62,7 +66,7 @@ plugins/Eyetracker/TobiiEyeX:
 * Connection to Tobii EyeX SDK, copyright Tobii Technology AB (http://developer.tobii.com/eyex-sdk)
 
 ## License
->Copyright 2018 Raphael Menges and Daniel Müller
+>Copyright 2019 Raphael Menges, Daniel Müller and Christopher Dreide
 
 >Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 

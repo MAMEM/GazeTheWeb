@@ -47,6 +47,9 @@ if(${CLIENT_DEPLOYMENT})
 	add_definitions(-DCLIENT_DEPLOYMENT)
 endif()
 
+# Create Installer prepares Script to create an installer.
+set(CLIENT_CREATE_INSTALLER OFF CACHE BOOL "Setup for installer creation.")
+
 # Debug mode
 set(CLIENT_DEBUG OFF CACHE BOOL "Setup for Debugging.")
 if(${CLIENT_DEBUG})
@@ -146,7 +149,7 @@ else() # Linux
 	# ${CURL_INCLUDE_DIR}
 	find_package(CURL REQUIRED)
 endif()
-include_directories(${CURL_INCLUDE_DIR}) 
+include_directories(${CURL_INCLUDE_DIR})
 
 # go-speech-recognition-lib
 if(WIN32) # Windows
@@ -156,6 +159,7 @@ else() # Linux
 	# TODO future
 endif()
 include_directories(${GO_SPEECH_INCLUDE_DIR})
+
 
 ### SUBMODULES #################################################################
 
@@ -280,33 +284,33 @@ if(OS_WINDOWS) # Windows
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		"${GO_SPEECH_DIRECTORY}/go-speech-recognition.dll"
 		$<TARGET_FILE_DIR:${CEF_TARGET}>)
-
+		
 	# Copy Sensor Lib library and dependencies to output folder (relies on liblsl.dll provided by GTW)
 	if(${CLIENT_SENSOR_LIB_INTEGRATION})
 	
-	  # Copy all dependencies....
-		macro(SimpleCopy arg)
-			add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				"${SENSOR_LIB_DIRECTORY}/bin/${arg}"
-				$<TARGET_FILE_DIR:${CEF_TARGET}>)
-		endmacro()
-		
-		# Libraries
-		SimpleCopy("SensorLibrary.dll")
-		SimpleCopy("EBNeuro.Galileo.Hardware.Communication.Device.GSR.dll")
-		SimpleCopy("EBNeuro.Galileo.Hardware.IO.dll")
-		SimpleCopy("EBNeuro.Galileo.Hardware.Ut.dll")
-		SimpleCopy("MathNet.Numerics.dll")
-		SimpleCopy("SDK_Shimmer.dll")
-		SimpleCopy("ShimmerClosedLibraryRev0_4.dll")
-		
-		# Licenses
-		SimpleCopy("LICENSE-EBNeuro.x.txt")
-		SimpleCopy("LICENSE-MathNet.Numerics.txt")
-		SimpleCopy("LICENSE-SDK_Shimmer.txt")
-		SimpleCopy("LICENSE-SensorLibrary.txt")
-		SimpleCopy("LICENSE-ShimmerClosedLibraryRev0_4.txt")
+	# Copy all dependencies....
+	macro(SimpleCopy arg)
+		add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${SENSOR_LIB_DIRECTORY}/bin/${arg}"
+			$<TARGET_FILE_DIR:${CEF_TARGET}>)
+	endmacro()
+	
+	# Libraries
+	SimpleCopy("SensorLibrary.dll")
+	SimpleCopy("EBNeuro.Galileo.Hardware.Communication.Device.GSR.dll")
+	SimpleCopy("EBNeuro.Galileo.Hardware.IO.dll")
+	SimpleCopy("EBNeuro.Galileo.Hardware.Ut.dll")
+	SimpleCopy("MathNet.Numerics.dll")
+	SimpleCopy("SDK_Shimmer.dll")
+	SimpleCopy("ShimmerClosedLibraryRev0_4.dll")
+	
+	# Licenses
+	SimpleCopy("LICENSE-EBNeuro.x.txt")
+	SimpleCopy("LICENSE-MathNet.Numerics.txt")
+	SimpleCopy("LICENSE-SDK_Shimmer.txt")
+	SimpleCopy("LICENSE-SensorLibrary.txt")
+	SimpleCopy("LICENSE-ShimmerClosedLibraryRev0_4.txt")
 	
 	endif()
 	
@@ -404,6 +408,27 @@ if(CLIENT_DEPLOYMENT)
 		
 endif(CLIENT_DEPLOYMENT)
 
+if(CLIENT_CREATE_INSTALLER)
+
+	if (NOT CLIENT_DEPLOYMENT)
+		message(WARNING "CLIENT_DEPLOYMENT wasn't set, it's needed to be set to properly create the installer.") # i.e. the installer script depends on the existence of the "VERSION" file
+	endif (NOT CLIENT_DEPLOYMENT)
+	configure_file(InstallerCreator.in ${CMAKE_BINARY_DIR}/InstallerCreator.nsi @ONLY)
+	#add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD # then, copy it to specific binary folder (direct creation there does not work)
+	#	COMMAND ${CMAKE_COMMAND} -E copy
+	#	${CMAKE_BINARY_DIR}/InstallerCreator.nsi
+	#	$<TARGET_FILE_DIR:${CEF_TARGET}>/InstallerCreator.nsi)
+	
+	configure_file(LICENSE ${CMAKE_BINARY_DIR}/LICENSE COPYONLY)
+	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_BINARY_DIR}/LICENSE
+		$<TARGET_FILE_DIR:${CEF_TARGET}>/LICENSE)
+
+
+endif(CLIENT_CREATE_INSTALLER)
+
+ 
 ### EYETRACKER PLUGINS #########################################################
 
 set(EYETRACKER_PLUGIN_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/plugins/Eyetracker")

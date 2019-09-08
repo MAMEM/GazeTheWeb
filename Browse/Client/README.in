@@ -30,12 +30,22 @@ Graphics card with OpenGL 3.3 or higher support
 1. Start Client.exe that was included in this zip
 2. Gaze is emulated through mouse pointer. Fixation is emulated through mouse click.
 
+## Usage with Voice
+1. The voice input feature uses the Google "Cloud Speech-to-Text"-API, therfore you first need to follow the first 3 steps explained at "Before you begin":
+   https://cloud.google.com/speech-to-text/docs/quickstart-client-libraries/
+   (You can set your credentials by setting the environment variable in it's own OS settings.
+   Do this to avoid repeating the process everytime you want to use the voice input feature)
+2. Ensure you have a working microphone attached to your device (the primary one will be used)
+3. Open the program with the commandline argument "--voice-input":
+   ".\Client.exe --voice-input".
+4. Navigate the Browser using voice commands.
+
 ## Shortcuts
 ESC: Exit application
 Tab: Toggle pause
 
 ## License
-Copyright 2018 Raphael Menges and Daniel Müller
+Copyright 2019 Raphael Menges, Daniel MÃ¼ller and Christopher Dreide
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -67,3 +77,4 @@ text-csv: https://github.com/roman-kashitsyn/text-csv
 TinyXML2 (used one from eyeGUI library): https://github.com/leethomason/tinyxml2
 curl: https://github.com/curl/curl
 JSON: https://github.com/nlohmann/json
+go-speech-recognition-lib: https://github.com/Drizzy3D/go-speech-recognition-lib
