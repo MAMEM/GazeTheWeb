@@ -1,31 +1,23 @@
+List of working voice commands (experimental):
 
-SCROLL_UP,      "scroll up"         // scroll the page up
-SCROLL_DOWN,    "scroll down"       // scroll the page down
-TOP,            "top"               // scroll to the top
-BOTTOM,         "bottom"            // scroll to the bottom
-BOOKMARK,       "bookmark"          // bookmark the current page/tab
-BACK,           "back"              // return to the last visited page
-REFRESH,        "reload", "refresh" // return to the last visited page
-FORWARD,        "forward"           // reverse the back command
-GO_TO,          "go to"             // open url [parameter]
-NEW_TAB,        "new tab"           // create a new tab and open url [parameter]
-SEARCH,         "search"            // search for the [parameter] on the current page
-ZOOM,           "zoom"              // toggle zoom on the current page
-TAB_OVERVIEW,   "tab overview"      // open the tab overview
-SHOW_BOOKMARKS, "show bookmarks"    // shows the list of bookmarks
-CLICK,          "click"             // click on the nearest clickable element containing the [parameter]
-CHECK,          "check"             // check the nearest checkbox
-VIDEO_INPUT,    "video"             // open videomode with nearest video
-INCREASE,       "increase"          // increases sound volume
-DECREASE,       "decrease"          // decreases sound volume
-PLAY,           "play"              // play the current video
-PAUSE,          "pause"             // pause the current video
-STOP,           "stop"              // stop the current video
-MUTE,           "mute"              // mute the videos sound
-UNMUTE          "unmute"            // unmute the videos sound
-TEXT,           "text", "type"      // activate text input ?[parameter]
-REMOVE,         "remove"            // remove last inputted word
-CLEAR,          "clear"             // clear the entire text input field
-SUBMIT,         "submit"            // submits inputted text
-CLOSE,          "close"             // close the current view and return to the page view
-QUIT,           "quit"              // quit the browser
+    SCROLL_UP,      "scroll up"         // scroll the page up
+    SCROLL_DOWN,    "scroll down"       // scroll the page down
+    TOP,            "top"               // scroll to the top
+    BOTTOM,         "bottom"            // scroll to the bottom
+    BOOKMARK,       "bookmark"          // bookmark the current page/tab
+    BACK,           "back"              // return to the last visited page
+    REFRESH,        "reload", "refresh" // return to the last visited page
+    FORWARD,        "forward"           // reverse the back command
+    GO_TO,          "go to"             // open url [parameter]
+    CHECK,          "check"             // check the nearest checkbox
+    VIDEO_INPUT,    "video"             // open videomode with nearest video
+    INCREASE,       "increase"          // increases sound volume
+    DECREASE,       "decrease"          // decreases sound volume
+    PLAY,           "play"              // play the current video
+    STOP,           "stop"              // stop the current video
+    MUTE,           "mute"              // mute the videos sound
+    UNMUTE          "unmute"            // unmute the videos sound
+    TEXT,           "text", "type"      // activate text input ?[parameter]
+    REMOVE,         "remove"            // remove last inputted letter
+    SUBMIT,         "submit"            // submits inputted text
+    QUIT,           "quit"              // quit the browser
