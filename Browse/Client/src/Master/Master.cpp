@@ -453,7 +453,6 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput(setup::PERIODICAL_VOICE_RESTART,finished));
 		if (finished) {
 			_spVoiceInputObject->Activate();
-			_useVoice = false;
 		}
 	}
 
