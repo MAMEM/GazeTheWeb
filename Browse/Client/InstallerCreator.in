@@ -81,7 +81,9 @@ Section "Start Menu Shortcuts"
   CreateDirectory "$SMPROGRAMS\${INSTALLATIONNAME}"
   CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Browse.lnk" "$INSTDIR\Client.exe" "" "$INSTDIR\Client.exe" 0
-    CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Browse - Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
+  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Browse - Voice.lnk" "$INSTDIR\Client.exe" "--voice-input" "$INSTDIR\Client.exe" 0
+  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\Readme.lnk" "$INSTDIR\Readme.txt" "$INSTDIR\Readme.txt" 0
+  CreateShortCut "$SMPROGRAMS\${INSTALLATIONNAME}\VoiceCommands.lnk" "$INSTDIR\VoiceCommands.txt" "$INSTDIR\VoiceCommands.txt" 0
 SectionEnd
 
 # Create Desktop Shortcuts

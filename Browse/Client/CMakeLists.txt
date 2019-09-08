@@ -393,6 +393,13 @@ if(CLIENT_DEPLOYMENT)
 		${CMAKE_BINARY_DIR}/README.txt
 		$<TARGET_FILE_DIR:${CEF_TARGET}>/README.txt)
 
+	# Copy List of Voice Commands
+	configure_file(VoiceCommands.in ${CMAKE_BINARY_DIR}/VoiceCommands.txt)
+	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_BINARY_DIR}/VoiceCommands.txt
+		$<TARGET_FILE_DIR:${CEF_TARGET}>/VoiceCommands.txt)
+
 	# Copy content to output folder
 	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -414,10 +421,6 @@ if(CLIENT_CREATE_INSTALLER)
 		message(WARNING "CLIENT_DEPLOYMENT wasn't set, it's needed to be set to properly create the installer.") # i.e. the installer script depends on the existence of the "VERSION" file
 	endif (NOT CLIENT_DEPLOYMENT)
 	configure_file(InstallerCreator.in ${CMAKE_BINARY_DIR}/InstallerCreator.nsi @ONLY)
-	#add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD # then, copy it to specific binary folder (direct creation there does not work)
-	#	COMMAND ${CMAKE_COMMAND} -E copy
-	#	${CMAKE_BINARY_DIR}/InstallerCreator.nsi
-	#	$<TARGET_FILE_DIR:${CEF_TARGET}>/InstallerCreator.nsi)
 	
 	configure_file(LICENSE ${CMAKE_BINARY_DIR}/LICENSE COPYONLY)
 	add_custom_command(TARGET ${CEF_TARGET} PRE_BUILD
