@@ -15,8 +15,11 @@ body {
   position: relative;
   /*background-color: {{ site.page-col }};*/
   /*background-image: linear-gradient(#ffad00c5, white);*/
-  background-image: url("../img/Background.svg");
+  background-image: url("../img/Background.jpg");
+  background-repeat: no-repeat;
+  background-position: center top;
   background-size: cover;
+  background-attachment: fixed;
   {% if site.page-img %}
   /*background-image: url({{ site.page-img | relative_url }});*/
   background-attachment: fixed;
