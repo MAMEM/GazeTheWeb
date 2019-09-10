@@ -5,6 +5,40 @@ layout: page
 #use-site-title: true
 ---
 
+<style>
+  .github-corner:hover .octo-arm {
+    animation: octocat-wave 560ms ease-in-out
+  }
+
+  @keyframes octocat-wave {
+
+    0%,
+    100% {
+      transform: rotate(0)
+    }
+
+    20%,
+    60% {
+      transform: rotate(-25deg)
+    }
+
+    40%,
+    80% {
+      transform: rotate(10deg)
+    }
+  }
+
+  @media (max-width:500px) {
+    .github-corner:hover .octo-arm {
+      animation: none
+    }
+
+    .github-corner .octo-arm {
+      animation: octocat-wave 560ms ease-in-out
+    }
+  }
+</style>
+
 <div class="top">
   <img src="img/logoname.png" alt="gtw-logo" />
   <!--
@@ -40,53 +74,19 @@ layout: page
     </ul>
   </div>
   <hr>
-  <div class="screenshotGroup">
-    <img class="screenshot zoomable" src="img/screenshots/Webpage.svg" alt="Webpage">
-    <img class="screenshot zoomable" src="img/screenshots/Textinput.svg" alt="Textinput">
-    <img class="screenshot zoomable" src="img/screenshots/Select.svg" alt="Select">
-    <img class="screenshot zoomable" src="img/screenshots/Video.svg" alt="Video">
-  </div>
-  <hr>
 </div>
 
-
-
-<style>
-  .github-corner:hover .octo-arm {
-    animation: octocat-wave 560ms ease-in-out
-  }
-
-  @keyframes octocat-wave {
-
-    0%,
-    100% {
-      transform: rotate(0)
-    }
-
-    20%,
-    60% {
-      transform: rotate(-25deg)
-    }
-
-    40%,
-    80% {
-      transform: rotate(10deg)
-    }
-  }
-
-  @media (max-width:500px) {
-    .github-corner:hover .octo-arm {
-      animation: none
-    }
-
-    .github-corner .octo-arm {
-      animation: octocat-wave 560ms ease-in-out
-    }
-  }
-</style>
 <div class="information">
 
   <div id="whatIsGTW" class="whatIsGTW">
+
+    <div class="screenshotGroup">
+      <img class="screenshot zoomable" src="img/screenshots/Webpage.svg" alt="Webpage">
+      <img class="screenshot zoomable" src="img/screenshots/Textinput.svg" alt="Textinput">
+      <img class="screenshot zoomable" src="img/screenshots/Select.svg" alt="Select">
+      <img class="screenshot zoomable" src="img/screenshots/Video.svg" alt="Video">
+    </div>
+
     <h2>What is GazeTheWeb?</h2>
     <p>
       <h3>INTRODUCTION</h3>
@@ -137,12 +137,9 @@ layout: page
       </a>
     </div>
 
-
     <div id="imgContainer">
       <img class="imgCenter" src="img/GTW-Flyer_inside.png" style="" alt="Eye-Tracking visualized">
     </div>
-
-
 
     <div class="gtwVideo">
       <iframe allowFullScreen="allowFullScreen"
@@ -155,8 +152,6 @@ layout: page
         <script>function execute_YTvideo() { return youtube.query({ ids: "channel==MINE", startDate: "2019-01-01", endDate: "2019-12-31", metrics: "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained", dimensions: "day", sort: "day" }).then(function (e) { }, function (e) { console.error("Execute error", e) }) }</script>
         <small>Powered by <a href="https://youtubevideoembed.com/ ">Embed YouTube Video</a></small>
       </iframe>
-
-
 
     </div>
     <hr>
