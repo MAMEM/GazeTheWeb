@@ -18,12 +18,8 @@ body {
   background-image: url("../img/Background.jpg");
   background-repeat: no-repeat;
   background-position: center top;
-  background-size: cover;
-  background-attachment: fixed;
-  {% if site.page-img %}
-  /*background-image: url({{ site.page-img | relative_url }});*/
-  background-attachment: fixed;
-  {% endif %}
+  background-size: 100%;
+  background-attachment: scroll;
 }
 p {
   line-height: 1.5;
