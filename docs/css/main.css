@@ -857,7 +857,7 @@ pre {
 }
 
 .requirements {
-  float: right;
+  display: inline-block;
 }
 
 
