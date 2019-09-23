@@ -18,6 +18,8 @@
 #include <vector>
 
 #include "go-speech-recognition.h"
+#include "src/voiceMonitorHandler.h"
+
 
 enum class VoiceMode {
 	COMMAND,	// change mode to COMMAND to use the transcription mode "command and search" (is default, use for browsing)
@@ -230,9 +232,13 @@ private:
 	std::shared_ptr<ContinuousAudioRecord> _spAudioInput;
 
 	// Time
+	// To track overall sending
+	std::chrono::steady_clock::time_point _startTime;
+
+	// To track sending since last reactivation
 	std::chrono::steady_clock::time_point _activationTime;
 
-	std::chrono::seconds _runTimeLimit = std::chrono::seconds(50);
+	std::chrono::seconds _runTimeLimit = std::chrono::seconds(10);
 
 	bool _allowRestart = false;
 
@@ -311,6 +317,9 @@ private:
 
 	// protects access to recognition_results
 	std::mutex _transcriptGuard;
+
+	// utf8 to utf16
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> _converter;
 };
 
 #endif // VOICEINPUT_H_

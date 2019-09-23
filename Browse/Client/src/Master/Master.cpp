@@ -447,7 +447,8 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 																															 // ### EYE INPUT ###
 	_upEyeInput = std::unique_ptr<EyeInput>(new EyeInput(this, _upSettings->GetEyetrackerGeometry()));
 
-	// ### VOICE INPUT ### 
+	// ### VOICE INPUT ###
+
 	if (_useVoice) {
 		bool finished = false;
 		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput(setup::PERIODICAL_VOICE_RESTART,finished));

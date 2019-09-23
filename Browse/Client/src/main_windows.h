@@ -4,10 +4,56 @@
 #include "src/CEF/OtherProcess/DefaultCefApp.h"
 #include "src/CEF/ProcessTypeGetter.h"
 #include "include/cef_sandbox_win.h"
+#include <thread>
+#include "voiceMonitorHandler.h"
 
 #if defined(CEF_USE_SANDBOX)
 #pragma comment(lib, "cef_sandbox.lib")
 #endif
+
+std::unique_ptr<std::thread> _tvoiceMonitor;
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+
+	switch (uMsg)
+	{
+	case WM_CLOSE:
+		DestroyWindow(hwnd);
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	case WM_COPYDATA:
+	{
+		
+		COPYDATASTRUCT* pcds = (COPYDATASTRUCT*)lParam;
+		if (pcds->dwData == 1)
+		{
+			LPCWSTR message = (LPCWSTR)(pcds->lpData);
+			//MessageBox(hwnd, lpszString, L"Caption", MB_OKCANCEL);
+			
+
+			
+
+			RECT rect;
+			HDC wdc = GetDC(hwnd);
+			GetClientRect(hwnd, &rect);
+			SetTextColor(wdc, 0x00000000);
+			SetBkMode(wdc, OPAQUE);
+			rect.left = 1;
+			rect.top = 1;
+			DrawText(wdc, message, -1, &rect, DT_NOCLIP);
+			ReleaseDC(hwnd, wdc);
+
+		}
+	}
+	break;
+	default:
+		return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+	}
+	return 0;
+}
 
 // Forward declaration of common main
 int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefApp> app, void* windows_sandbox_info, std::string userDirectory, bool useVoice);
@@ -32,6 +78,54 @@ int APIENTRY wWinMain(
 	// Check commandline args
 	LPTSTR check = L"--voice-input";
 	bool useVoice = (lpCmdLine && (lstrcmpW(check, lpCmdLine) == 0));
+
+	// If voice input show logging window
+	// Register the window class.
+	if (useVoice) {
+		HWND hwnd;
+		const wchar_t voiceMonitor[] = L"Voice Monitor";
+		MSG msg = { };
+		WNDCLASS wc = { };
+
+		wc.lpfnWndProc = WndProc;
+		wc.hInstance = hInstance;
+		wc.lpszClassName = voiceMonitor;
+
+		RegisterClass(&wc);
+
+		// Create the window.
+
+		hwnd = CreateWindowExW(
+			0,                              // Optional window styles.
+			voiceMonitor,                   // Window class
+			L"Voice Monitor",				// Window text
+			WS_OVERLAPPEDWINDOW,            // Window style
+
+			// Size and position
+			CW_USEDEFAULT,					// X
+			CW_USEDEFAULT,					// Y
+			600,							// Width
+			600,							// Height
+
+			NULL,       // Parent window    
+			NULL,       // Menu
+			hInstance,  // Instance handle
+			NULL        // Additional application data
+		);
+		_tvoiceMonitor = std::make_unique<std::thread>([hInstance, nCmdShow, &hwnd, &msg] {
+
+			ShowWindow(hwnd, nCmdShow);
+			while (GetMessageW(&msg, NULL, 0, 0))
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+			}
+			return msg.wParam;
+		});
+		voiceMonitorHandler::setWindow(hwnd);
+	}
+
+
 
 	// Enable High-DPI support on Windows 7 or newer.
 	// CefEnableHighDPISupport();

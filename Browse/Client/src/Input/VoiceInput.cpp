@@ -143,6 +143,7 @@ VoiceInput::VoiceInput(bool allowRestart, bool &finished) {
 			LogError("VoiceInput: go-speech-recognition.dll is not properly loaded.");
 		}
 	}
+	_startTime = std::chrono::steady_clock::now();
 	
 	finished = true;
 }
@@ -169,6 +170,9 @@ TRANSCRIPT TO ACTION
 // Returns the last transcribed audio as a VoiceAction object
 std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) {
 
+	auto sentSeconds = std::chrono::steady_clock::now() - _startTime;
+	std::wstring sentSecondsW = _converter.from_bytes(std::to_string(std::chrono::duration_cast<std::chrono::seconds>(sentSeconds).count()));
+	voiceMonitorHandler::setNewText(PrintCategory::SENTSECONDS, sentSecondsW);
 
 	// Initialize voiceResult (When there's no (matching) transcript from queue it'll be returned as is)
 	VoiceAction voiceResult = VoiceAction(VoiceCommand::NO_ACTION, "");
@@ -294,8 +298,10 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 					}
 
 				}
-
 				LogInfo("voiceCommand: " + bestCommandStruct.phoneticVariants[0] + (!voiceResult.parameter.empty() ? " Parameter: " + voiceResult.parameter : ""));
+
+				std::wstring action = _converter.from_bytes(bestCommandStruct.phoneticVariants[0]);
+				voiceMonitorHandler::setNewText(PrintCategory::CURRENTACTION, action);
 			}
 			else if (_voiceMode == VoiceMode::FREE) {
 				voiceResult.command = VoiceCommand::PARAMETER_ONLY;
@@ -311,6 +317,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 void VoiceInput::SetVoiceMode(VoiceMode voiceMode) {
 	_voiceInputState = VoiceInputState::Changing;
+	voiceMonitorHandler::setNewText(PrintCategory::CONNECTIONGOOGLE, L"off");
 
 	// voice mode hasn't changed - nothing to do
 	if (voiceMode == _voiceMode)
@@ -369,6 +376,7 @@ TRANSCRIBING
 void VoiceInput::Activate() {
 	_voiceInputState = VoiceInputState::Active;
 	_activationTime = std::chrono::steady_clock::now();
+	voiceMonitorHandler::setNewText(PrintCategory::CONNECTIONGOOGLE, L"on");
 
 	if (IsPluginLoaded()) {
 		LogInfo("VoiceInput: Started transcribing process.");
@@ -425,6 +433,8 @@ void VoiceInput::Activate() {
 		// Get and log name of used device 
 		std::string deviceName = Pa_GetDeviceInfo(parameters.device)->name;
 		LogInfo("PortAudio: Chosen input audio device: " + deviceName);
+		
+		voiceMonitorHandler::setNewText(PrintCategory::CURRENTMICROPHONE, _converter.from_bytes(deviceName));
 
 		parameters.channelCount = AUDIO_INPUT_CHANNEL_COUNT;
 		parameters.sampleFormat = paInt16;
@@ -455,6 +465,7 @@ void VoiceInput::Activate() {
 		}
 
 		_voiceInputState = VoiceInputState::Active;
+		voiceMonitorHandler::setNewText(PrintCategory::CONNECTIONGOOGLE, L"on");
 
 		_tSending = std::make_unique<std::thread>([this] {
 			_isSending = true;
@@ -531,7 +542,7 @@ void VoiceInput::Activate() {
 				receivedString = received;
 				if (!receivedString.empty()) {
 					LogInfo("VoiceInput: Received: [" + receivedString + "]");
-
+					voiceMonitorHandler::setNewText(PrintCategory::LASTWORD, _converter.from_bytes(receivedString));
 					// Save transcript in _recognitionResults vector
 					std::lock_guard<std::mutex> lock(_transcriptGuard);
 					_recognitionResults.push(receivedString);
@@ -601,8 +612,10 @@ void VoiceInput::Deactivate() {
 	LogInfo("VoiceInput: Stopped audio recording and transcribing process.");
 
 
-	if (_voiceInputState == VoiceInputState::Active)
+	if (_voiceInputState == VoiceInputState::Active) {
 		_voiceInputState = VoiceInputState::Inactive;
+		voiceMonitorHandler::setNewText(PrintCategory::CONNECTIONGOOGLE, L"off");
+	}		
 }
 
 

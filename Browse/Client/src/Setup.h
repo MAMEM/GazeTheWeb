@@ -48,7 +48,7 @@ namespace setup
 	static const float	MAX_AGE_OF_USED_GAZE = 0.25f; // only accept gaze as input that is not older than one second (TODO: this is not used by filter but by master to determine when to stop taking gaze input as serious)
 	static const float	DURATION_BEFORE_SUPER_CALIBRATION = 30.f; // duration until recalibration is offered after receiving no gaze samples
 	static const bool	PAUSED_AT_STARTUP = false | DEMO_MODE;
-	static const bool	SUPER_CALIBRATION_AT_STARTUP = DEPLOYMENT && !DEMO_MODE;
+	static const bool	SUPER_CALIBRATION_AT_STARTUP = false; // DEPLOYMENT && !DEMO_MODE;
 	static const float	LINK_CORRECTION_MAX_PIXEL_DISTANCE = 5.f;
 	static const int	TEXT_SELECTION_MARGIN = 4; // area which is selected before / after zoom coordinate in CEFPixels
 
