@@ -238,7 +238,7 @@ private:
 	// To track sending since last reactivation
 	std::chrono::steady_clock::time_point _activationTime;
 
-	std::chrono::seconds _runTimeLimit = std::chrono::seconds(10);
+	std::chrono::seconds _runTimeLimit = std::chrono::seconds(50);
 
 	bool _allowRestart = false;
 
