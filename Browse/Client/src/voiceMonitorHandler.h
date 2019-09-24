@@ -3,6 +3,8 @@
 // Author: Christopher Dreide (cdreide@uni-koblenz.de)
 //============================================================================
 
+// TODO: why small case name? both files and class
+
 #pragma once
 #include <windows.h>
 #include <string>
@@ -12,7 +14,7 @@
 #include <mutex>
 
 enum class PrintCategory {
-	CURRENTMICROPHONE,
+	CURRENTMICROPHONE, // underscore for space
 	AVAILABLECOMMANDS,
 	CONNECTIONGOOGLE,
 	SENTSECONDS,
@@ -29,7 +31,6 @@ struct PrintStruct {
 	std::deque<std::wstring> lastWords;
 	std::wstring currentAction;
 };
-
 
 class voiceMonitorHandler
 {

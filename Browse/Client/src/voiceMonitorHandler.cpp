@@ -63,7 +63,7 @@ void voiceMonitorHandler::addUpdate(PrintCategory printCategory, std::wstring ne
 	{
 	case PrintCategory::CURRENTMICROPHONE:
 	{
-		if (newText != _printStruct.currentMicrophone)
+		if (newText != _printStruct.currentMicrophone) // TODO: if not necessary
 			_printStruct.currentMicrophone = newText;
 	}
 		break;	
@@ -150,7 +150,7 @@ LPCWSTR voiceMonitorHandler::evaluateLog() {
 void voiceMonitorHandler::setNewText(PrintCategory printCategory, std::wstring newText) {
 
 	// Only prepare/send one package at the time
-	std::lock_guard<std::mutex> lock(_mupdate);
+	std::lock_guard<std::mutex> lock(_mupdate); // TODO: think about it
 
 	// Prepare package to send to the window.
 	addUpdate(printCategory, newText);
