@@ -827,12 +827,27 @@ pre {
   height: 150px;
 }
 
-.gtwVideo {
-  text-align: center;
+.videoWrapper {
+  width: 100%;
+	padding-bottom: 56.25%; /* 16:9 */
+	position: relative;
+
 }
 
-.mamemVideo {
-  text-align: center;
+.video {
+  position: relative;
+  padding-bottom: 56.25%; /* proportion value to aspect ratio 16:9 (9 / 16 = 0.5625 or 56.25%) */
+  height: 0;
+  overflow: hidden;
+  
+	text-align: center;
+}
+.video iframe {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 #citation {
@@ -935,6 +950,8 @@ hr {
 .main-navigation {
   box-shadow: 0 5px 5px -0px rgba(0,0,0,.2);
 }
+
+
 
 /*
 .imgCenter {
