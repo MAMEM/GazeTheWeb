@@ -16,9 +16,9 @@
 #include <queue>
 #include <mutex>
 #include <vector>
+#include <codecvt>
 
 #include "go-speech-recognition.h"
-#include "src/voiceMonitorHandler.h"
 
 
 enum class VoiceMode {

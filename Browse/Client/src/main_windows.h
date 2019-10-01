@@ -5,7 +5,7 @@
 #include "src/CEF/ProcessTypeGetter.h"
 #include "include/cef_sandbox_win.h"
 #include <thread>
-#include "voiceMonitorHandler.h"
+#include "Singletons/VoiceMonitorHandler.h"
 
 #if defined(CEF_USE_SANDBOX)
 #pragma comment(lib, "cef_sandbox.lib")
@@ -18,6 +18,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	switch (uMsg)
 	{
+	case WM_ERASEBKGND:
+		return 1;
+		break;
 	case WM_CLOSE:
 		DestroyWindow(hwnd);
 		break;
@@ -35,9 +38,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			
 
 			
-
 			RECT rect;
 			HDC wdc = GetDC(hwnd);
+			BitBlt(wdc, 0, 0, 600, 600, 0, 0, 0, WHITENESS);
+			//InvalidateRect(hwnd, NULL, true);
 			GetClientRect(hwnd, &rect);
 			SetTextColor(wdc, 0x00000000);
 			SetBkMode(wdc, OPAQUE);
@@ -99,7 +103,7 @@ int APIENTRY wWinMain(
 			0,                              // Optional window styles.
 			voiceMonitor,                   // Window class
 			L"Voice Monitor",				// Window text
-			WS_OVERLAPPEDWINDOW,            // Window style
+			WS_EX_TOPMOST,            // Window style
 
 			// Size and position
 			CW_USEDEFAULT,					// X
@@ -122,7 +126,7 @@ int APIENTRY wWinMain(
 			}
 			return msg.wParam;
 		});
-		voiceMonitorHandler::setWindow(hwnd);
+		VoiceMonitorHandler::instance().setWindow(hwnd);
 	}
 
 
