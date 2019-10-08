@@ -85,8 +85,7 @@ void VoiceMonitorHandler::addUpdate(PrintCategory printCategory, std::wstring ne
 }
 
 LPCWSTR VoiceMonitorHandler::evaluateLog() {
-	//char* result = "";
-	
+
 	std::wstring strResult = L"";
 
 	strResult += instance()._currentMicrophone;

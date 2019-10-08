@@ -17,6 +17,8 @@
 #include <iomanip>
 #include <string>
 #include <fstream>
+#include "src/Singletons/VoiceMonitorHandler.h"
+
 
 #ifdef _WIN32 // Windows
 // Native access to Windows functions is necessary to maximize window
@@ -1163,6 +1165,7 @@ void Master::Loop()
 		glfwSwapBuffers(_pWindow);
 		glfwPollEvents();
 	}
+	DestroyWindow(VoiceMonitorHandler::instance().getWindow());
 }
 
 void Master::UpdateAsyncJobs(bool wait)

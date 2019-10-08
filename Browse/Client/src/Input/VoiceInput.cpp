@@ -172,7 +172,10 @@ TRANSCRIPT TO ACTION
 std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) {
 
 	// Keep VoiceMonitorHandlerOnTop (maybe there's a better place to do this?)
-	SetWindowPos(VoiceMonitorHandler::instance().getWindow(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	DWORD dwExStyle = GetWindowLong(VoiceMonitorHandler::instance().getWindow(), GWL_EXSTYLE);
+	if ((dwExStyle & WS_EX_TOPMOST) == 0)
+		SetWindowPos(VoiceMonitorHandler::instance().getWindow(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	
 
 	auto sentSeconds = std::chrono::steady_clock::now() - _startTime;
 	std::wstring sentSecondsW = _converter.from_bytes(std::to_string(std::chrono::duration_cast<std::chrono::seconds>(sentSeconds).count()));

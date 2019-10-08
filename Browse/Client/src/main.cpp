@@ -77,7 +77,8 @@ int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefA
     // Execute our code
     bool shutdownOnExit = Execute(app, userDirectory, useVoice);
 
-    // Shutdown CEF
+
+	// Shutdown CEF
     LogInfo("Shutdown CEF...");
     CefShutdown();
     LogInfo("..done.");
@@ -93,5 +94,5 @@ int CommonMain(const CefMainArgs& args, CefSettings settings, CefRefPtr<MainCefA
 	}
 
 	// Exit
-    return 0;
+	return 0;
 }

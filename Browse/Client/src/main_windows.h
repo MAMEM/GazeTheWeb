@@ -29,15 +29,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_COPYDATA:
 	{
-		
 		COPYDATASTRUCT* pcds = (COPYDATASTRUCT*)lParam;
 		if (pcds->dwData == 1)
 		{
 			LPCWSTR message = (LPCWSTR)(pcds->lpData);
-			//MessageBox(hwnd, lpszString, L"Caption", MB_OKCANCEL);
-			
 
-			
 			RECT rect;
 			HDC wdc = GetDC(hwnd);
 			BitBlt(wdc, 0, 0, 600, 600, 0, 0, 0, WHITENESS);
@@ -103,7 +99,7 @@ int APIENTRY wWinMain(
 			0,                              // Optional window styles.
 			voiceMonitor,                   // Window class
 			L"Voice Monitor",				// Window text
-			WS_EX_TOPMOST,            // Window style
+			WS_OVERLAPPEDWINDOW,            // Window style
 
 			// Size and position
 			CW_USEDEFAULT,					// X
