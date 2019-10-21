@@ -854,6 +854,7 @@ pre {
   background-color: rgb(230, 230, 230);
   padding: 15px;
   border-radius: 15px;
+  word-break: break-all;
 }
 
 #tabbed {
