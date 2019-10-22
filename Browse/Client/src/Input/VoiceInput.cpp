@@ -27,37 +27,37 @@ HINSTANCE pluginHandle;
 
 std::vector<CommandStruct> commandStructList = {
 
-	CommandStruct(VoiceCommand::SCROLL_UP,		std::vector<std::string> {"scroll up", "up", "app", "call down" },									false),
-	CommandStruct(VoiceCommand::SCROLL_DOWN,	std::vector<std::string> {"scroll down", "down", "town", "dawn", "dumb", "call up", "Trov down"},			false),
-	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top", "talk"},									false),
-	CommandStruct(VoiceCommand::BOTTOM,			std::vector<std::string> {"bottom", "button", "boredom", "autumn"},					false),
-	CommandStruct(VoiceCommand::BOOKMARK,		std::vector<std::string> {"bookmark"},											false),
-	CommandStruct(VoiceCommand::BACK,			std::vector<std::string> {"back"},												false),
-	CommandStruct(VoiceCommand::REFRESH,		std::vector<std::string> {"reload", "refresh"},									false),
-	CommandStruct(VoiceCommand::FORWARD,		std::vector<std::string> {"forward", "for what", "for want"},							false),
-	CommandStruct(VoiceCommand::GO_TO,			std::vector<std::string> {"go to", "visit"},								true),
-	CommandStruct(VoiceCommand::NEW_TAB,		std::vector<std::string> {"new tab", "new tap", "UTEP"},					true),
-	CommandStruct(VoiceCommand::SEARCH,			std::vector<std::string> {"search"},											true),
-	CommandStruct(VoiceCommand::ZOOM,			std::vector<std::string> {"zoom"},												false),
-	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview", "tap overview"},					false),
-	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},									false),
-	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {"click", "lick", "blick", "clique", "clip", "Kik", "Nick", "dick", "big"},				true),
-	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck", "checkbox" "checkbook's"},		false),
-	CommandStruct(VoiceCommand::VIDEO_INPUT,	std::vector<std::string> {"video", "video input"},							false),
-	CommandStruct(VoiceCommand::INCREASE,		std::vector<std::string> {"increase", "increase volume", "increase sound"},	false),
-	CommandStruct(VoiceCommand::DECREASE,		std::vector<std::string> {"decrease", "decrease volume", "decrease sound"},	false),
-	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},												false),
-	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},												false),
-	CommandStruct(VoiceCommand::STOP,			std::vector<std::string> {"stop"},												false),
-	CommandStruct(VoiceCommand::MUTE,			std::vector<std::string> {"mute"},												false),
-	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},											false),
-	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},										true),
-	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},											false),
-	CommandStruct(VoiceCommand::CLEAR,			std::vector<std::string> {"clear", "Thalia", "Clea"},						false),
-	CommandStruct(VoiceCommand::SUBMIT,			std::vector<std::string> {"submit"},											false),
-	CommandStruct(VoiceCommand::CLOSE,			std::vector<std::string> {"close"},												false),
-	CommandStruct(VoiceCommand::QUIT,			std::vector<std::string> {"quit"},												false),
-	CommandStruct(VoiceCommand::PARAMETER_ONLY,	std::vector<std::string> {},													true),
+	CommandStruct(VoiceCommand::SCROLL_UP,		std::vector<std::string> {"scroll up", "up", "app", "call down" },									false, false),
+	CommandStruct(VoiceCommand::SCROLL_DOWN,	std::vector<std::string> {"scroll down", "down", "town", "dawn", "dumb", "call up", "Trov down"},			false, false),
+	CommandStruct(VoiceCommand::TOP,			std::vector<std::string> {"top", "talk"},									false, false),
+	CommandStruct(VoiceCommand::BOTTOM,			std::vector<std::string> {"bottom", "button", "boredom", "autumn"},					false, false),
+	CommandStruct(VoiceCommand::BOOKMARK,		std::vector<std::string> {"bookmark"},											false, false),
+	CommandStruct(VoiceCommand::BACK,			std::vector<std::string> {"back"},												false, false),
+	CommandStruct(VoiceCommand::REFRESH,		std::vector<std::string> {"reload", "refresh"},									false, false),
+	CommandStruct(VoiceCommand::FORWARD,		std::vector<std::string> {"forward", "for what", "for want"},							false, false),
+	CommandStruct(VoiceCommand::GO_TO,			std::vector<std::string> {"go to", "visit"},								true, false),
+	CommandStruct(VoiceCommand::NEW_TAB,		std::vector<std::string> {"new tab", "new tap", "UTEP"},					true, false),
+	CommandStruct(VoiceCommand::SEARCH,			std::vector<std::string> {"search"},											true, false),
+	CommandStruct(VoiceCommand::ZOOM,			std::vector<std::string> {"zoom"},												false, false),
+	CommandStruct(VoiceCommand::TAB_OVERVIEW,	std::vector<std::string> {"tab overview", "tap overview"},					false, false),
+	CommandStruct(VoiceCommand::SHOW_BOOKMARKS, std::vector<std::string> {"show bookmarks"},									false, false),
+	CommandStruct(VoiceCommand::CLICK,			std::vector<std::string> {/*"click on the word"*/"click", "lick", "blick", "clique", "clip", "Kik", "Nick", "dick", "big"},				true, false),
+	CommandStruct(VoiceCommand::CHECK,			std::vector<std::string> {"check", "chuck", "checkbox" "checkbook's"},		false, false),
+	CommandStruct(VoiceCommand::VIDEO_INPUT,	std::vector<std::string> {"video", "video input"},							false, false),
+	CommandStruct(VoiceCommand::INCREASE,		std::vector<std::string> {"increase", "increase volume", "increase sound"},	false, false),
+	CommandStruct(VoiceCommand::DECREASE,		std::vector<std::string> {"decrease", "decrease volume", "decrease sound"},	false, false),
+	CommandStruct(VoiceCommand::PLAY,			std::vector<std::string> {"play"},												false, false),
+	CommandStruct(VoiceCommand::PAUSE,			std::vector<std::string> {"pause"},												false, false),
+	CommandStruct(VoiceCommand::STOP,			std::vector<std::string> {"stop"},												false, false),
+	CommandStruct(VoiceCommand::MUTE,			std::vector<std::string> {"mute"},												false, false),
+	CommandStruct(VoiceCommand::UNMUTE,			std::vector<std::string> {"unmute"},											false, false),
+	CommandStruct(VoiceCommand::TEXT,			std::vector<std::string> {"text", "type"},										true, false),
+	CommandStruct(VoiceCommand::REMOVE,			std::vector<std::string> {"remove"},											false, true),
+	CommandStruct(VoiceCommand::CLEAR,			std::vector<std::string> {"clear", "Thalia", "Clea"},						false, true),
+	CommandStruct(VoiceCommand::SUBMIT,			std::vector<std::string> {"submit"},											false, true),
+	CommandStruct(VoiceCommand::CLOSE,			std::vector<std::string> {"close"},												false, true),
+	CommandStruct(VoiceCommand::QUIT,			std::vector<std::string> {"quit"},												false, false),
+	CommandStruct(VoiceCommand::PARAMETER_ONLY,	std::vector<std::string> {},													true, false),
 
 };
 
@@ -145,7 +145,7 @@ VoiceInput::VoiceInput(bool allowRestart, bool &finished) {
 		}
 	}
 	_startTime = std::chrono::steady_clock::now();
-	
+	_pauseTime = _startTime;
 	finished = true;
 }
 
@@ -156,6 +156,11 @@ VoiceInput::~VoiceInput() {
 		Deactivate();
 	if (pluginHandle)
 		FreeLibrary(pluginHandle);
+}
+
+void VoiceInput::SendVoiceInputToVoiceMonitor(std::shared_ptr<VoiceInput> spVoiceInputObject)
+{
+	VoiceMonitorHandler::instance().SetVoiceInput(spVoiceInputObject);
 }
 
 bool VoiceInput::IsPluginLoaded() {
@@ -172,14 +177,14 @@ TRANSCRIPT TO ACTION
 std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) {
 
 	// Keep VoiceMonitorHandlerOnTop (maybe there's a better place to do this?)
-	DWORD dwExStyle = GetWindowLong(VoiceMonitorHandler::instance().getWindow(), GWL_EXSTYLE);
+	DWORD dwExStyle = GetWindowLong(VoiceMonitorHandler::instance().GetWindow(), GWL_EXSTYLE);
 	if ((dwExStyle & WS_EX_TOPMOST) == 0)
-		SetWindowPos(VoiceMonitorHandler::instance().getWindow(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		SetWindowPos(VoiceMonitorHandler::instance().GetWindow(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	
-
-	auto sentSeconds = std::chrono::steady_clock::now() - _startTime;
+	auto globalTime = std::chrono::steady_clock::now() - _startTime;
+	auto sentSeconds = globalTime - _pausedTime;
 	std::wstring sentSecondsW = _converter.from_bytes(std::to_string(std::chrono::duration_cast<std::chrono::seconds>(sentSeconds).count()));
-	VoiceMonitorHandler::instance().setNewText(PrintCategory::SENTSECONDS, sentSecondsW);
+	VoiceMonitorHandler::instance().SetNewText(PrintCategory::SENT_SECONDS, sentSecondsW);
 
 	// Initialize voiceResult (When there's no (matching) transcript from queue it'll be returned as is)
 	VoiceAction voiceResult = VoiceAction(VoiceCommand::NO_ACTION, "");
@@ -235,10 +240,15 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			int shortestStrDistance = INT32_MAX;
 
 			// The best matching CommandStruct
-			CommandStruct bestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false);
+			CommandStruct bestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
 
 			// iterate over all possible keys
 			for (CommandStruct currentCommandStruct : commandStructList) {
+
+				// Make sure that only Commands get checked, that are usable in the free ("keyboard") mode.
+				if (_voiceMode == VoiceMode::FREE && !currentCommandStruct.usableInFree)
+					continue;
+
 				// iterate over all phonetic variants
 				for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
@@ -308,24 +318,23 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 				LogInfo("voiceCommand: " + bestCommandStruct.phoneticVariants[0] + (!voiceResult.parameter.empty() ? " Parameter: " + voiceResult.parameter : ""));
 
 				std::wstring action = _converter.from_bytes(bestCommandStruct.phoneticVariants[0]);
-				VoiceMonitorHandler::instance().setNewText(PrintCategory::CURRENTACTION, action);
+				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_ACTION, action);
 			}
+
 			else if (_voiceMode == VoiceMode::FREE) {
 				voiceResult.command = VoiceCommand::PARAMETER_ONLY;
 				voiceResult.parameter = transcriptCandidatesList[0];
-				VoiceMonitorHandler::instance().setNewText(PrintCategory::CURRENTACTION, L"text");
+				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_ACTION, L"text");
 			}
 		}
 	}
 
-
 	return std::make_shared<VoiceAction>(voiceResult);
-
 }
 
 void VoiceInput::SetVoiceMode(VoiceMode voiceMode) {
 	_voiceInputState = VoiceInputState::Changing;
-	VoiceMonitorHandler::instance().setNewText(PrintCategory::CONNECTIONGOOGLE, L"off");
+	VoiceMonitorHandler::instance().SetNewText(PrintCategory::CONNECTION_GOOGLE, L"off");
 
 	// voice mode hasn't changed - nothing to do
 	if (voiceMode == _voiceMode)
@@ -384,7 +393,9 @@ TRANSCRIBING
 void VoiceInput::Activate() {
 	_voiceInputState = VoiceInputState::Active;
 	_activationTime = std::chrono::steady_clock::now();
-	VoiceMonitorHandler::instance().setNewText(PrintCategory::CONNECTIONGOOGLE, L"on");
+	_pausedTime += std::chrono::duration_cast<std::chrono::seconds>(_activationTime - _pauseTime);
+
+	VoiceMonitorHandler::instance().SetNewText(PrintCategory::CONNECTION_GOOGLE, L"on");
 
 	if (IsPluginLoaded()) {
 		LogInfo("VoiceInput: Started transcribing process.");
@@ -442,7 +453,7 @@ void VoiceInput::Activate() {
 		std::string deviceName = Pa_GetDeviceInfo(parameters.device)->name;
 		LogInfo("PortAudio: Chosen input audio device: " + deviceName);
 		
-		VoiceMonitorHandler::instance().setNewText(PrintCategory::CURRENTMICROPHONE, _converter.from_bytes(deviceName));
+		VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_MICROPHONE, _converter.from_bytes(deviceName));
 
 		parameters.channelCount = AUDIO_INPUT_CHANNEL_COUNT;
 		parameters.sampleFormat = paInt16;
@@ -479,7 +490,7 @@ void VoiceInput::Activate() {
 			ContinuousAudioRecord& pRecord = *_spAudioInput.get();
 
 			LogInfo("VoiceInput: Started sending audio.");
-			VoiceMonitorHandler::instance().setNewText(PrintCategory::CONNECTIONGOOGLE, L"on");
+			VoiceMonitorHandler::instance().SetNewText(PrintCategory::CONNECTION_GOOGLE, L"on");
 
 			while (!_stopping) {
 
@@ -541,7 +552,7 @@ void VoiceInput::Activate() {
 				if (receiveSuccess != GO_SPEECH_RECOGNITION_TRUE) {
 					std::string log = GO_SPEECH_RECOGNITION_GetLog();
 					LogError("VoiceInput: " + log + " (RECEIVING)");
-					VoiceMonitorHandler::instance().setNewText(PrintCategory::CONNECTIONGOOGLE, L"off");
+					VoiceMonitorHandler::instance().SetNewText(PrintCategory::CONNECTION_GOOGLE, L"off");
 					_stopping = true;
 					_isReceiving = false;
 					return;
@@ -551,7 +562,7 @@ void VoiceInput::Activate() {
 				receivedString = received;
 				if (!receivedString.empty()) {
 					LogInfo("VoiceInput: Received: [" + receivedString + "]");
-					VoiceMonitorHandler::instance().setNewText(PrintCategory::LASTWORD, _converter.from_bytes(receivedString));
+					VoiceMonitorHandler::instance().SetNewText(PrintCategory::LAST_WORD, _converter.from_bytes(receivedString));
 					// Save transcript in _recognitionResults vector
 					std::lock_guard<std::mutex> lock(_transcriptGuard);
 					_recognitionResults.push(receivedString);
@@ -574,13 +585,14 @@ void VoiceInput::Reactivate() {
 	});
 }
 
-
 void VoiceInput::Deactivate() {
 	_stopping = true;
 	LogInfo("VoiceInput: Stopping audio recording and transcribing process.");
-	VoiceMonitorHandler::instance().setNewText(PrintCategory::CONNECTIONGOOGLE, L"off");
 
 	GO_SPEECH_RECOGNITION_CloseStream();
+	
+	_pauseTime = std::chrono::steady_clock::now();
+	VoiceMonitorHandler::instance().SetNewText(PrintCategory::CONNECTION_GOOGLE, L"off");
 
 	// STOP AUDIO RECORDING
 	// Check for PortAudio
@@ -624,7 +636,6 @@ void VoiceInput::Deactivate() {
 
 	if (_voiceInputState == VoiceInputState::Active) {
 		_voiceInputState = VoiceInputState::Inactive;
-		VoiceMonitorHandler::instance().setNewText(PrintCategory::CONNECTIONGOOGLE, L"off");
 	}
 }
 

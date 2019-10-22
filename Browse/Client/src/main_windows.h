@@ -18,6 +18,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	switch (uMsg)
 	{
+	case WM_CREATE:
+	{
+		CreateWindow(TEXT("button"), TEXT("Toggle Recording"),
+			WS_VISIBLE | WS_CHILD,
+			20,		// x
+			550,	// y
+			200,	// width
+			25,		// height
+			hwnd, (HMENU)1, NULL, NULL);
+		break;
+	}
+	case WM_COMMAND:
+	{
+		// Mute was pressed
+		if (LOWORD(wParam) == 1) {
+			VoiceMonitorHandler::instance().ToggleVoiceInput();
+		}
+		break;
+	}
 	case WM_ERASEBKGND:
 		return 1;
 		break;
@@ -36,7 +55,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			RECT rect;
 			HDC wdc = GetDC(hwnd);
-			BitBlt(wdc, 0, 0, 600, 600, 0, 0, 0, WHITENESS);
+			BitBlt(wdc, 0, 0, 600, 500, 0, 0, 0, WHITENESS);
 			//InvalidateRect(hwnd, NULL, true);
 			GetClientRect(hwnd, &rect);
 			SetTextColor(wdc, 0x00000000);
@@ -74,57 +93,10 @@ int APIENTRY wWinMain(
 	int       nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
-	
+
 	// Check commandline args
 	LPTSTR check = L"--voice-input";
 	bool useVoice = (lpCmdLine && (lstrcmpW(check, lpCmdLine) == 0));
-
-	// If voice input show logging window
-	// Register the window class.
-	if (useVoice) {
-		HWND hwnd;
-		const wchar_t voiceMonitor[] = L"Voice Monitor";
-		MSG msg = { };
-		WNDCLASS wc = { };
-
-		wc.lpfnWndProc = WndProc;
-		wc.hInstance = hInstance;
-		wc.lpszClassName = voiceMonitor;
-
-		RegisterClass(&wc);
-
-		// Create the window.
-
-		hwnd = CreateWindowExW(
-			0,                              // Optional window styles.
-			voiceMonitor,                   // Window class
-			L"Voice Monitor",				// Window text
-			WS_OVERLAPPEDWINDOW,            // Window style
-
-			// Size and position
-			CW_USEDEFAULT,					// X
-			CW_USEDEFAULT,					// Y
-			600,							// Width
-			600,							// Height
-
-			NULL,       // Parent window    
-			NULL,       // Menu
-			hInstance,  // Instance handle
-			NULL        // Additional application data
-		);
-		_tvoiceMonitor = std::make_unique<std::thread>([hInstance, nCmdShow, &hwnd, &msg] {
-
-			ShowWindow(hwnd, nCmdShow);
-			while (GetMessageW(&msg, NULL, 0, 0))
-			{
-				TranslateMessage(&msg);
-				DispatchMessageW(&msg);
-			}
-			return msg.wParam;
-		});
-		VoiceMonitorHandler::instance().setWindow(hwnd);
-	}
-
 
 
 	// Enable High-DPI support on Windows 7 or newer.
@@ -166,6 +138,53 @@ int APIENTRY wWinMain(
 		// Main process
 		mainProcessApp = new MainCefApp();
 		app = mainProcessApp;
+
+
+		// If voice input show logging window
+		// Register the window class.
+		if (useVoice) {
+			HWND hwnd;
+			const wchar_t voiceMonitor[] = L"Voice Monitor";
+			MSG msg = { };
+			WNDCLASS wc = { };
+
+			wc.lpfnWndProc = WndProc;
+			wc.hInstance = hInstance;
+			wc.lpszClassName = voiceMonitor;
+
+			RegisterClass(&wc);
+
+			// Create the window.
+
+			hwnd = CreateWindowExW(
+				0,                              // Optional window styles.
+				voiceMonitor,                   // Window class
+				L"Voice Monitor",				// Window text
+				WS_OVERLAPPEDWINDOW,            // Window style
+
+				// Size and position
+				CW_USEDEFAULT,					// X
+				CW_USEDEFAULT,					// Y
+				600,							// Width
+				800,							// Height
+
+				NULL,       // Parent window    
+				NULL,       // Menu
+				hInstance,  // Instance handle
+				NULL        // Additional application data
+			);
+			_tvoiceMonitor = std::make_unique<std::thread>([hInstance, nCmdShow, &hwnd, &msg] {
+
+				ShowWindow(hwnd, nCmdShow);
+				while (GetMessageW(&msg, NULL, 0, 0))
+				{
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
+				}
+				return msg.wParam;
+				});
+			VoiceMonitorHandler::instance().SetWindow(hwnd);
+		}
 		break;
 
 	case ProcessType::RENDER:

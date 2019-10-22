@@ -81,6 +81,8 @@ struct CommandStruct {
 	// Indicates if the command takes parameter
 	bool takesParameter;
 
+	// Usable in keyboard mode
+	bool usableInFree;
 
 	/*
 	Needed to assign Transcripts to VoiceCommands
@@ -90,10 +92,11 @@ struct CommandStruct {
 	phoneticVariants - a vector of strings triggering the VoiceCommand (for logging purpose: first should be the intended key word)
 	takesParameter - indicates if the VoiceCommand should take a parameter
 	*/
-	CommandStruct(VoiceCommand command, std::vector<std::string> phoneticVariants, bool takesParameter) {
+	CommandStruct(VoiceCommand command, std::vector<std::string> phoneticVariants, bool takesParameter, bool usableInFree) {
 		this->command = command;
 		this->phoneticVariants = phoneticVariants;
 		this->takesParameter = takesParameter;
+		this->usableInFree = usableInFree;
 	}
 };
 
@@ -151,7 +154,7 @@ private:
 };
 
 // Class that handles recording and transcribing audio 
-class VoiceInput
+class VoiceInput : public std::enable_shared_from_this<VoiceInput>
 {
 
 public:
@@ -198,6 +201,12 @@ public:
 	std::chrono::seconds GetRunTimeLimit() { return _runTimeLimit; }
 
 	void Reactivate();
+
+	/* 
+		Just forwards a shared pointer of itself to the Monitor 
+		(is it better if the Master can do this directly?)	
+	*/
+	void SendVoiceInputToVoiceMonitor(std::shared_ptr<VoiceInput> spVoiceInput);
 	
 private:
 
@@ -265,6 +274,8 @@ private:
 	// indicating the current state
 	VoiceInputState _voiceInputState = VoiceInputState::Inactive;
 
+	std::chrono::steady_clock::time_point _pauseTime;
+	std::chrono::seconds _pausedTime = std::chrono::seconds(0);
 
 	/*
 	state showing if recording and transcribing should be stopped (use to ensure you are only stopping once at the time)

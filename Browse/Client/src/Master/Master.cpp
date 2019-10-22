@@ -17,7 +17,6 @@
 #include <iomanip>
 #include <string>
 #include <fstream>
-#include "src/Singletons/VoiceMonitorHandler.h"
 
 
 #ifdef _WIN32 // Windows
@@ -455,6 +454,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 		bool finished = false;
 		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput(setup::PERIODICAL_VOICE_RESTART,finished));
 		if (finished) {
+			_spVoiceInputObject->SendVoiceInputToVoiceMonitor(_spVoiceInputObject);
 			_spVoiceInputObject->Activate();
 		}
 	}
@@ -1165,7 +1165,6 @@ void Master::Loop()
 		glfwSwapBuffers(_pWindow);
 		glfwPollEvents();
 	}
-	DestroyWindow(VoiceMonitorHandler::instance().getWindow());
 }
 
 void Master::UpdateAsyncJobs(bool wait)

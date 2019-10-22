@@ -5,7 +5,7 @@
 
 #include "VoiceMonitorHandler.h"
 
-void VoiceMonitorHandler::setWindow(HWND hwnd) {
+void VoiceMonitorHandler::SetWindow(HWND hwnd) {
 	instance()._hwnd = hwnd;
 
 	instance()._printStruct.currentMicrophone = L"";
@@ -38,35 +38,50 @@ void VoiceMonitorHandler::setWindow(HWND hwnd) {
 	instance()._printStruct.currentAction = L"";
 };
 
-HWND VoiceMonitorHandler::getWindow() {
+HWND VoiceMonitorHandler::GetWindow() {
 	return instance()._hwnd;
 };
 
+void VoiceMonitorHandler::SetVoiceInput(std::shared_ptr<VoiceInput> spVoiceInputObject) {
+	_spVoiceInputObject = spVoiceInputObject;
+}
 
-void VoiceMonitorHandler::addUpdate(PrintCategory printCategory, std::wstring newText) {
+void VoiceMonitorHandler::ToggleVoiceInput() {
+
+	if (_spVoiceInputObject->GetState() == VoiceInputState::Active)
+		auto tDeactivating = std::make_unique<std::thread>([this] {
+			_spVoiceInputObject->Deactivate();
+		});
+	else if (_spVoiceInputObject->GetState() == VoiceInputState::Inactive)
+		auto tActivating = std::make_unique<std::thread>([this] {
+			_spVoiceInputObject->Activate();
+		});
+}
+
+void VoiceMonitorHandler::AddUpdate(PrintCategory printCategory, std::wstring newText) {
 	switch (printCategory)
 	{
-	case PrintCategory::CURRENTMICROPHONE:
+	case PrintCategory::CURRENT_MICROPHONE:
 	{
 		instance()._printStruct.currentMicrophone = newText;
 	}
 		break;	
-	case PrintCategory::AVAILABLECOMMANDS:
+	case PrintCategory::AVAILABLE_COMMANDS:
 	{
 		instance()._printStruct.availableCommands = newText;
 	}
 		break;
-	case PrintCategory::CONNECTIONGOOGLE:
+	case PrintCategory::CONNECTION_GOOGLE:
 	{
 		instance()._printStruct.connectionGoogle = newText;
 	}
 		break;
-	case PrintCategory::SENTSECONDS:
+	case PrintCategory::SENT_SECONDS:
 	{
 		instance()._printStruct.sentSeconds = newText;
 	}
 		break;
-	case PrintCategory::LASTWORD:
+	case PrintCategory::LAST_WORD:
 	{
 		if (instance()._printStruct.lastWords.size() > 2)
 			instance()._printStruct.lastWords.pop_back();
@@ -74,7 +89,7 @@ void VoiceMonitorHandler::addUpdate(PrintCategory printCategory, std::wstring ne
 		instance()._printStruct.lastWords.push_front(newText);
 	}
 		break;
-	case PrintCategory::CURRENTACTION:
+	case PrintCategory::CURRENT_ACTION:
 	{
 		instance()._printStruct.currentAction = newText;
 	}
@@ -84,7 +99,7 @@ void VoiceMonitorHandler::addUpdate(PrintCategory printCategory, std::wstring ne
 	}
 }
 
-LPCWSTR VoiceMonitorHandler::evaluateLog() {
+LPCWSTR VoiceMonitorHandler::EvaluateLog() {
 
 	std::wstring strResult = L"";
 
@@ -124,13 +139,13 @@ LPCWSTR VoiceMonitorHandler::evaluateLog() {
 	return result;
 }
 
-void VoiceMonitorHandler::setNewText(PrintCategory printCategory, std::wstring newText) {
+void VoiceMonitorHandler::SetNewText(PrintCategory printCategory, std::wstring newText) {
 
 	// Prepare package to send to the window.
-	addUpdate(printCategory, newText);
+	AddUpdate(printCategory, newText);
 
 	// Code from here till the end maybe in some sort of "Update" function?
-	LPCWSTR message = evaluateLog();
+	LPCWSTR message = EvaluateLog();
 
 	// Prepare package to send to the window.
 	COPYDATASTRUCT cds;

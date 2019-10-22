@@ -25,7 +25,12 @@ bool Execute(CefRefPtr<MainCefApp> app, std::string userDirectory, bool useVoice
 	app->SetMaster(&master);
 
     // Run master which communicates with CEF over mediator
-    return master.Run();
+	auto masterResult = master.Run();
+
+	// Close the VoiceMonitor window
+	DestroyWindow(VoiceMonitorHandler::instance().GetWindow());
+	
+	return masterResult;
 
     // Destructor of master is called implicity
 }

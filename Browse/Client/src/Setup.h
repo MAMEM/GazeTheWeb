@@ -74,7 +74,7 @@ namespace setup
 	static const std::string	DASHBOARD_URL = "gtw.mamem.eu/home"; // without slash at the end
 	static const double			INACTIVITY_SHUTDOWN_TIME = 60.0*60.0*3.0; // shutting down after three hours of inactivity (determined by the time the super calibration layout is visible, in seconds)
 
-																		  // Firebase
+	// Firebase
 	static const bool			FIREBASE_MAILING = !DEMO_MODE; // on/off switch for sending data to Firebase
 	static const std::string	FIREBASE_API_KEY = "AIzaSyBMa9gSXsoDo27S7P959QZYf3rJBGDGEIA"; // API key for our Firebase
 	static const std::string	FIREBASE_PROJECT_ID = "mamem-phase2-fall17"; // Project Id of our Firebase
@@ -91,7 +91,7 @@ namespace setup
 	static const float	DOM_POLLING_FREQUENCY = 1.0f; // times per second
 	static const int	DOM_POLLING_PARTITION_NUMBER = 8;
 	static const std::chrono::milliseconds STORING_TIME = std::chrono::milliseconds(2500); // time to store the queue of GazeCoordinates to use past values
-	static const bool PERIODICAL_VOICE_RESTART = true; // allow the voice recognition to restart before 60 seconds are expired (after 50 seconds)
+	static const bool PERIODICAL_VOICE_RESTART = false; // allow the voice recognition to restart before 60 seconds are expired (after 50 seconds)
 }
 
 #endif // SETUP_H_

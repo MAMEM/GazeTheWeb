@@ -10,14 +10,15 @@
 #include <deque>
 #include <codecvt>
 #include <mutex>
+#include "src/Input/VoiceInput.h"
 
 enum class PrintCategory {
-	CURRENTMICROPHONE, // underscore for space
-	AVAILABLECOMMANDS,
-	CONNECTIONGOOGLE,
-	SENTSECONDS,
-	LASTWORD,
-	CURRENTACTION
+	CURRENT_MICROPHONE,
+	AVAILABLE_COMMANDS,
+	CONNECTION_GOOGLE,
+	SENT_SECONDS,
+	LAST_WORD,
+	CURRENT_ACTION
 };
 
 struct PrintStruct {
@@ -44,11 +45,15 @@ public:
 	// Destructor
 	~VoiceMonitorHandler() {};
 	
-	void setWindow(HWND hwnd);
-	HWND getWindow();
+	void SetWindow(HWND hwnd);
+	HWND GetWindow();
+
+	// Handle the Voice Input
+	void SetVoiceInput(std::shared_ptr<VoiceInput> spVoiceInputObject);
+	void ToggleVoiceInput();
 
 	// Sets the text corresponding to the provided printCategory and sends a package to the _hwnd window.
-	void setNewText(PrintCategory printCategory, std::wstring newText);
+	void SetNewText(PrintCategory printCategory, std::wstring newText);
 
 private:
 
@@ -67,7 +72,10 @@ private:
 	std::wstring _currentAction = L"Current Action: ";
 	std::wstring _lineBreak = L"\r\n";
 
+	// VoiceInput Object
+	std::shared_ptr<VoiceInput> _spVoiceInputObject;
+
 	// Helper function to set the text corresponding to the provided printCategory.
-	void VoiceMonitorHandler::addUpdate(PrintCategory printCategory, std::wstring newText);
-	LPCWSTR VoiceMonitorHandler::evaluateLog();
+	void VoiceMonitorHandler::AddUpdate(PrintCategory printCategory, std::wstring newText);
+	LPCWSTR VoiceMonitorHandler::EvaluateLog();
 };
