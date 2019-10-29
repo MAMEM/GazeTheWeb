@@ -261,7 +261,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 					for (int i = 0; i < splittedTranscriptLen; i++) {
 
 						// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
-						strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0], true);
+						strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0], StringDistanceType::SOUNDEX);
 
 						// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
 						if (strDistance < 2 && strDistance < shortestStrDistance) {
@@ -273,7 +273,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 								for (int j = 1; j < splittedPhoneticVariantLen && i + j < splittedTranscriptLen; j++) {
 
 									// strDistance has to be < 2 for the whole key 
-									strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], true);
+									strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], StringDistanceType::SOUNDEX);
 
 									// we found the currently best matching key
 									if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {

@@ -272,7 +272,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 						(glm::abs(rect.right - gazeXOffset) < thresholdX || glm::abs(rect.left - gazeXOffset) < thresholdX)) {
 						std::string linktext = link.text;
 						std::transform(linktext.begin(), linktext.end(), linktext.begin(), ::tolower);
-						int strDistance = StringDistance(spVoiceInput->parameter, linktext, true);
+						int strDistance = StringDistance(spVoiceInput->parameter, linktext, StringDistanceType::SOUNDEX);
 						if (strDistance < strDistanceMax && strDistance != linktext.size()) {
 							LogInfo("shorter dis:", linktext, " . dis:", strDistance, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
 							finalLinkX = rect.Center().x;

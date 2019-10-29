@@ -482,9 +482,16 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std
 	{
 		if (!spVoiceInput->parameter.empty())
 		{
-			if (spVoiceInput->parameter.find(".com") == std::string::npos) {
-				spVoiceInput->parameter.append(".com");
+			bool appendCom = true;
+			for each (std::string topLevelDomain in _topLevelDomains)
+			{
+				if (spVoiceInput->parameter.find(topLevelDomain) != std::string::npos) {
+					appendCom = false;
+					break;
+				}
 			}
+			if (appendCom)
+				spVoiceInput->parameter.append(".com");
 
 			std::u16string url16;
 			eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, url16);
