@@ -250,6 +250,18 @@ int APIENTRY wWinMain(
         // Folder could not be created.
 	}
 
+	// Create bmp folder.
+	const char* bmpDir = ".\\bmp";
+	if (CreateDirectoryA(bmpDir, NULL) ||
+		ERROR_ALREADY_EXISTS == GetLastError())
+	{
+		// Everything ok.
+	}
+	else
+	{
+		// Folder could not be created.
+	}
+
     // Append another slash for easier usage of that path.
 	userDirectory.append("\\");
 
