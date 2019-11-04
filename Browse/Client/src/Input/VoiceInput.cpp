@@ -236,7 +236,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			std::vector<std::string> splittedTranscript = SplitBySeparator(transcriptCandidatesList[i], ' ');
 			int splittedTranscriptLen = splittedTranscript.size();
 
-			// The current shortest shortest Levenshtein Distance in the transcript
+			// The current shortest shortest Distance in the transcript
 			int shortestStrDistance = INT32_MAX;
 
 			// The best matching CommandStruct
@@ -252,51 +252,28 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 				// iterate over all phonetic variants
 				for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
-					// distance between key and transcription
+					// distance between key and transcription (evaluated "difference")
 					int strDistance = 0;
 					std::vector<std::string> splittedPhoneticVariant = SplitBySeparator(phoneticVariant, ' ');
 					int splittedPhoneticVariantLen = splittedPhoneticVariant.size();
 
 					// iterate over the phonetic variant
-					for (int i = 0; i < splittedTranscriptLen; i++) {
+					for (int i = 0; i < splittedPhoneticVariantLen && i < splittedTranscriptLen; i++) {
 
-						// check the Levenshtein Distance between the first word in the phonetic variant and the current word in the transcript
-						strDistance = StringDistance(splittedTranscript[i], splittedPhoneticVariant[0], StringDistanceType::SOUNDEX);
+						// check the Distance between the current word in the phonetic variant and the current word in the transcript, add it to the current distance
+						strDistance += StringDistance(splittedTranscript[i], splittedPhoneticVariant[i], StringDistanceType::DOUBLE_METAPHONE);
 
-						// if the transcript is similiar enough (Levenshtein Distance < 2) to the key the command could be (partially) found
-						if (strDistance < 2 && strDistance < shortestStrDistance) {
-
-							// check if the following words are matching if the phonetic variant is longer than 1 word
-							if (splittedPhoneticVariantLen > 1) {
-
-								// iterate over the rest of the splittedPhoneticVariant
-								for (int j = 1; j < splittedPhoneticVariantLen && i + j < splittedTranscriptLen; j++) {
-
-									// strDistance has to be < 2 for the whole key 
-									strDistance += StringDistance(splittedTranscript[i + j], splittedPhoneticVariant[j], StringDistanceType::SOUNDEX);
-
-									// we found the currently best matching key
-									if (strDistance < 2 && strDistance < shortestStrDistance && j == splittedPhoneticVariantLen - 1) {
-										bestCommandStruct = currentCommandStruct;
-										voiceParameterIndex = i + j + 1;
-										LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i + j], " ) and ( ", splittedPhoneticVariant[j], " ) is ", strDistance);
-										shortestStrDistance = strDistance;
-									}
-								}
-							}
-
-							// the key is one word and the currently best matching one
-							else {
-								bestCommandStruct = currentCommandStruct;
-								voiceParameterIndex = i + 1;
-								LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[0], " ) is ", strDistance);
-								shortestStrDistance = strDistance;
-							}
+						// distance small enough && checked the whole phonetic variant && the distance is smaller than the current shortest
+						if (strDistance < 2* splittedPhoneticVariantLen && i == splittedPhoneticVariantLen - 1  && strDistance < shortestStrDistance) { // maybe it's better to check strDistance < 2*splittedPhoneticVariantLen?
+							// we found the currently best matching key
+							bestCommandStruct = currentCommandStruct;
+							voiceParameterIndex = i + 1; // not necessary in the boundaries of the transcript (will be checked later on)
+							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[i], " ) is ", strDistance);
+							shortestStrDistance = strDistance;
 						}
 					}
 				}
 			}
-
 			// assign the found command to the voiceResult
 			if (bestCommandStruct.command != VoiceCommand::NO_ACTION) {
 				voiceResult.command = bestCommandStruct.command;
@@ -313,7 +290,6 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 							voiceResult.parameter += " " + splittedTranscript[i];
 						}
 					}
-
 				}
 				LogInfo("voiceCommand: " + bestCommandStruct.phoneticVariants[0] + (!voiceResult.parameter.empty() ? " Parameter: " + voiceResult.parameter : ""));
 

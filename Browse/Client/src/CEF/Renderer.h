@@ -46,6 +46,13 @@ private:
 
     // Include CEF'S default reference counting implementation
     IMPLEMENT_REFCOUNTING(Renderer);
+
+	// BMP
+	// After how many iterations create a .bmp
+	BYTE _iterationLimit = 5;
+	BYTE _currentIteration = 0;
+	short _bmpId = 0;
+
 };
 
 #endif // CEF_RENDERER_H_
