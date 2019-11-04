@@ -15,6 +15,7 @@
 #include <algorithm>
 
 
+
 // Include singleton for mailing to JavaScript
 #include "src/Singletons/JSMailer.h"
 
@@ -482,23 +483,31 @@ StateType Web::Update(float tpf, const std::shared_ptr<const Input> spInput, std
 	{
 		if (!spVoiceInput->parameter.empty())
 		{
+			std::string domain = spVoiceInput->parameter;
+
+			// remove whitespace and transform to lower case
+			domain.erase(std::remove_if(domain.begin(), domain.end(), isspace), domain.end());
+			std::transform(domain.begin(), domain.end(), domain.begin(), ::tolower);
+
+			// check if toplevel domain exists in domain
 			bool appendCom = true;
 			for each (std::string topLevelDomain in _topLevelDomains)
 			{
-				if (spVoiceInput->parameter.find(topLevelDomain) != std::string::npos) {
+				if (domain.find(topLevelDomain) != std::string::npos) {
 					appendCom = false;
 					break;
 				}
 			}
+			// otherwise append ".com"
 			if (appendCom)
-				spVoiceInput->parameter.append(".com");
+				domain.append(".com");
 
 			std::u16string url16;
-			eyegui_helper::convertUTF8ToUTF16(spVoiceInput->parameter, url16);
+			eyegui_helper::convertUTF8ToUTF16(domain, url16);
 			url16 = u"Going to " + url16;
 			_pMaster->PushNotification(url16, MasterNotificationInterface::Type::NEUTRAL, false);
 			if (_currentTabId >= 0)
-				_tabs.at(_currentTabId)->OpenURL(spVoiceInput->parameter);
+				_tabs.at(_currentTabId)->OpenURL(domain);
 		}
 		else {
 			std::u16string url16 = u"\"Go To\" awaits a page to visit!";
