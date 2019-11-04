@@ -31,16 +31,26 @@ Visit the [**wiki**](https://github.com/MAMEM/GazeTheWeb/wiki) for troubleshooti
 ## Research
 If you use our software as part for your own research, please be kind and cite our publication:
 ```
-@inproceedings{w4a17gazetheweb,
-  title = {GazeTheWeb: A Gaze-Controlled Web Browser},
-  author = {Menges, Raphael and Kumar, Chandan and M{\"u}ller, Daniel and Sengupta, Korok},
-  booktitle = {Proceedings of the 14th Web for All Conference},
-  year = {2017},
-  series = {W4A '17},
-  isbn = {978-1-4503-4900-0},
-  url = {http://dx.doi.org/10.1145/3058555.3058582},
-  publisher = {ACM},
-}
+@article{tochiGazeTheWeb,
+ author = {Menges, Raphael and Kumar, Chandan and Staab, Steffen},
+ title = {Improving User Experience of Eye Tracking-Based Interaction: Introspecting and Adapting Interfaces},
+ journal = {ACM Trans. Comput.-Hum. Interact.},
+ issue_date = {October 2019},
+ volume = {26},
+ number = {6},
+ month = nov,
+ year = {2019},
+ issn = {1073-0516},
+ pages = {37:1--37:46},
+ articleno = {37},
+ numpages = {46},
+ url = {http://doi.acm.org/10.1145/3338844},
+ doi = {10.1145/3338844},
+ acmid = {3338844},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Eye tracking, GazeTheWeb, Web accessibility, gaze interaction experience, gaze-based emulation, gaze-controlled interface, interface semantics, introspection},
+} 
 ```
 
 ## Links
