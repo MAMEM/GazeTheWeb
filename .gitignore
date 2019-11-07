@@ -7,9 +7,12 @@ Browse/include
 Browse/libcef_dll
 Browse/Release
 Browse/Debug
+Browse/tests
 Browse/Resources
 Browse/README.txt
 Browse/LICENSE.txt
+Browse/cef_paths.gypi
+Browse/cef_paths2.gypi
 
 # Build folder
 BUILD
