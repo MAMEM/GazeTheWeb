@@ -421,7 +421,7 @@ int StringAt(std::string &s, unsigned int start, unsigned int length, ...)
 	return 0;
 }
 
-void CreateBitmapFile(unsigned char const * pBuffer, int width, int height, int bytesPerPixel, char* fName) {
+void CreateBitmapFile(unsigned char const * pBuffer, int width, int height, int bytesPerPixel, const char* fName) {
 
 	unsigned char padding[3] = { 0, 0, 0 };
 	int paddingSize = (4 - (width*bytesPerPixel) % 4) % 4;

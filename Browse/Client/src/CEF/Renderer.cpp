@@ -44,19 +44,8 @@ void Renderer::OnPaint(
 			_currentIteration++;
 			if (_currentIteration == _iterationLimit) {
 
-				// Concat the Filename
-				char fName[100];
-				// path
-				strcpy(fName, "./bmp/");
-				// id
-				std::string bmpIdString = std::to_string(_bmpId);
-				char const *bmpIdChars = bmpIdString.c_str();
-				strcat(fName, bmpIdChars);
-				// extension
-				strcat(fName, ".bmp");
-
-				// Create the file itself.
-				CreateBitmapFile((const unsigned char*)buffer, width, height, 4, fName);
+				std::string filePath = "./bmp/" + std::to_string(_bmpId) + ".bmp";
+				CreateBitmapFile((const unsigned char*)buffer, width, height, 4, filePath.c_str());
 
 				_bmpId++;
 				_currentIteration = 0;
