@@ -101,14 +101,6 @@ int main(int argc, char* argv[])
         // Folder could not be created or already existed.
     }
 
-	// Create bmp folder.
-	const char* bmpDir = "./bmp/";
-	dir_err = mkdir(bmpDir), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if (-1 == dir_err)
-	{
-		// Folder could not be created or already existed.
-	}
-
     // Append another slash for easier usage of that path.
     userDirectory.append("/");
 

@@ -22,6 +22,14 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#ifdef __linux__
+namespace fs = std::experimental::filesystem;
+#elif _WIN32
+#include <experimental/filesystem>
+#include <filesystem>
+namespace fs = std::experimental::filesystem::v1;
+#endif
+
 std::string RGBAToHexString(glm::vec4 color)
 {
 	// Clamp color
@@ -434,6 +442,10 @@ void CreateBitmapFile(unsigned char const * pBuffer, int width, int height, int 
 	bmpinfoheader[9] = (unsigned char)(height >> 8);
 	bmpinfoheader[10] = (unsigned char)(height >> 16);
 	bmpinfoheader[11] = (unsigned char)(height >> 24);
+
+	if (!fs::exists(fs::path("./bmp/"))) {
+		fs::create_directory(fs::path("./bmp/"));
+	}
 
 	FILE* imageFile = fopen(fName, "wb");
 
