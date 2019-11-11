@@ -21,7 +21,7 @@ description: A page that you can use to download the newest release of the GazeT
 # List of links in the navigation bar
 navbar-links:
   Download: "download"
-  What is GazeTheWeb?: "whatIsGTW"
+  What is Gaze&thinsp;The&thinsp;Web?: "whatIsGTW"
   Story: "story"
   Impact: "impact"
   People: "people"
