@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <string>
 #include <fstream>
+#include "src/Singletons/ScreenshotHandler.h"
 
 
 #ifdef _WIN32 // Windows
@@ -909,6 +910,7 @@ void Master::Loop()
 				spVoiceInput = _spVoiceInputObject->Update(tpf, _keyboardActive);
 			}
 		}
+
 		// Record how long super calibration layout has been visible
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout))
 		{
@@ -1289,6 +1291,30 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 					PushNotification(u"Demo Mode Reset", MasterNotificationInterface::Type::SUCCESS, false);
 					LogInfo("Demo Mode Reset");
 				}
+			}
+			break; }
+		case GLFW_KEY_S: {
+			if (setup::KEYSTROKE_BMP_CREATION) {
+				/*
+				Create Dialog in which we retrieve the file name for the taken screenshot
+				std:string fileName = Dialog();
+				ScreenshotHandler::instance().TakeScreenshot(fileName);
+				*/
+
+				// Take screenshot of the surrounded area with Timestamp
+				ScreenshotHandler::instance().TakeScreenshot(true, _userDirectory + "/bmp/");
+			}
+			break; }
+		case GLFW_KEY_A: {
+			if (setup::KEYSTROKE_BMP_CREATION) {
+				/*
+				Create Dialog in which we retrieve the file name for the taken screenshot
+				std:string fileName = Dialog();
+				ScreenshotHandler::instance().TakeScreenshot(fileName);
+				*/
+
+				// Take screenshot of the whole screen with Timestamp
+				ScreenshotHandler::instance().TakeScreenshot(false, _userDirectory + "/bmp/");
 			}
 			break; }
 		}

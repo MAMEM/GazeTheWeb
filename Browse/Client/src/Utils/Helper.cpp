@@ -21,6 +21,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <windows.h>
+
 
 #ifdef __linux__
 namespace fs = std::experimental::filesystem;
@@ -419,45 +421,6 @@ int StringAt(std::string &s, unsigned int start, unsigned int length, ...)
 	va_end(ap);
 
 	return 0;
-}
-
-void CreateBitmapFile(unsigned char const * pBuffer, int width, int height, int bytesPerPixel, const char* fName) {
-
-	unsigned char padding[3] = { 0, 0, 0 };
-	int paddingSize = (4 - (width*bytesPerPixel) % 4) % 4;
-	int filesize = 54 + 4 * width*height;
-	unsigned char bmpfileheader[14] = { 'B','M', 0,0,0,0, 0,0, 0,0, 54,0,0,0 };
-	unsigned char bmpinfoheader[40] = { 40,0,0,0, 0,0,0,0, 0,0,0,0, 1,0, 32,0 };
-
-	bmpfileheader[2] = (unsigned char)(filesize);
-	bmpfileheader[3] = (unsigned char)(filesize >> 8);
-	bmpfileheader[4] = (unsigned char)(filesize >> 16);
-	bmpfileheader[5] = (unsigned char)(filesize >> 24);
-
-	bmpinfoheader[4] = (unsigned char)(width);
-	bmpinfoheader[5] = (unsigned char)(width >> 8);
-	bmpinfoheader[6] = (unsigned char)(width >> 16);
-	bmpinfoheader[7] = (unsigned char)(width >> 24);
-	bmpinfoheader[8] = (unsigned char)(height);
-	bmpinfoheader[9] = (unsigned char)(height >> 8);
-	bmpinfoheader[10] = (unsigned char)(height >> 16);
-	bmpinfoheader[11] = (unsigned char)(height >> 24);
-
-	if (!fs::exists(fs::path("./bmp/"))) {
-		fs::create_directory(fs::path("./bmp/"));
-	}
-
-	FILE* imageFile = fopen(fName, "wb");
-
-	fwrite(bmpfileheader, 1, 14, imageFile);
-	fwrite(bmpinfoheader, 1, 40, imageFile);
-
-	int i;
-	for (i = height - 1; i >= 0; i--) {
-		fwrite(pBuffer + (i*width*bytesPerPixel), bytesPerPixel, width, imageFile);
-		fwrite(padding, 1, paddingSize, imageFile);
-	}
-	fclose(imageFile);
 }
 
 void DoubleMetaphone(const std::string &str, std::vector<std::string> *codes)
@@ -1359,49 +1322,45 @@ void DoubleMetaphone(const std::string &str, std::vector<std::string> *codes)
 size_t StringDistance(const std::string s1, const std::string s2, StringDistanceType stringDistanceType)
 {
 	switch (stringDistanceType) {
-	case StringDistanceType::LEVENSHTEIN:
-	{
-		return levenshteinSSE::levenshtein(s1, s2);
-	}
-	case StringDistanceType::SOUNDEX:
-	{
-		size_t output = 0;
-
-		// generate soundex codes 
-		std::string firstSoundexCode = GenerateSoundexCode(s1);
-		std::string secondSoundexCode = GenerateSoundexCode(s2);
-
-		// check similarity between soundex codes
-		for (int i = 0; i < 4; i++) {
-			if (firstSoundexCode[i] != secondSoundexCode[i])
-				output += 1;
+		case StringDistanceType::LEVENSHTEIN: {
+			return levenshteinSSE::levenshtein(s1, s2);
 		}
+		case StringDistanceType::SOUNDEX: {
+			size_t output = 0;
 
-		return output;
-	}
-	case StringDistanceType::DOUBLE_METAPHONE:
-	{
-		// Generate Metaphone Codes
-		std::vector<std::string> firstCodes;
-		std::vector<std::string> secondCodes;
-		DoubleMetaphone(s1, &firstCodes);
-		DoubleMetaphone(s2, &secondCodes);
+			// generate soundex codes 
+			std::string firstSoundexCode = GenerateSoundexCode(s1);
+			std::string secondSoundexCode = GenerateSoundexCode(s2);
 
-		if (firstCodes[0] == secondCodes[0])
-			return 0;
-		else if (firstCodes[1] == secondCodes[0])
-			return 1;
-		else if (firstCodes[0] == secondCodes[1])
-			return 1;
-		else if (firstCodes[1] == secondCodes[0])
-			return 1;
-		else
-			return 2;
-		break;
-	}
-	default:
-	{
-		break;
-	}
+			// check similarity between soundex codes
+			for (int i = 0; i < 4; i++) {
+				if (firstSoundexCode[i] != secondSoundexCode[i])
+					output += 1;
+			}
+
+			return output;
+		}
+		case StringDistanceType::DOUBLE_METAPHONE: {
+			// Generate Metaphone Codes
+			std::vector<std::string> firstCodes;
+			std::vector<std::string> secondCodes;
+			DoubleMetaphone(s1, &firstCodes);
+			DoubleMetaphone(s2, &secondCodes);
+
+			if (firstCodes[0] == secondCodes[0])
+				return 0;
+			else if (firstCodes[1] == secondCodes[0])
+				return 1;
+			else if (firstCodes[0] == secondCodes[1])
+				return 1;
+			else if (firstCodes[1] == secondCodes[0])
+				return 1;
+			else
+				return 2;
+			break;
+		}
+		default: {
+			break;
+		}
 	}
 }

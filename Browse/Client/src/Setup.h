@@ -92,7 +92,8 @@ namespace setup
 	static const int	DOM_POLLING_PARTITION_NUMBER = 8;
 	static const std::chrono::milliseconds STORING_TIME = std::chrono::milliseconds(2500); // time to store the queue of GazeCoordinates to use past values
 	static const bool	PERIODICAL_VOICE_RESTART = false; // allow the voice recognition to restart before 60 seconds are expired (after 50 seconds)
-	static const bool	PERIODICAL_BMP_CREATION = true; // periodical creation of bmp files of the current
+	static const bool	KEYSTROKE_BMP_CREATION = true; // Creation of bmp files using the "s" key
+	static const int	BMP_GAZE_RADIUS = 200; // Radius around the gaze in which you want to take a partial screenshot
 }
 
 #endif // SETUP_H_

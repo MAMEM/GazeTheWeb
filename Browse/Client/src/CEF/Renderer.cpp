@@ -12,6 +12,8 @@
 #include "fstream"
 #include "src/Utils/Helper.h"
 #include "src/Setup.h"
+#include "src/Singletons/ScreenshotHandler.h"
+
 
 Renderer::Renderer(Mediator* pMediator)
 {
@@ -40,20 +42,13 @@ void Renderer::OnPaint(
     // Look up corresponding texture
     if (auto spTexture = _mediator->GetTexture(browser).lock())
     {
-		if (setup::PERIODICAL_BMP_CREATION) {
-			_currentIteration++;
-			if (_currentIteration == _iterationLimit) {
-
-				std::string filePath = "./bmp/" + std::to_string(_bmpId) + ".bmp";
-				CreateBitmapFile((const unsigned char*)buffer, width, height, 4, filePath.c_str());
-
-				_bmpId++;
-				_currentIteration = 0;
-			}
+		if (setup::KEYSTROKE_BMP_CREATION) {
+			// Save current screen, so we can grab it at any time we want.
+			ScreenshotHandler::instance().SetBuffer((unsigned char const*)buffer, width, height, 4);
 		}
 
-        // Fill texture with rendered website
-        spTexture->Fill(width, height, GL_BGRA, (const unsigned char*) buffer);
+		// Fill texture with rendered website
+		spTexture->Fill(width, height, GL_BGRA, (unsigned char const*)buffer);
 
 		// TESTING
 		//if (dirtyRects.size() > 0)
