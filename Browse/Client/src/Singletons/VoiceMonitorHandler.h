@@ -18,7 +18,9 @@ enum class PrintCategory {
 	CONNECTION_GOOGLE,
 	SENT_SECONDS,
 	LAST_WORD,
-	CURRENT_ACTION
+	CURRENT_METAPHONE_ACTION,
+	CURRENT_SOUNDEX_ACTION,
+	CURRENT_LEVENSHTEIN_ACTION
 };
 
 struct PrintStruct {
@@ -28,7 +30,9 @@ struct PrintStruct {
 	std::wstring connectionGoogle;
 	std::wstring sentSeconds;
 	std::deque<std::wstring> lastWords;
-	std::wstring currentAction;
+	std::wstring currentMetaphoneAction;
+	std::wstring currentSoundexAction;
+	std::wstring currentLevenshteinAction;
 };
 
 class VoiceMonitorHandler
@@ -69,7 +73,9 @@ private:
 	std::wstring _connectionGoogle = L"Connection to Google: ";
 	std::wstring _sentSeconds = L"Sent seconds: ";
 	std::wstring _lastWords = L"Last Words: ";
-	std::wstring _currentAction = L"Current Action: ";
+	std::wstring _currentMetaphoneAction = L"Current Metaphone Action: ";
+	std::wstring _currentSoundexAction = L"Current Soundex Action: ";
+	std::wstring _currentLevenshteinAction = L"Current Levenshtein Action: ";
 	std::wstring _lineBreak = L"\r\n";
 
 	// VoiceInput Object

@@ -246,8 +246,8 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	break;
 	case VoiceCommand::CLICK: 
 	{
-		float thresholdY = 50.0;
-		float thresholdX = 100.0;
+		float thresholdY = 200.0;
+		float thresholdX = 200.0;
 		float gazeXOffset = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
 		float gazeYOffset = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
 
@@ -257,27 +257,46 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 
 
 		std::vector<Tab::DOMLinkInfo> domLinkList = this->RetrieveDOMLinkInfos();
-		int strDistanceMax = 20;
+		int shortestStrDistance = INT32_MAX;
 
 		//generalizing?
 
 		//get the lev distance between text of link and transcription
 		if (!spVoiceInput->parameter.empty()) {
+			// Normalize Parameter
+			std::transform(spVoiceInput->parameter.begin(), spVoiceInput->parameter.end(), spVoiceInput->parameter.begin(), ::tolower);
+			// Split into words
+			std::vector<std::string> splittedParameter = SplitBySeparator(spVoiceInput->parameter, ' ');
+			int splittedParameterLen = splittedParameter.size();
+
 			for (Tab::DOMLinkInfo link : domLinkList) {
 				std::vector<Rect> rectList = link.rects;
 				for (Rect rect : rectList) {
-					std::transform(spVoiceInput->parameter.begin(), spVoiceInput->parameter.end(), spVoiceInput->parameter.begin(), ::tolower);
 					// gaze must be within (threshold  + the area of link )
 					if ((glm::abs(rect.top - gazeYOffset) < thresholdY || glm::abs(rect.bottom - gazeYOffset) < thresholdY) &&
 						(glm::abs(rect.right - gazeXOffset) < thresholdX || glm::abs(rect.left - gazeXOffset) < thresholdX)) {
+						int strDistance = 0;
 						std::string linktext = link.text;
 						std::transform(linktext.begin(), linktext.end(), linktext.begin(), ::tolower);
-						int strDistance = StringDistance(spVoiceInput->parameter, linktext, StringDistanceType::DOUBLE_METAPHONE);
-						if (strDistance < strDistanceMax && strDistance != linktext.size()) {
-							LogInfo("shorter dis:", linktext, " . dis:", strDistance, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
-							finalLinkX = rect.Center().x;
-							finalLinkY = rect.Center().y;
-							strDistanceMax = strDistance;
+						std::vector<std::string> splittedLinktext = SplitBySeparator(linktext, ' ');
+						int splittedLinktextLen = splittedLinktext.size();
+
+
+						for (int i = 0; i < splittedParameterLen; i++) {
+							for (int j = 0; j < splittedLinktextLen; j++) {
+								strDistance += StringDistance(splittedParameter[i], splittedLinktext[j], StringDistanceType::DOUBLE_METAPHONE);
+								if (strDistance < 2 * splittedParameterLen && i == splittedParameterLen - 1 && strDistance < shortestStrDistance) {
+									LogInfo("Link Distance:", linktext, " . dis:", strDistance, ", gazeoffset Y:", rect.Center().y, ", gazeoffset X:", rect.Center().x);
+									finalLinkX = rect.Center().x;
+									finalLinkY = rect.Center().y;
+									shortestStrDistance = strDistance;
+								}
+								else {
+									if (strDistance >= 2 * splittedParameterLen) {
+										strDistance = 0;
+									}
+								}
+							}
 						}
 					}
 				}
@@ -1336,9 +1355,9 @@ bool Tab::FindNearest(const float gazeX, const float gazeY, const std::vector<Re
 		float dx = glm::max(glm::abs(gazeXOffset - rect.Center().x) - (rect.Width() / 2.f), 0.f);
 		float dy = glm::max(glm::abs(gazeYOffset - rect.Center().y) - (rect.Height() / 2.f), 0.f);
 		float distance = glm::sqrt((dx * dx) + (dy * dy));
-		LogInfo("checkbox: ", distance, "  ,x:", rect.Center().x, " ,y:", rect.Center().y);
 		
 		if (*spResultDis > distance) {
+			LogInfo("FindNearest: ", distance, "to ", rect.ToString(), " ", ", x:", rect.Center().x, ", y:", rect.Center().y);
 			*spResultX = rect.Center().x;
 			*spResultY = rect.Center().y;
 			*spResultDis = distance;

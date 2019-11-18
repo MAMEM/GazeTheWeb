@@ -231,16 +231,22 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 
 			// Index representing the beginning of the parameter (index of the last word of a key + 1)
 			int voiceParameterIndex = 0;
+			int SoundexVoiceParameterIndex = 0;
+			int LevenshteinVoiceParameterIndex = 0;
 
 			// For comparing purpose split the transcript
 			std::vector<std::string> splittedTranscript = SplitBySeparator(transcriptCandidatesList[i], ' ');
 			int splittedTranscriptLen = splittedTranscript.size();
 
 			// The current shortest shortest Distance in the transcript
-			int shortestStrDistance = INT32_MAX;
+			int shortestMetaphoneStrDistance = INT32_MAX;
+			int shortestSoundexStrDistance = INT32_MAX;
+			int shortestLevenshteinStrDistance = INT32_MAX;
 
 			// The best matching CommandStruct
 			CommandStruct bestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
+			CommandStruct SoundexBestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
+			CommandStruct LevenshteinBestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
 
 			// iterate over all possible keys
 			for (CommandStruct currentCommandStruct : commandStructList) {
@@ -253,7 +259,9 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 				for (std::string phoneticVariant : currentCommandStruct.phoneticVariants) {
 
 					// distance between key and transcription (evaluated "difference")
-					int strDistance = 0;
+					int MetaphoneStrDistance = 0;
+					int SoundexStrDistance = 0;
+					int LevenshteinStrDistance = 0;
 					std::vector<std::string> splittedPhoneticVariant = SplitBySeparator(phoneticVariant, ' ');
 					int splittedPhoneticVariantLen = splittedPhoneticVariant.size();
 
@@ -261,15 +269,31 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 					for (int i = 0; i < splittedPhoneticVariantLen && i < splittedTranscriptLen; i++) {
 
 						// check the Distance between the current word in the phonetic variant and the current word in the transcript, add it to the current distance
-						strDistance += StringDistance(splittedTranscript[i], splittedPhoneticVariant[i], StringDistanceType::DOUBLE_METAPHONE);
+						MetaphoneStrDistance += StringDistance(splittedTranscript[i], splittedPhoneticVariant[i], StringDistanceType::DOUBLE_METAPHONE);
+						SoundexStrDistance += StringDistance(splittedTranscript[i], splittedPhoneticVariant[i], StringDistanceType::SOUNDEX);
+						LevenshteinStrDistance += StringDistance(splittedTranscript[i], splittedPhoneticVariant[i], StringDistanceType::LEVENSHTEIN);
 
 						// distance small enough && checked the whole phonetic variant && the distance is smaller than the current shortest
-						if (strDistance < 2* splittedPhoneticVariantLen && i == splittedPhoneticVariantLen - 1  && strDistance < shortestStrDistance) { // maybe it's better to check strDistance < 2*splittedPhoneticVariantLen?
+						if (MetaphoneStrDistance < 2 * splittedPhoneticVariantLen && i == splittedPhoneticVariantLen - 1  && MetaphoneStrDistance < shortestMetaphoneStrDistance) { // maybe it's better to check strDistance < 2*splittedPhoneticVariantLen?
 							// we found the currently best matching key
 							bestCommandStruct = currentCommandStruct;
 							voiceParameterIndex = i + 1; // not necessary in the boundaries of the transcript (will be checked later on)
-							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[i], " ) is ", strDistance);
-							shortestStrDistance = strDistance;
+							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[i], " ) is ", MetaphoneStrDistance);
+							shortestMetaphoneStrDistance = MetaphoneStrDistance;
+						}
+						if (SoundexStrDistance < 2 * splittedPhoneticVariantLen && i == splittedPhoneticVariantLen - 1 && SoundexStrDistance < shortestSoundexStrDistance) { // maybe it's better to check strDistance < 2*splittedPhoneticVariantLen?
+							// we found the currently best matching key
+							SoundexBestCommandStruct = currentCommandStruct;
+							SoundexVoiceParameterIndex = i + 1; // not necessary in the boundaries of the transcript (will be checked later on)
+							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[i], " ) is ", SoundexStrDistance);
+							shortestSoundexStrDistance = SoundexStrDistance;
+						}
+						if (LevenshteinStrDistance < 2 * splittedPhoneticVariantLen && i == splittedPhoneticVariantLen - 1 && LevenshteinStrDistance < shortestLevenshteinStrDistance) { // maybe it's better to check strDistance < 2*splittedPhoneticVariantLen?
+							// we found the currently best matching key
+							LevenshteinBestCommandStruct = currentCommandStruct;
+							LevenshteinVoiceParameterIndex = i + 1; // not necessary in the boundaries of the transcript (will be checked later on)
+							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[i], " ) is ", LevenshteinStrDistance);
+							shortestLevenshteinStrDistance = LevenshteinStrDistance;
 						}
 					}
 				}
@@ -294,13 +318,46 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 				LogInfo("voiceCommand: " + bestCommandStruct.phoneticVariants[0] + (!voiceResult.parameter.empty() ? " Parameter: " + voiceResult.parameter : ""));
 
 				std::wstring action = _converter.from_bytes(bestCommandStruct.phoneticVariants[0]);
-				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_ACTION, action);
+				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_METAPHONE_ACTION, action);
 			}
-
 			else if (_voiceMode == VoiceMode::FREE) {
 				voiceResult.command = VoiceCommand::PARAMETER_ONLY;
 				voiceResult.parameter = transcriptCandidatesList[0];
-				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_ACTION, L"text");
+				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_METAPHONE_ACTION, L"text");
+			}
+			if (SoundexBestCommandStruct.command != VoiceCommand::NO_ACTION) {
+				std::string SoundexParameter = "";
+				if (SoundexBestCommandStruct.takesParameter) {
+					// add the transcripted words following the command to the voiceResult.parameter
+					for (int i = voiceParameterIndex; i < splittedTranscriptLen; i++) {
+						if (i == voiceParameterIndex) {
+							SoundexParameter += splittedTranscript[i];
+						}
+						else {
+							SoundexParameter += " " + splittedTranscript[i];
+						}
+					}
+				}
+				LogInfo("SoundexVoiceCommand: " + SoundexBestCommandStruct.phoneticVariants[0] + (!SoundexParameter.empty() ? " Parameter: " + SoundexParameter : ""));
+				std::wstring action = _converter.from_bytes(SoundexBestCommandStruct.phoneticVariants[0]);
+				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_SOUNDEX_ACTION, action);
+			}
+			if (LevenshteinBestCommandStruct.command != VoiceCommand::NO_ACTION) {
+				std::string LevenshteinParameter = "";
+				if (LevenshteinBestCommandStruct.takesParameter) {
+					// add the transcripted words following the command to the voiceResult.parameter
+					for (int i = voiceParameterIndex; i < splittedTranscriptLen; i++) {
+						if (i == voiceParameterIndex) {
+							LevenshteinParameter += splittedTranscript[i];
+						}
+						else {
+							LevenshteinParameter += " " + splittedTranscript[i];
+						}
+					}
+				}
+				LogInfo("LevenshteinVoiceCommand: " + LevenshteinBestCommandStruct.phoneticVariants[0] + (!LevenshteinParameter.empty() ? " Parameter: " + LevenshteinParameter : ""));
+				std::wstring action = _converter.from_bytes(LevenshteinBestCommandStruct.phoneticVariants[0]);
+				VoiceMonitorHandler::instance().SetNewText(PrintCategory::CURRENT_LEVENSHTEIN_ACTION, action);
 			}
 		}
 	}

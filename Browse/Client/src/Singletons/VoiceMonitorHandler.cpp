@@ -35,7 +35,9 @@ void VoiceMonitorHandler::SetWindow(HWND hwnd) {
 	instance()._printStruct.connectionGoogle = L"off";
 	instance()._printStruct.sentSeconds = L"";
 	instance()._printStruct.lastWords.push_front(L""); // DATATYPE?
-	instance()._printStruct.currentAction = L"";
+	instance()._printStruct.currentMetaphoneAction = L"";
+	instance()._printStruct.currentSoundexAction = L"";
+	instance()._printStruct.currentLevenshteinAction = L"";
 };
 
 HWND VoiceMonitorHandler::GetWindow() {
@@ -89,9 +91,19 @@ void VoiceMonitorHandler::AddUpdate(PrintCategory printCategory, std::wstring ne
 		instance()._printStruct.lastWords.push_front(newText);
 	}
 		break;
-	case PrintCategory::CURRENT_ACTION:
+	case PrintCategory::CURRENT_METAPHONE_ACTION:
 	{
-		instance()._printStruct.currentAction = newText;
+		instance()._printStruct.currentMetaphoneAction = newText;
+	}
+		break;
+	case PrintCategory::CURRENT_SOUNDEX_ACTION:
+	{
+		instance()._printStruct.currentSoundexAction = newText;
+	}
+		break;
+	case PrintCategory::CURRENT_LEVENSHTEIN_ACTION:
+	{
+		instance()._printStruct.currentLevenshteinAction = newText;
 	}
 		break;
 	default:
@@ -129,10 +141,17 @@ LPCWSTR VoiceMonitorHandler::EvaluateLog() {
 	}
 	strResult += instance()._lineBreak;
 
-	strResult += instance()._currentAction;
-	strResult += instance()._printStruct.currentAction;
+	strResult += instance()._currentMetaphoneAction;
+	strResult += instance()._printStruct.currentMetaphoneAction;
 	strResult += instance()._lineBreak;
 
+	strResult += instance()._currentSoundexAction;
+	strResult += instance()._printStruct.currentSoundexAction;
+	strResult += instance()._lineBreak;
+
+	strResult += instance()._currentLevenshteinAction;
+	strResult += instance()._printStruct.currentLevenshteinAction;
+	strResult += instance()._lineBreak;
 
 	LPCWSTR result = strResult.c_str();
 
