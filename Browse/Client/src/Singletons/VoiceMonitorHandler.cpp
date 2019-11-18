@@ -66,46 +66,45 @@ void VoiceMonitorHandler::AddUpdate(PrintCategory printCategory, std::wstring ne
 	case PrintCategory::CURRENT_MICROPHONE:
 	{
 		instance()._printStruct.currentMicrophone = newText;
+		break;
 	}
-		break;	
 	case PrintCategory::AVAILABLE_COMMANDS:
 	{
 		instance()._printStruct.availableCommands = newText;
-	}
 		break;
+	}
 	case PrintCategory::CONNECTION_GOOGLE:
 	{
 		instance()._printStruct.connectionGoogle = newText;
-	}
 		break;
+	}
 	case PrintCategory::SENT_SECONDS:
 	{
 		instance()._printStruct.sentSeconds = newText;
-	}
 		break;
+	}
 	case PrintCategory::LAST_WORD:
 	{
 		if (instance()._printStruct.lastWords.size() > 2)
 			instance()._printStruct.lastWords.pop_back();
 
 		instance()._printStruct.lastWords.push_front(newText);
-	}
 		break;
+	}
 	case PrintCategory::CURRENT_METAPHONE_ACTION:
 	{
 		instance()._printStruct.currentMetaphoneAction = newText;
 	}
-		break;
+	break;
 	case PrintCategory::CURRENT_SOUNDEX_ACTION:
 	{
 		instance()._printStruct.currentSoundexAction = newText;
 	}
-		break;
+	break;
 	case PrintCategory::CURRENT_LEVENSHTEIN_ACTION:
 	{
 		instance()._printStruct.currentLevenshteinAction = newText;
 	}
-		break;
 	default:
 		break;
 	}

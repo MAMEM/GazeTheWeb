@@ -11,6 +11,7 @@
 #include "src/Utils/Logger.h"
 #include "src/State/Web/Tab/SocialRecord.h"
 #include <algorithm>
+#include "src/Singletons/ScreenshotHandler.h"
 
 
 
@@ -151,6 +152,13 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 	// Store tpf
 	_lastTimePerFrame = tpf;
 
+	// Screenshot
+	if (setup::KEYSTROKE_BMP_CREATION) {
+		int x = spInput->gazeX - this->GetWebViewX();
+		int y = spInput->gazeY;
+		ScreenshotHandler::instance().SetGaze(x, y);
+	}
+
 	// Update the keyboardActivePointer
 	keyboardActive = _keyboardActive;
 
@@ -250,7 +258,6 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		float thresholdX = 200.0;
 		float gazeXOffset = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
 		float gazeYOffset = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
-
 		float finalLinkX = std::get<0>(_gazeQueue.front()) - this->GetWebViewX();
 		float finalLinkY = std::get<1>(_gazeQueue.front()) + this->_scrollingOffsetY;
 		float shortestDis = 50.0;
