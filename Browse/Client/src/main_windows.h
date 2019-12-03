@@ -23,7 +23,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		CreateWindow(TEXT("button"), TEXT("Toggle Recording"),
 			WS_VISIBLE | WS_CHILD,
 			20,		// x
-			550,	// y
+			700,	// y
 			200,	// width
 			25,		// height
 			hwnd, (HMENU)1, NULL, NULL);

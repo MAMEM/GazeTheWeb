@@ -422,6 +422,9 @@ private:
 
 	// Bool to indicate demo mode reset which is handled in the update loop
 	bool _demoModeReset = false;
+
+	std::unique_ptr<std::thread> _tEdit = nullptr;
+	
 };
 
 #endif // MASTER_H_

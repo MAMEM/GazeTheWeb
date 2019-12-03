@@ -32,9 +32,6 @@ std::string GetDate();
 // Simple getter of timestamp (in miliseconds)
 std::string GetTimestamp();
 
-// Create a BGRA Bitfile with given 
-void CreateBitmapFile(unsigned char const * pBuffer, int width, int height, int bytesPerPixel, const char* fName);
-
 // For StringDistance
 enum class StringDistanceType {
 	LEVENSHTEIN,

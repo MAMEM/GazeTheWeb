@@ -244,7 +244,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 			int shortestLevenshteinStrDistance = INT32_MAX;
 
 			// The best matching CommandStruct
-			CommandStruct bestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
+			CommandStruct MetaphoneBestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
 			CommandStruct SoundexBestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
 			CommandStruct LevenshteinBestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
 
@@ -276,7 +276,7 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 						// distance small enough && checked the whole phonetic variant && the distance is smaller than the current shortest
 						if (MetaphoneStrDistance < 2 * splittedPhoneticVariantLen && i == splittedPhoneticVariantLen - 1  && MetaphoneStrDistance < shortestMetaphoneStrDistance) { // maybe it's better to check strDistance < 2*splittedPhoneticVariantLen?
 							// we found the currently best matching key
-							bestCommandStruct = currentCommandStruct;
+							MetaphoneBestCommandStruct = currentCommandStruct;
 							voiceParameterIndex = i + 1; // not necessary in the boundaries of the transcript (will be checked later on)
 							LogInfo("VoiceInput: voice distance between transcript ( ", splittedTranscript[i], " ) and ( ", splittedPhoneticVariant[i], " ) is ", MetaphoneStrDistance);
 							shortestMetaphoneStrDistance = MetaphoneStrDistance;
@@ -298,6 +298,13 @@ std::shared_ptr<VoiceAction> VoiceInput::Update(float tpf, bool keyboardActive) 
 					}
 				}
 			}
+			CommandStruct bestCommandStruct(VoiceCommand::NO_ACTION, std::vector<std::string> {""}, false, false);
+			
+			if (SoundexBestCommandStruct.command == LevenshteinBestCommandStruct.command)
+				bestCommandStruct = SoundexBestCommandStruct;
+			else 
+				bestCommandStruct = MetaphoneBestCommandStruct;
+
 			// assign the found command to the voiceResult
 			if (bestCommandStruct.command != VoiceCommand::NO_ACTION) {
 				voiceResult.command = bestCommandStruct.command;
@@ -524,7 +531,7 @@ void VoiceInput::Activate() {
 
 			LogInfo("VoiceInput: Started sending audio.");
 			VoiceMonitorHandler::instance().SetNewText(PrintCategory::CONNECTION_GOOGLE, L"on");
-
+			
 			while (!_stopping) {
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(_queryTime));

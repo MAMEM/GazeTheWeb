@@ -1263,6 +1263,51 @@ void Master::PersistDriftGrid(PersistDriftGridReason reason)
 	}
 }
 
+//	#define SOME_KIND_OF_ID 50
+//	
+//	LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+//	{
+//		TCHAR lpszPassword[16];
+//		WORD cchPassword;
+//	
+//		switch (uMsg)
+//		{
+//		case WM_CREATE:
+//		{
+//			HWND TextBox = CreateWindow(TEXT("EDIT"), TEXT(""), WS_BORDER | WS_CHILD | WS_VISIBLE, 10, 10, 400, 20, hwnd, NULL, NULL, NULL);
+//			CreateWindow(TEXT("button"), TEXT("submit"),
+//				WS_VISIBLE | WS_CHILD,
+//				20,		// x
+//				550,	// y
+//				200,	// width
+//				25,		// height
+//				hwnd, (HMENU)1, NULL, NULL);
+//			break;
+//		}
+//		case WM_CLOSE:
+//			DestroyWindow(hwnd);
+//			break;
+//		case WM_KEYDOWN: {
+//			LogInfo("ENTER");
+//			if (wParam == VK_RETURN) {
+//				DestroyWindow(hwnd);
+//			}
+//			break;
+//		}
+//		case WM_DESTROY:
+//			PostQuitMessage(0);
+//			break;
+//		case WM_COMMAND:
+//			if (LOWORD(wParam) == 1) {
+//				LogInfo("Pressed");
+//			}
+//			return 0;
+//		}
+//		return FALSE;
+//	
+//		UNREFERENCED_PARAMETER(lParam);
+//	}
+
 void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 {
 	if (action == GLFW_PRESS)
@@ -1293,18 +1338,67 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 				}
 			}
 			break; }
-		case GLFW_KEY_S: {
-			if (setup::KEYSTROKE_BMP_CREATION) {
-				/*
-				Create Dialog in which we retrieve the file name for the taken screenshot
-				std:string fileName = Dialog();
-				ScreenshotHandler::instance().TakeScreenshot(fileName);
-				*/
-
-				// Take screenshot of the surrounded area with Timestamp
+	//	case GLFW_KEY_S: {
+	//		if (setup::KEYSTROKE_BMP_CREATION) {
+	//			/*
+	//			Create Dialog in which we retrieve the file name for the taken screenshot
+	//			std:string fileName = Dialog();
+	//			ScreenshotHandler::instance().TakeScreenshot(fileName);
+	//			*/
+	//
+	//			// Take screenshot of the surrounded area with Timestamp
 				ScreenshotHandler::instance().TakeScreenshot(true, _userDirectory + "/bmp/");
-			}
-			break; }
+	//
+	//
+	//			/*
+	//				Create Dialog in which we retrieve the file name for the taken screenshot
+	//				std:string fileName = Dialog();
+	//				ScreenshotHandler::instance().TakeScreenshot(fileName);
+	//			*/
+	//
+	//			HWND hwnd;
+	//				//HWND hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT, 0, 0, (signed)600, (signed)800, NULL, NULL, NULL, NULL);
+	//				//SetBkColor(GetDC(hwnd), RGB(255, 255, 255));
+	//
+	//				//HWND hwnd;
+	//				MSG msg = { };
+	//				WNDCLASS wc = { };
+	//				const wchar_t className[] = L"FileName";
+	//				wc.lpfnWndProc = EditProc;
+	//				wc.lpszClassName = className;
+	//
+	//				RegisterClass(&wc);
+	//
+	//				hwnd = CreateWindowExW(
+	//					0,                              // Optional window styles.
+	//					className,                   // Window class
+	//					NULL,				// Window text
+	//					WS_OVERLAPPEDWINDOW | WS_BORDER,            // Window style
+	//
+	//					// Size and position
+	//					CW_USEDEFAULT,					// X
+	//					CW_USEDEFAULT,					// Y
+	//					600,							// Width
+	//					800,							// Height
+	//
+	//					NULL,       // Parent window
+	//					NULL,       // Menu
+	//					NULL,		// Instance handle
+	//					NULL        // Additional application data
+	//				);
+	//				_tEdit = std::make_unique<std::thread>([&hwnd, &msg] {
+	//
+	//					ShowWindow(hwnd, SW_SHOW);
+	//					while (GetMessageW(&msg, NULL, 0, 0))
+	//					{
+	//						TranslateMessage(&msg);
+	//						DispatchMessageW(&msg);
+	//					}
+	//					return msg.wParam;
+	//				});
+	//		}
+	//		break; }
+	//
 		case GLFW_KEY_A: {
 			if (setup::KEYSTROKE_BMP_CREATION) {
 				/*
