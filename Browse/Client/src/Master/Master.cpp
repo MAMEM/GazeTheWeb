@@ -18,7 +18,7 @@
 #include <string>
 #include <fstream>
 #include "src/Singletons/ScreenshotHandler.h"
-
+#include <Commctrl.h>
 
 #ifdef _WIN32 // Windows
 // Native access to Windows functions is necessary to maximize window
@@ -348,7 +348,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 				--time;
 				currentTimeRounded -= std::chrono::seconds(1);
 			}
-			int milliseconds = std::chrono::duration_cast<std::chrono::duration<int, std::milli> >(currentTime - currentTimeRounded).count();
+			int milliseconds = std::chrono::duration_cast<std::chrono::duration<int, std::milli>>(currentTime - currentTimeRounded).count();
 
 			// Write everything to file
 			std::ofstream fs(filename, std::ios_base::app | std::ios_base::out); // append to existing
@@ -453,7 +453,7 @@ Master::Master(Mediator* pCefMediator, std::string userDirectory, bool useVoice)
 
 	if (_useVoice) {
 		bool finished = false;
-		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput(setup::PERIODICAL_VOICE_RESTART,finished));
+		_spVoiceInputObject = std::shared_ptr<VoiceInput>(new VoiceInput(setup::PERIODICAL_VOICE_RESTART, finished));
 		if (finished) {
 			_spVoiceInputObject->SendVoiceInputToVoiceMonitor(_spVoiceInputObject);
 			_spVoiceInputObject->Activate();
@@ -1263,50 +1263,135 @@ void Master::PersistDriftGrid(PersistDriftGridReason reason)
 	}
 }
 
-//	#define SOME_KIND_OF_ID 50
-//	
-//	LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-//	{
-//		TCHAR lpszPassword[16];
-//		WORD cchPassword;
-//	
-//		switch (uMsg)
-//		{
-//		case WM_CREATE:
-//		{
-//			HWND TextBox = CreateWindow(TEXT("EDIT"), TEXT(""), WS_BORDER | WS_CHILD | WS_VISIBLE, 10, 10, 400, 20, hwnd, NULL, NULL, NULL);
-//			CreateWindow(TEXT("button"), TEXT("submit"),
-//				WS_VISIBLE | WS_CHILD,
-//				20,		// x
-//				550,	// y
-//				200,	// width
-//				25,		// height
-//				hwnd, (HMENU)1, NULL, NULL);
-//			break;
-//		}
-//		case WM_CLOSE:
-//			DestroyWindow(hwnd);
-//			break;
-//		case WM_KEYDOWN: {
-//			LogInfo("ENTER");
-//			if (wParam == VK_RETURN) {
-//				DestroyWindow(hwnd);
-//			}
-//			break;
-//		}
-//		case WM_DESTROY:
-//			PostQuitMessage(0);
-//			break;
-//		case WM_COMMAND:
-//			if (LOWORD(wParam) == 1) {
-//				LogInfo("Pressed");
-//			}
-//			return 0;
-//		}
-//		return FALSE;
-//	
-//		UNREFERENCED_PARAMETER(lParam);
-//	}
+HWND dialog;
+HWND textBox;
+std::string fileName;
+LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK EditSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+
+static std::string GetFileName()
+{
+	int len = GetWindowTextLengthA(textBox) + 1;
+	std::vector<char> fileNameBuf(len);
+	GetWindowTextA(textBox, &fileNameBuf[0], len);
+	std::string fileName = &fileNameBuf[0];
+	LogInfo("Typed: " + fileName);
+	return fileName;
+}
+
+LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+		case WM_CREATE:
+		{
+			textBox = CreateWindow(
+				TEXT("EDIT"),
+				TEXT(""),
+				WS_BORDER | WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_WANTRETURN,
+				10,		// x
+				10,		// y
+				280,	// width
+				20,		// height
+				hwnd, NULL, NULL, NULL);
+			CreateWindow(TEXT("button"), TEXT("submit"),
+				WS_VISIBLE | WS_CHILD,
+				50,		// x
+				40,		// y
+				200,	// width
+				25,		// height
+				hwnd, (HMENU)1, NULL, NULL);
+			//SetWindowLongPtr(textBox, GWL_WNDPROC, (LONG_PTR)&SubEditProc);
+			//SetWindowLongPtr(textBox, GWL_WNDPROC, (LONG_PTR)&SubProc);
+			SetWindowSubclass(textBox, EditSubclassProc, 0, 0);
+			SetFocus(textBox);
+			break;
+		}
+		case WM_CLOSE:
+		{
+			DestroyWindow(hwnd);
+			break;
+		}
+		case WM_COMMAND:
+		{
+			if (LOWORD(wParam) == 1)
+			{
+				fileName = GetFileName();
+				ScreenshotHandler::instance().TakeScreenshot(fileName);
+				DestroyWindow(hwnd);
+			} 
+			else
+			{
+				if (wParam == IDOK) {
+					fileName = GetFileName();
+					ScreenshotHandler::instance().TakeScreenshot(fileName);
+					DestroyWindow(hwnd);
+				}
+			}
+			break;
+		}
+		default:
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+	return FALSE;
+}
+
+LRESULT CALLBACK EditSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	if (uMsg == WM_CHAR && wParam == VK_RETURN)
+	{
+		fileName = GetFileName();
+		ScreenshotHandler::instance().TakeScreenshot(fileName);
+		SendMessage(dialog, WM_CLOSE,NULL,NULL);
+		return CallWindowProc(EditProc, hwnd, uMsg, wParam, lParam);
+	}
+	LRESULT lRes = DefSubclassProc(hwnd, uMsg, wParam, lParam);
+	if (uMsg == WM_DESTROY)
+		RemoveWindowSubclass(hwnd, EditSubclassProc, 0);
+	return lRes;
+}
+
+void Master::OpenFileNameWindow()
+{
+	MSG msg = { };
+	WNDCLASS wc = { };
+	const wchar_t className[] = L"FileName";
+	wc.lpfnWndProc = EditProc;
+	wc.lpszClassName = className;
+
+	// Needed to center screen
+	auto ScreenX = GetSystemMetrics(SM_CXSCREEN);
+	auto ScreenY = GetSystemMetrics(SM_CYSCREEN);
+
+	RegisterClass(&wc);
+	dialog = CreateWindowExW(
+		0,                              // Optional window styles.
+		className,						// Window class
+		TEXT("Enter the file name:"),	// Window text
+		WS_OVERLAPPEDWINDOW,            // Window style
+
+		// Size and position
+		ScreenX/2 - 150,				// X
+		ScreenY/2 - 50,					// Y				
+		320,							// Width
+		120,							// Height
+
+		NULL,      // Parent window
+		NULL,       // Menu
+		NULL,		// Instance handle
+		NULL        // Additional application data
+	);
+	HWND dialogCopy = dialog;
+	_tEdit = std::make_unique<std::thread>([&dialogCopy, &msg] {
+		ShowWindow(dialog, SW_SHOW);
+		while (GetMessageW(&msg, NULL, 0, 0))
+		{
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
+		return msg.wParam;
+	});
+}
 
 void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 {
@@ -1318,13 +1403,13 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 		case GLFW_KEY_TAB: { eyegui::hitButton(_pSuperLayout, "pause"); break; }
 		case GLFW_KEY_ENTER: { _enterKeyPressed = true; break; }
 		case GLFW_KEY_SPACE: { _enterKeyPressed = true; break; }
-							 // case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
+		// case GLFW_KEY_S: { LabStreamMailer::instance().Send("42"); break; } // TODO: testing
 		case GLFW_KEY_R: { ShowSuperCalibrationLayout(); break; } // just show the super calibration layout
-																  // case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
-																  // case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
-																  // case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
+		// case GLFW_KEY_6: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::MAGNIFICATION); break; }
+		// case GLFW_KEY_7: { _upWeb->PushBackPointingEvaluationPipeline(PointingApproach::FUTURE); break; }
+		// case GLFW_KEY_9: { _pCefMediator->Poll(); break; } // poll everything
 		case GLFW_KEY_0: { if (!setup::DEPLOYMENT && !setup::DEMO_MODE) { _pCefMediator->ShowDevTools(); } break; }
-						 // case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
+		// case GLFW_KEY_M: { PersistDriftGrid(PersistDriftGridReason::MANUAL); break; }
 		case GLFW_KEY_D: {
 			if (mods & GLFW_MOD_CONTROL)
 			{
@@ -1338,77 +1423,19 @@ void Master::GLFWKeyCallback(int key, int scancode, int action, int mods)
 				}
 			}
 			break; }
-	//	case GLFW_KEY_S: {
-	//		if (setup::KEYSTROKE_BMP_CREATION) {
-	//			/*
-	//			Create Dialog in which we retrieve the file name for the taken screenshot
-	//			std:string fileName = Dialog();
-	//			ScreenshotHandler::instance().TakeScreenshot(fileName);
-	//			*/
-	//
-	//			// Take screenshot of the surrounded area with Timestamp
-				ScreenshotHandler::instance().TakeScreenshot(true, _userDirectory + "/bmp/");
-	//
-	//
-	//			/*
-	//				Create Dialog in which we retrieve the file name for the taken screenshot
-	//				std:string fileName = Dialog();
-	//				ScreenshotHandler::instance().TakeScreenshot(fileName);
-	//			*/
-	//
-	//			HWND hwnd;
-	//				//HWND hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT, 0, 0, (signed)600, (signed)800, NULL, NULL, NULL, NULL);
-	//				//SetBkColor(GetDC(hwnd), RGB(255, 255, 255));
-	//
-	//				//HWND hwnd;
-	//				MSG msg = { };
-	//				WNDCLASS wc = { };
-	//				const wchar_t className[] = L"FileName";
-	//				wc.lpfnWndProc = EditProc;
-	//				wc.lpszClassName = className;
-	//
-	//				RegisterClass(&wc);
-	//
-	//				hwnd = CreateWindowExW(
-	//					0,                              // Optional window styles.
-	//					className,                   // Window class
-	//					NULL,				// Window text
-	//					WS_OVERLAPPEDWINDOW | WS_BORDER,            // Window style
-	//
-	//					// Size and position
-	//					CW_USEDEFAULT,					// X
-	//					CW_USEDEFAULT,					// Y
-	//					600,							// Width
-	//					800,							// Height
-	//
-	//					NULL,       // Parent window
-	//					NULL,       // Menu
-	//					NULL,		// Instance handle
-	//					NULL        // Additional application data
-	//				);
-	//				_tEdit = std::make_unique<std::thread>([&hwnd, &msg] {
-	//
-	//					ShowWindow(hwnd, SW_SHOW);
-	//					while (GetMessageW(&msg, NULL, 0, 0))
-	//					{
-	//						TranslateMessage(&msg);
-	//						DispatchMessageW(&msg);
-	//					}
-	//					return msg.wParam;
-	//				});
-	//		}
-	//		break; }
-	//
+		case GLFW_KEY_S: {
+			if (setup::KEYSTROKE_BMP_CREATION) {
+				// Take screenshot of the current area
+				ScreenshotHandler::instance().PrepareScreenshot(true, _userDirectory + "/bmp/");
+				OpenFileNameWindow();
+			}
+			break; }
+
 		case GLFW_KEY_A: {
 			if (setup::KEYSTROKE_BMP_CREATION) {
-				/*
-				Create Dialog in which we retrieve the file name for the taken screenshot
-				std:string fileName = Dialog();
-				ScreenshotHandler::instance().TakeScreenshot(fileName);
-				*/
-
-				// Take screenshot of the whole screen with Timestamp
-				ScreenshotHandler::instance().TakeScreenshot(false, _userDirectory + "/bmp/");
+				// Take screenshot of the whole screen
+				ScreenshotHandler::instance().PrepareScreenshot(false, _userDirectory + "/bmp/");
+				OpenFileNameWindow();
 			}
 			break; }
 		}

@@ -17,7 +17,8 @@ namespace fs = std::experimental::filesystem;
 namespace fs = std::experimental::filesystem::v1;
 #endif
 
-void ScreenshotHandler::SetBuffer(unsigned char const * buffer, int width, int height, int bytesPerPixel) {
+void ScreenshotHandler::SetBuffer(unsigned char const * buffer, int width, int height, int bytesPerPixel)
+{
 	_buffer = buffer;
 	_width = width;
 	_height = height;
@@ -25,32 +26,38 @@ void ScreenshotHandler::SetBuffer(unsigned char const * buffer, int width, int h
 };
 
 void ScreenshotHandler::SetGaze(int gazeX, int gazeY){
-	_gazeX = gazeX;
-	_gazeY = gazeY;
+	_currentGazeX = gazeX;
+	_currentGazeY = gazeY;
 }
 
-void ScreenshotHandler::TakeScreenshot(bool partial, std::string path) {
+void ScreenshotHandler::PrepareScreenshot(bool partial, std::string path)
+{
+	_path = path;
+	_reservedGazeX = _currentGazeX;
+	_reservedGazeY = _currentGazeY;
+	_partial = partial;
+}
 
-	// Current timestamp to string
-	std::string fileName;
-	time_t rawtime;
-	struct tm * timeinfo;
-	char buffer[80];
-	time(&rawtime);
+void ScreenshotHandler::TakeScreenshot(std::string fileName)
+{
+	// if no fileName is provided use timestamp
+	if (fileName.length() < 1)
+	{
+		// Current timestamp to string
+		time_t rawtime;
+		struct tm * timeinfo;
+		char buffer[80];
+		time(&rawtime);
 
-	timeinfo = localtime(&rawtime);
-	strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", timeinfo); 
-	fileName = buffer;
-
-	TakeScreenshot(partial, path, fileName);
-};
-
-void ScreenshotHandler::TakeScreenshot(bool partial, std::string path, std::string fileName) {
+		timeinfo = localtime(&rawtime);
+		strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", timeinfo);
+		fileName = buffer;
+	}
 
 	// Path
-	std::string filePath = path + fileName + ".bmp";
-	if (!fs::exists(fs::path(path))) {
-		fs::create_directory(fs::path(path));
+	std::string filePath = _path + fileName + ".bmp";
+	if (!fs::exists(fs::path(_path))) {
+		fs::create_directory(fs::path(_path));
 	}
 
 	// Prepare the coordinates
@@ -60,24 +67,28 @@ void ScreenshotHandler::TakeScreenshot(bool partial, std::string path, std::stri
 	int bottom = _height;
 
 	// partial screenshot
-	if (partial && _gazeX != -1 && _gazeY != -1) {
+	if (_partial && _reservedGazeX != -1 && _reservedGazeY != -1) {
 		// 0,0 is top right
 		// Prepare gaze data
-		left = (_gazeX - setup::BMP_GAZE_RADIUS / 2);
+		left = (_reservedGazeX - setup::BMP_GAZE_RADIUS / 2);
 		if (left < 0)
 			left = 0;
 
-		right = _gazeX + setup::BMP_GAZE_RADIUS / 2;
+		right = _reservedGazeX + setup::BMP_GAZE_RADIUS / 2;
 		if (right > _width)
 			right = _width;
 
-		top = _gazeY - setup::BMP_GAZE_RADIUS / 2;
+		top = _reservedGazeY - setup::BMP_GAZE_RADIUS / 2;
 		if (top < 0)
 			top = 0;
 		
-		bottom = (_gazeY + setup::BMP_GAZE_RADIUS / 2);
+		bottom = (_reservedGazeY + setup::BMP_GAZE_RADIUS / 2);
 		if (bottom > _height)
 			bottom = _height;
+
+		// reset reserved coordinates
+		_reservedGazeX = -1;
+		_reservedGazeY = -1;
 	}
 
 	int outWidth = right - left;

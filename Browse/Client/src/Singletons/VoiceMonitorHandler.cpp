@@ -52,12 +52,12 @@ void VoiceMonitorHandler::ToggleVoiceInput() {
 
 	if (_spVoiceInputObject->GetState() == VoiceInputState::Active)
 		auto tDeactivating = std::make_unique<std::thread>([this] {
-			_spVoiceInputObject->Deactivate();
-		});
+		_spVoiceInputObject->Deactivate();
+	});
 	else if (_spVoiceInputObject->GetState() == VoiceInputState::Inactive)
 		auto tActivating = std::make_unique<std::thread>([this] {
-			_spVoiceInputObject->Activate();
-		});
+		_spVoiceInputObject->Activate();
+	});
 }
 
 void VoiceMonitorHandler::AddUpdate(PrintCategory printCategory, std::wstring newText) {

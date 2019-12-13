@@ -401,7 +401,7 @@ private:
 	// Asyncronous calls, e.g. persist Firebase entries
 	std::vector<std::future<bool> > _asyncJobs; // abuse async calls since it is easier to determine whether finished or not
 
-												// Indicator whether computer should shut down at exit
+	// Indicator whether computer should shut down at exit
 	bool _shouldShutdownAtExit = false;
 
 	// Last calibration points
@@ -423,8 +423,10 @@ private:
 	// Bool to indicate demo mode reset which is handled in the update loop
 	bool _demoModeReset = false;
 
+	// File Name Dialog runs in this Thread
 	std::unique_ptr<std::thread> _tEdit = nullptr;
-	
+	// Invokes File Name Dialog
+	void OpenFileNameWindow();
 };
 
 #endif // MASTER_H_

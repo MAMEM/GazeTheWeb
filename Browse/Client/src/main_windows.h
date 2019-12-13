@@ -139,7 +139,6 @@ int APIENTRY wWinMain(
 		mainProcessApp = new MainCefApp();
 		app = mainProcessApp;
 
-
 		// If voice input show logging window
 		// Register the window class.
 		if (useVoice) {
