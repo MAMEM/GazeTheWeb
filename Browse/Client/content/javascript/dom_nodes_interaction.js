@@ -141,26 +141,7 @@ DOMVideo.prototype.setFullscreen = function(fullscreen)
 			ConsolePrint("DOMVideo id="+scoped_id+": Fullscreen is set to true");
 
 			console.log("Trying to get node to fullscreen: ", scoped_node);
-			
-			// Request fullscreen for given video
-			// YOUTUBE FIX
-			if (scoped_node.className === "video-stream html5-main-video"
-                && scoped_node.parentElement
-				&& scoped_node.parentElement.parentElement
-                && scoped_node.parentElement.parentElement.parentElement
-                && scoped_node.parentElement.parentElement.parentElement.parentElement
-                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement
-                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
-                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
-                && scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement)
-			{
-			    var container = scoped_node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
-				container.webkitRequestFullscreen();
-
-				console.log("Requested fullscreen for: ", container);
-			}
-			else
-				scoped_node.webkitRequestFullscreen();
+			scoped_node.webkitRequestFullscreen();
 			this.style.position = "static";
 			this.id += "-finished";
 			this.className += "-finished";

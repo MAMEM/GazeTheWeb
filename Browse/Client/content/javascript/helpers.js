@@ -127,9 +127,14 @@ function CefGetPageResolution()
     if(!document || !document.body)
         return;
 
-    if(gtwPageHeight !== document.body.scrollHeight || gtwPageWidth !== document.body.scrollWidth)
+    // Get some different votes about the height take the highest
+    var body = document.body, html = document.documentElement;
+    var newheight = Math.max(body.scrollHeight, body.offsetHeight, 
+                           html.clientHeight, html.scrollHeight, html.offsetHeight);
+
+    if(gtwPageHeight !== newheight || gtwPageWidth !== document.body.scrollWidth)
     {
-        gtwPageHeight = document.body.scrollHeight;
+        gtwPageHeight = newheight;
         gtwPageWidth = document.body.scrollWidth;
 
         // Bug fix for dynamically added nodes in updating timelines or search result lists
