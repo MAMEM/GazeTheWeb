@@ -154,11 +154,11 @@ void Mediator::EmulateLeftMouseButtonClick(TabCEFInterface * pTab, double x, dou
     }
 }
 
-void Mediator::EmulateMouseWheelScrolling(TabCEFInterface * pTab, double deltaX, double deltaY)
+void Mediator::EmulateMouseWheelScrolling(TabCEFInterface * pTab, double deltaX, double deltaY, int x, int y)
 {
     if (CefRefPtr<CefBrowser> browser = GetBrowser(pTab))
     {
-        _handler->EmulateMouseWheelScrolling(browser, deltaX, deltaY);
+        _handler->EmulateMouseWheelScrolling(browser, deltaX, deltaY, x, y);
     }
 }
 

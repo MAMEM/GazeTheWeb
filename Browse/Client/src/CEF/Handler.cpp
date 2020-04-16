@@ -453,10 +453,10 @@ void Handler::EmulateLeftMouseButtonClick(CefRefPtr<CefBrowser> browser, double 
 
 }
 
-void Handler::EmulateMouseWheelScrolling(CefRefPtr<CefBrowser> browser, double deltaX, double deltaY)
+void Handler::EmulateMouseWheelScrolling(CefRefPtr<CefBrowser> browser, double deltaX, double deltaY, int x, int y)
 {
     CefMouseEvent event;
-    event.x = 0;	// TODO: Mouse position? Possible case: Scroll inside of a sub area inside the page
+    event.x = 0;
     event.y = 0;
     //DLOG(INFO) << "Emulating mouse wheel, browserID=" << browser->GetIdentifier();
     browser->GetHost()->SendMouseWheelEvent(event, deltaX, deltaY);

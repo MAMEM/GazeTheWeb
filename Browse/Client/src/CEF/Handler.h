@@ -128,7 +128,7 @@ public:
     // Emulation of mouse buttons in specific browser
     void EmulateMouseCursor(CefRefPtr<CefBrowser> browser, double x, double y, bool leftButtonPressed);
     void EmulateLeftMouseButtonClick(CefRefPtr<CefBrowser> browser, double x, double y);
-    void EmulateMouseWheelScrolling(CefRefPtr<CefBrowser> browser, double deltaX, double deltaY);
+    void EmulateMouseWheelScrolling(CefRefPtr<CefBrowser> browser, double deltaX, double deltaY, int x, int y);
 	void EmulateKeyboardKey(CefRefPtr<CefBrowser> browser, int key, int scancode, int mods, bool send_char_keyevent=true);
 	void EmulateKeyboardStrokes(CefRefPtr<CefBrowser> browser, std::string input);
 	void EmulateEnterKey(CefRefPtr<CefBrowser> browser);

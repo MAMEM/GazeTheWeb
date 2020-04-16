@@ -688,7 +688,7 @@ void Tab::Update(float tpf, const std::shared_ptr<const Input> spInput, std::sha
 		// Use value of auto scrolling to scroll
         if(_autoScrollingValue != 0.0f)
         {
-            _pCefMediator->EmulateMouseWheelScrolling(this, 0.0, (double)(20.f * _autoScrollingValue));
+            _pCefMediator->EmulateMouseWheelScrolling(this, 0.0, (double)(20.f * _autoScrollingValue), this->GetWebViewWidth() / 2, this->GetWebViewHeight() / 2);
         }
 
 		// Autoscroll inside of DOMOverflowElement if gazed upon

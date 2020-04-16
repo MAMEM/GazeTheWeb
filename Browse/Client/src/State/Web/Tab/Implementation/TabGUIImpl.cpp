@@ -185,11 +185,11 @@ void Tab::TabSensorListener::penetrated(eyegui::Layout* pLayout, std::string id,
 	{
 		if (id == "scroll_up_sensor")
 		{
-            _pTab->_pCefMediator->EmulateMouseWheelScrolling(_pTab, 0, (amount * 1000.f ) * _pTab->GetLastTimePerFrame());
+            _pTab->_pCefMediator->EmulateMouseWheelScrolling(_pTab, 0, (amount * 1000.f ) * _pTab->GetLastTimePerFrame(), _pTab->GetWebViewWidth() / 2, _pTab->GetWebViewHeight() / 2);
 		}
 		else if (id == "scroll_down_sensor")
 		{
-            _pTab->_pCefMediator->EmulateMouseWheelScrolling(_pTab, 0, (amount * - 1000.f) * _pTab->GetLastTimePerFrame());
+            _pTab->_pCefMediator->EmulateMouseWheelScrolling(_pTab, 0, (amount * - 1000.f) * _pTab->GetLastTimePerFrame(), _pTab->GetWebViewWidth() / 2, _pTab->GetWebViewHeight() / 2);
 		}
 	}
 }

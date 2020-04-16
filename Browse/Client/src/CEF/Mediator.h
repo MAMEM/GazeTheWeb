@@ -76,7 +76,7 @@ public:
     void EmulateMouseCursor(TabCEFInterface* pTab, double x, double y, bool leftButtonPressed); // leftButtonPressed seems necessary
 																								// between mouse button down and up during text selection
     void EmulateLeftMouseButtonClick(TabCEFInterface* pTab, double x, double y);
-    void EmulateMouseWheelScrolling(TabCEFInterface* pTab, double deltaX, double deltaY);
+    void EmulateMouseWheelScrolling(TabCEFInterface* pTab, double deltaX, double deltaY, int x = 0, int y = 0);
 	/*
 	*  @param[in] key The [keyboard key](@ref keys) that was pressed or released.
 	*  @param[in] scancode The system-specific scancode of the key.
