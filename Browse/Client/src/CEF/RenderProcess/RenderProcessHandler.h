@@ -23,6 +23,7 @@ public:
     // Callback, called when IPC message from e.g. main process (see Handler) is received
     bool OnProcessMessageReceived(
         CefRefPtr<CefBrowser> browser,
+		CefRefPtr<CefFrame> frame,
         CefProcessId sourceProcess,
         CefRefPtr<CefProcessMessage> msg) OVERRIDE;
 

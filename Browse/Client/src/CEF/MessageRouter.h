@@ -95,10 +95,11 @@ public:
 	// Redirecting OnProcessMessageReceived
 	bool OnProcessMessageReceived(
 		CefRefPtr<CefBrowser> browser,
+		CefRefPtr<CefFrame> frame,
 		CefProcessId source_process,
 		CefRefPtr<CefProcessMessage> message) const
 	{
-		return _router->OnProcessMessageReceived(browser, source_process, message);
+		return _router->OnProcessMessageReceived(browser, frame, source_process, message);
 	}
 	// Redirect OnRenderProcessTerminated
 	void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser) const

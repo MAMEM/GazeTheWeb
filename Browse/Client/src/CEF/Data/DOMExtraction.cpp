@@ -125,7 +125,7 @@ const void V8ToCefListValue::_Log(std::string txt, CefRefPtr<CefBrowser> browser
 		CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("IPCLog");
 		msg->GetArgumentList()->SetBool(0, true);
 		msg->GetArgumentList()->SetString(1, txt);
-		browser->SendProcessMessage(PID_BROWSER, msg);
+		browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
 	}
 }
 

@@ -45,6 +45,7 @@ CefRefPtr<CefV8Value> RenderProcessHandler::CefValueToCefV8Value(CefRefPtr<CefVa
 
 bool RenderProcessHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser,
+	CefRefPtr<CefFrame> frame,
     CefProcessId sourceProcess,
     CefRefPtr<CefProcessMessage> msg)
 {
@@ -55,7 +56,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 
 	if ((msgName == "EmulateKeyboardStrokes") || (msgName == "EmulateEnterKey") || (msgName == "EmulateSelectAll"))
 	{
-		browser->SendProcessMessage(PID_BROWSER, msg);
+		browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
 	}
 
 	if (msgName == "ExecuteJavascriptFunction")
@@ -113,7 +114,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 				{
 					innerArgs->SetDouble(0, ret_val->GetValue("x")->GetDoubleValue());
 					innerArgs->SetDouble(1, ret_val->GetValue("y")->GetDoubleValue());
-					browser->SendProcessMessage(PID_BROWSER, msg);
+					browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
 					
 				}
 				
@@ -241,7 +242,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 
 			
 			// Send response
-			browser->SendProcessMessage(PID_BROWSER, msg);
+			browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
 
         	context->Exit();
 			return true;
@@ -306,7 +307,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 				LogDebug(browser, "Renderer: ERROR processing " + js_obj_getter_name + "(" + std::to_string(id) + ")!");
 			}
 
-			browser->SendProcessMessage(PID_BROWSER, reply);
+			browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, reply);
 
 			// Set node ready for attribute updates
 			CefRefPtr<CefV8Value> setReadyFunc = domObj->GetValue("setCppReady");
@@ -327,7 +328,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
 	}
 
     // If no suitable handling was found, try message router
-    return _msgRouter->OnProcessMessageReceived(browser, sourceProcess, msg);
+    return _msgRouter->OnProcessMessageReceived(browser, frame, sourceProcess, msg);
 }
 
 void RenderProcessHandler::OnFocusedNodeChanged(
@@ -365,7 +366,7 @@ void RenderProcessHandler::OnContextCreated(
 
 		// Clear previous DOM nodes in current Tab
 		CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("OnContextCreated");
-		browser->SendProcessMessage(PID_BROWSER, msg);
+		browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
 
 
     // Create variables in Javascript which are to be read after page finished loading.
@@ -456,7 +457,7 @@ void RenderProcessHandler::IPCLog(CefRefPtr<CefBrowser> browser, std::string tex
     CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("IPCLog");
     msg->GetArgumentList()->SetBool(0, debugLog);
     msg->GetArgumentList()->SetString(1, text);
-    browser->SendProcessMessage(PID_BROWSER, msg);
+    browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
 
     // Just in case (time offset in log file due to slow IPC msg, for example): Use CEF's logging as well
     if (debugLog)

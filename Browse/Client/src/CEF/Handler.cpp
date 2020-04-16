@@ -107,12 +107,14 @@ void Handler::OnLoadError(
         return;
 
     // Display a load error message.
+	/*
     std::stringstream ss;
     ss << "<html><body bgcolor=\"white\">"
         "<h2>Failed to load URL " << std::string(failedUrl) <<
         " with error " << std::string(errorText) << " (" << errorCode <<
         ").</h2></body></html>";
     frame->LoadString(ss.str(), failedUrl);
+	*/
 }
 
 void Handler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
@@ -222,7 +224,9 @@ void Handler::CloseBrowser(CefRefPtr<CefBrowser> browser)
     LogDebug("Handler: Browser successfully closed (id = ", browserID, ").");
 }
 
-bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+bool Handler::OnProcessMessageReceived(
+	CefRefPtr<CefBrowser> browser, 
+	CefRefPtr<CefFrame> frame,
     CefProcessId source_process,
     CefRefPtr<CefProcessMessage> msg)
 {
@@ -341,7 +345,7 @@ bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 		}
 	}
 
-    return _msgRouter->OnProcessMessageReceived(browser, source_process, msg);
+    return _msgRouter->OnProcessMessageReceived(browser, frame, source_process, msg);
 }
 
 bool Handler::OnJSDialog(
@@ -560,12 +564,12 @@ bool Handler::OnBeforePopup(CefRefPtr<CefBrowser> browser,
 	CefWindowInfo& windowInfo,
 	CefRefPtr<CefClient>& client,
 	CefBrowserSettings& settings,
+	CefRefPtr<CefDictionaryValue>& extra_info,
 	bool* no_javascript_access)
 {
 	LogInfo("Handler: Suppressed popup from opening a new window");
 	
-	_pMediator->OpenPopupTab(browser, target_url, !(*no_javascript_access));
-
+	_pMediator->OpenPopupTab(browser, target_url);
 	return true;
 }
 
@@ -577,7 +581,7 @@ void Handler::SendToJSLoggingMediator(std::string message)
 	// Send message to every browser
 	for (const auto& browser : _browserList)
 	{
-		browser->SendProcessMessage(PID_RENDERER, msg);
+		browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
 	}
 	
 }

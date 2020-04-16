@@ -2380,12 +2380,15 @@ const std::vector<std::string> adURLs =
 	"zv1.november-lax.com"
 };
 
-CefRequestHandler::ReturnValue RequestHandler::OnBeforeResourceLoad(
+CefRefPtr<CefResourceRequestHandler> RequestHandler::GetResourceRequestHandler(
 	CefRefPtr<CefBrowser> browser,
 	CefRefPtr<CefFrame> frame,
 	CefRefPtr<CefRequest> request,
-	CefRefPtr<CefRequestCallback> callback)
-{
+	bool is_navigation,
+	bool is_download,
+	const CefString& request_initiator,
+	bool& disable_default_handling) {
+
 	if (_blockAds)
 	{
 		// Fetch URL
@@ -2400,11 +2403,12 @@ CefRequestHandler::ReturnValue RequestHandler::OnBeforeResourceLoad(
 		{
 			if (URL.find(rAdURL) != std::string::npos) // does URL contain ad URL?
 			{
-				return RV_CANCEL;
+				disable_default_handling = true;
+				return nullptr;
 			}
 		}
 	}
 
 	// No ad URL found, continue
-	return RV_CONTINUE;
+	return nullptr;
 }

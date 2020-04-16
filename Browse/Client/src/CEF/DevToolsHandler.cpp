@@ -67,6 +67,7 @@ void DevToolsHandler::OnLoadError(
 		return;
 	}
 
+	/*
 	// Display a load error message
 	std::stringstream ss;
 	ss << "<html><body bgcolor=\"white\">"
@@ -74,6 +75,7 @@ void DevToolsHandler::OnLoadError(
 		" with error " << std::string(errorText) << " (" << errorCode <<
 		").</h2></body></html>";
 	frame->LoadString(ss.str(), failedUrl);
+	*/
 }
 
 void DevToolsHandler::CloseAllBrowsers(bool forceClose)

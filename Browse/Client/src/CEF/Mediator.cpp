@@ -55,9 +55,9 @@ void Mediator::RegisterTab(TabCEFInterface* pTab, std::string URL, CefRefPtr<Cef
 
     LogDebug("Mediator: Creating new CefBrowser at Tab registration.");
     // Create new CefBrowser with given information
+	auto dict = CefDictionaryValue::Create();
     CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(
-        window_info, _handler.get(), URL, browser_settings, request_context);
-
+        window_info, _handler.get(), URL, browser_settings, dict, request_context);
 	LogDebug("Mediator::RegisterTab: request_context == nullptr? ", request_context == nullptr);
 
     // Fill maps with correlating Tab and CefBrowsre
@@ -265,7 +265,8 @@ bool Mediator::SendProcessMessageToRenderer(CefRefPtr<CefProcessMessage> msg, Ta
 {
 	if (auto browser = GetBrowser(pTab))
 	{
-		return browser->SendProcessMessage(PID_RENDERER, msg);
+		browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
+		return true;
 	}
 	return false;
 }

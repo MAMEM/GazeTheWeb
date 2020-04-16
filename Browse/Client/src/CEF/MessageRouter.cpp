@@ -88,7 +88,7 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 
 		// Tell renderer to read out favicon image's bytes
 		CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("GetFavIconBytes");
-		browser->SendProcessMessage(PID_RENDERER, msg);
+		browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
 
 		// Success!
 		callback->Success("success");
@@ -151,7 +151,7 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 				// Tell RenderProcessHandler to read out bounding rectangle coordinates belonging to the given ID
 				CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("FetchFixedElements");
 				msg->GetArgumentList()->SetInt(0, atoi(id.c_str()));
-				browser->SendProcessMessage(PID_RENDERER, msg);
+				browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
 
 				// Success!
 				callback->Success("success");
@@ -279,7 +279,7 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 				CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("LoadDOM" + ipcName + "Data");
 				msg->GetArgumentList()->SetInt(0, type);
 				msg->GetArgumentList()->SetInt(1, id);
-				browser->SendProcessMessage(PID_RENDERER, msg);
+				browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
 			}
 
 			// REMOVE DOMNODE

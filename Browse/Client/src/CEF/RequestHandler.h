@@ -19,11 +19,14 @@ public:
 	void BlockAds(bool value) { _blockAds = value; }
 
 	// Called before resource is loaded
-	CefRequestHandler::ReturnValue OnBeforeResourceLoad(
+	virtual CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(
 		CefRefPtr<CefBrowser> browser,
 		CefRefPtr<CefFrame> frame,
 		CefRefPtr<CefRequest> request,
-		CefRefPtr<CefRequestCallback> callback) OVERRIDE;
+		bool is_navigation,
+		bool is_download,
+		const CefString& request_initiator,
+		bool& disable_default_handling) OVERRIDE;
 
 private:
 

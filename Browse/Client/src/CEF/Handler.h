@@ -59,7 +59,7 @@ public:
     virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
     virtual bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
     virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
-	bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+	virtual bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
 		CefRefPtr<CefFrame> frame,
 		const CefString& target_url,
 		const CefString& target_frame_name,
@@ -69,6 +69,7 @@ public:
 		CefWindowInfo& windowInfo,
 		CefRefPtr<CefClient>& client,
 		CefBrowserSettings& settings,
+		CefRefPtr<CefDictionaryValue>& extra_info,
 		bool* no_javascript_access) OVERRIDE;
 
     // Loading state callbacks
@@ -89,10 +90,11 @@ public:
     void CloseBrowser(CefRefPtr<CefBrowser> browser);
 
     // Called when message from another process is received (e.g. IPC response from renderer process)
-    virtual bool OnProcessMessageReceived(
-        CefRefPtr<CefBrowser> browser,
-        CefProcessId source_process,
-        CefRefPtr<CefProcessMessage> message) OVERRIDE;
+	virtual bool OnProcessMessageReceived(
+		CefRefPtr<CefBrowser> browser,
+		CefRefPtr<CefFrame> frame,
+		CefProcessId source_process,
+		CefRefPtr<CefProcessMessage> message) OVERRIDE;
 
 	// Called when JavaScript dialog is received
 	virtual bool OnJSDialog(
