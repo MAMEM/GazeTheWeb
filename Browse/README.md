@@ -25,7 +25,7 @@ Since the CEF3 binaries for Windows and Linux do not like each other, one has to
 
 1. Clone this repository.
 2. Download either Windows 32bit or Linux 64bit CEF binaries in standard distribution from [here](http://opensource.spotify.com/cefbuilds/index.html)
- * Windows Version: CEF 73.1.12+gee4b49f+chromium-73.0.3683.75 / Chromium 73.0.3683.75
+ * Windows Version: CEF 81.2.15+ge07275d+chromium-81.0.4044.92 / Chromium 81.0.4044.92
  * Linux Version: *currently not supported*
 3. Extract the downloaded files and copy following content into the locally cloned repository:
  * include

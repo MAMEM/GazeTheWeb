@@ -66,7 +66,7 @@ plugins/Eyetracker/TobiiEyeX:
 * Connection to Tobii EyeX SDK, copyright Tobii Technology AB (http://developer.tobii.com/eyex-sdk)
 
 ## License
->Copyright 2019 Raphael Menges, Daniel Müller and Christopher Dreide
+>Copyright 2020 Raphael Menges, Daniel Müller and Christopher Dreide
 
 >Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
