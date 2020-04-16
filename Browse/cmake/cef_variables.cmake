@@ -171,6 +171,12 @@ if(OS_LINUX)
       )
   endif()
 
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    list(APPEND CEF_CXX_COMPILER_FLAGS
+      -Wno-attributes             # The cfi-icall attribute is not supported by the GNU C++ compiler
+      )
+  endif()
+
   if(PROJECT_ARCH STREQUAL "x86_64")
     # 64-bit architecture.
     list(APPEND CEF_COMPILER_FLAGS
@@ -214,7 +220,6 @@ if(OS_LINUX)
     libcef.so
     libEGL.so
     libGLESv2.so
-    natives_blob.bin
     snapshot_blob.bin
     v8_context_snapshot.bin
     swiftshader
@@ -328,6 +333,9 @@ if(OS_MACOSX)
     set(CMAKE_OSX_ARCHITECTURES "i386")
   endif()
 
+  # Prevent Xcode 11 from doing automatic codesigning.
+  set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+
   # CEF directory paths.
   set(CEF_BINARY_DIR          "${_CEF_ROOT}/$<CONFIGURATION>")
   set(CEF_BINARY_DIR_DEBUG    "${_CEF_ROOT}/Debug")
@@ -342,6 +350,15 @@ if(OS_MACOSX)
     set(CEF_SANDBOX_LIB_DEBUG "${CEF_BINARY_DIR_DEBUG}/cef_sandbox.a")
     set(CEF_SANDBOX_LIB_RELEASE "${CEF_BINARY_DIR_RELEASE}/cef_sandbox.a")
   endif()
+
+  # CEF Helper app suffixes.
+  # Format is "<name suffix>:<target suffix>:<plist suffix>".
+  set(CEF_HELPER_APP_SUFFIXES
+    "::"
+    " (GPU):_gpu:.gpu"
+    " (Plugin):_plugin:.plugin"
+    " (Renderer):_renderer:.renderer"
+    )
 endif()
 
 
@@ -370,14 +387,18 @@ if(OS_WINDOWS)
       1913  # VS2017 version 15.6
       1914  # VS2017 version 15.7
       1915  # VS2017 version 15.8
-      1916  # Added by Raphael Menges: Guess my VS version will work as well
+      1916  # VS2017 version 15.9
+      1920  # VS2019 version 16.0
+      1921  # VS2019 version 16.1
+      1922  # VS2019 version 16.2
+      1923  # VS2019 version 16.3
+      1924  # VS2019 version 16.4
       )
     list(FIND supported_msvc_versions ${MSVC_VERSION} _index)
     if (${_index} EQUAL -1)
       message(WARNING "CEF sandbox is not compatible with the current MSVC version (${MSVC_VERSION})")
       set(USE_SANDBOX OFF)
     endif()
-    
   endif()
 
   # Consumers who run into LNK4099 warnings can pass /Z7 instead (see issue #385).
@@ -458,12 +479,10 @@ if(OS_WINDOWS)
   # List of CEF binary files.
   set(CEF_BINARY_FILES
     chrome_elf.dll
-    d3dcompiler_43.dll
     d3dcompiler_47.dll
     libcef.dll
     libEGL.dll
     libGLESv2.dll
-    natives_blob.bin
     snapshot_blob.bin
     v8_context_snapshot.bin
     swiftshader
@@ -489,7 +508,11 @@ if(OS_WINDOWS)
     # Libraries required by cef_sandbox.lib.
     set(CEF_SANDBOX_STANDARD_LIBS
       dbghelp.lib
+      Delayimp.lib
+      PowrProf.lib
+      Propsys.lib
       psapi.lib
+      SetupAPI.lib
       version.lib
       wbemuuid.lib
       winmm.lib
