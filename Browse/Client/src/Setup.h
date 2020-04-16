@@ -75,7 +75,7 @@ namespace setup
 	static const double			INACTIVITY_SHUTDOWN_TIME = 60.0*60.0*3.0; // shutting down after three hours of inactivity (determined by the time the super calibration layout is visible, in seconds)
 
 	// Firebase
-	static const bool			FIREBASE_MAILING = !DEMO_MODE; // on/off switch for sending data to Firebase
+	static const bool			FIREBASE_MAILING = false; // on/off switch for sending data to Firebase
 	static const std::string	FIREBASE_API_KEY = "AIzaSyBMa9gSXsoDo27S7P959QZYf3rJBGDGEIA"; // API key for our Firebase
 	static const std::string	FIREBASE_PROJECT_ID = "mamem-phase2-fall17"; // Project Id of our Firebase
 	static const int			SOCIAL_RECORD_DIGIT_COUNT = 6;
