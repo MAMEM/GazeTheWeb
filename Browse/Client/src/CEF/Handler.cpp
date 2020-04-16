@@ -123,6 +123,7 @@ void Handler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> fra
     if (frame->IsMain())
     {
 		_pMediator->ResetFavicon(browser);
+		_pMediator->ClearDOMNodes(browser);
 		//LogDebug("Handler: Started loading frame id = ", frame->GetIdentifier(), " (main = ", frame->IsMain(), "), browserID = ", browser->GetIdentifier());
 
         // Set zoom level according to Tab's settings
@@ -281,7 +282,7 @@ bool Handler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 	if (msgName == "OnContextCreated")
 	{
-		_pMediator->ClearDOMNodes(browser);
+		// _pMediator->ClearDOMNodes(browser);
 		return true;
 	}
 
