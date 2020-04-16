@@ -53,6 +53,23 @@ bool DefaultMsgHandler::OnQuery(CefRefPtr<CefBrowser> browser,
 		return true;
 	}
 
+	// Calls the scroll offset change callback because CEF does so no more: https://bitbucket.org/chromiumembedded/cef/issues/2810
+	if (split_request.size() == 3 && split_request[0].compare("scroll") == 0)
+	{
+		try
+		{
+			const double& x = std::stod(split_request[1]);
+			const double& y = std::stod(split_request[2]);
+			_pMediator->OnScrollOffsetChanged(browser, x, y);
+		}
+		catch (const std::exception& e)
+		{
+			LogInfo("MsgRouter: Received wrongly typed page scrolling information!");
+			LogInfo("Caught exception: ", e.what());
+		}
+		return true;
+	}
+
 	// Receive META data
 	if (split_request.size() == 3 && split_request[0].compare("meta") == 0)
 	{

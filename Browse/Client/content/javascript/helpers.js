@@ -143,6 +143,16 @@ function CefGetPageResolution()
         ConsolePrint("#resolution#"+gtwPageWidth+"#"+gtwPageHeight+"#");
     }
 }
+/**
+ * Because CEF API of scrolling callback is broken, we need some hacky workaround
+ */
+(function () {
+    var callback = function() { 
+        ConsolePrint("#scroll#"+window.scrollX+"#"+window.scrollY+"#");
+    };
+    callback();
+    window.setInterval(callback, 500);
+})();
 
 if(DOMRectList.prototype.map === undefined)
 {
