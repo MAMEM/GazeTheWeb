@@ -3,7 +3,7 @@ default
 	// Important threshold values
 	KeyboardKeySelectionDuration = 1.0
 	KeyboardZoomSpeedMultiplier = 1.0
-	SensorPenetrationIncreaseDuration = 4
+	SensorPenetrationIncreaseDuration = 2
 	SensorPenetrationDecreaseDuration = 0.5
 	ButtonThresholdIncreaseDuration = 1
 	ButtonThresholdDecreaseDuration = 2
@@ -20,7 +20,7 @@ default
 	// GazeVisualizationColor = 0xFF820080
 	
 	// Misc
-	AnimationDuration = 0.125
+	AnimationDuration = 0.1
 	ButtonPressingDuration = 0.3
 	ButtonHitSound=sounds/GameAudio/ClickWooden-1.ogg
 	KeyPressSound=sounds/GameAudio/ClickWooden-2.ogg

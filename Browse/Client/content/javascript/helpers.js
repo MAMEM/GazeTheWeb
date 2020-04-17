@@ -151,7 +151,7 @@ function CefGetPageResolution()
         ConsolePrint("#scroll#"+window.scrollX+"#"+window.scrollY+"#");
     };
     callback();
-    window.setInterval(callback, 500);
+    window.setInterval(callback, 250);
 })();
 
 if(DOMRectList.prototype.map === undefined)
