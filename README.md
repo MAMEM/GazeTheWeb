@@ -6,9 +6,9 @@ Software to access the Web using eyes and mind.
 
 Download the latest release [**here**](https://github.com/MAMEM/GazeTheWeb/releases/latest).
 
-
-> :rocket: A part of the team is continuing to work on the innovation in a spin-off named **Semanux**. Visit <https://semanux.com> for more details!
-
+---
+:rocket: A part of the team behind GazeTheWeb is continuing to work on the innovation in a spin-off named *Semanux*. Visit <https://semanux.com> for more details!
+---
 
 ## Cloning
 This project uses Git submodules. Please check it out using:
