@@ -952,7 +952,17 @@ hr {
   box-shadow: 0 5px 5px -0px rgba(0,0,0,.2);
 }
 
-
+.semanux {
+  margin: auto;
+  display: box;
+  width: 80%;
+  margin-top: 5rem;
+  background-color: orange;
+  padding: 1.5rem;
+  font-size: larger;
+  border-radius: 1rem;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+}
 
 /*
 .imgCenter {
