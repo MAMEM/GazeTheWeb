@@ -23,6 +23,9 @@ build
 
 # Other
 *.orig
+.DS_Store
+.bundle
+vendor
 
 # Unignore specific files
 !go-speech-recognition.dll
