@@ -15,7 +15,7 @@
     						<stack showbackground="true">
 								<picture style="default_noback" src="icons/TabIconNotFound.png" id="icon" relativescale="10%" border="10%"/>
 			  					<stack showbackground="false" separator="0.1%">
-										<boxbutton icon="icons/Award_bronze.png" id="dashboard" relativescale="100%" style="dashboard"/>
+                    <!-- <boxbutton icon="icons/Award_bronze.png" id="dashboard" relativescale="100%" style="dashboard"/> -->
 										<boxbutton icon="icons/ScrollToTop.png" desckey="tab:scroll_to_top" id="scroll_to_top" relativescale="90%"/>
 										<!-- <boxbutton icon="icons/Pivot.png" desckey="tab:pivot" id="pivot"/> -->
 										<boxbutton icon="icons/Selection.png" desckey="tab:selection" id="selection"/>

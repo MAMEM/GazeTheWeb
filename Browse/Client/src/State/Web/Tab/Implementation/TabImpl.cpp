@@ -86,7 +86,7 @@ Tab::Tab(
     eyegui::registerButtonListener(_pPanelLayout, "selection", _spTabButtonListener);
 	eyegui::registerButtonListener(_pPanelLayout, "zoom", _spTabButtonListener);
 	// eyegui::registerButtonListener(_pPanelLayout, "test_button", _spTabButtonListener); // TODO: only for testing new features
-	eyegui::registerButtonListener(_pPanelLayout, "dashboard", _spTabButtonListener);
+	// eyegui::registerButtonListener(_pPanelLayout, "dashboard", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "play", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "pause", _spTabButtonListener);
 	eyegui::registerButtonListener(_pVideoModeLayout, "volume_up", _spTabButtonListener) ;
@@ -118,7 +118,7 @@ Tab::Tab(
 	if (setup::DEMO_MODE)
 	{
 		eyegui::setContentOfTextBlock(_pPanelLayout, "version_info", "Demo Mode");
-		eyegui::setElementActivity(_pPanelLayout, "dashboard", false, false);
+		// eyegui::setElementActivity(_pPanelLayout, "dashboard", false, false);
 		eyegui::setElementActivity(_pPanelLayout, "zoom", false, false);
 		eyegui::setElementActivity(_pPanelLayout, "selection", false, false);
 	}
@@ -1309,6 +1309,7 @@ bool Tab::SendProcessMessageToRenderer(CefRefPtr<CefProcessMessage> msg)
 
 void Tab::SetAwardIcon(Award award)
 {
+	/*
 	switch (award)
 	{
 	case Award::BRONZE:
@@ -1321,6 +1322,7 @@ void Tab::SetAwardIcon(Award award)
 		eyegui::setIconOfIconElement(_pPanelLayout, "dashboard", "icons/Award_gold.png");
 		break;
 	}
+	*/
 }
 std::vector<Tab::DOMTextInputInfo> Tab::RetrieveDOMTextInputInfos() const
 {
