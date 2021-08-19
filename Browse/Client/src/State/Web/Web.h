@@ -220,7 +220,6 @@ private:
 
 	bool CreateBookmark();
 
-
     // Maps id to Tab
     std::map<int, std::unique_ptr<Tab> > _tabs;
 

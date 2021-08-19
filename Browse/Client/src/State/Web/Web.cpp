@@ -46,7 +46,7 @@ Web::Web(Master* pMaster, Mediator* pCefMediator, bool dataTransfer) : State(pMa
     eyegui::registerButtonListener(_pWebLayout, "settings", _spWebButtonListener);
     eyegui::registerButtonListener(_pWebLayout, "back", _spWebButtonListener);
     eyegui::registerButtonListener(_pWebLayout, "forward", _spWebButtonListener);
-	eyegui::registerButtonListener(_pWebLayout, "no_data_transfer", _spWebButtonListener);
+	// eyegui::registerButtonListener(_pWebLayout, "no_data_transfer", _spWebButtonListener);
     eyegui::registerButtonListener(_pTabOverviewLayout, "close", _spWebButtonListener);
 	eyegui::registerButtonListener(_pTabOverviewLayout, "history", _spWebButtonListener);
     eyegui::registerButtonListener(_pTabOverviewLayout, "back", _spWebButtonListener);
@@ -59,7 +59,7 @@ Web::Web(Master* pMaster, Mediator* pCefMediator, bool dataTransfer) : State(pMa
 	// If firebase mailing is not activated, no "no data transfer" button is required
 	if (!setup::FIREBASE_MAILING)
 	{
-		eyegui::setElementActivity(_pWebLayout, "no_data_transfer", false, false);
+		// eyegui::setElementActivity(_pWebLayout, "no_data_transfer", false, false);
 	}
 
 	// Regular expression for URL validation
@@ -368,12 +368,12 @@ void Web::SetWebPanelMode(WebPanelMode mode)
 	case WebPanelMode::STANDARD:
 		_pMaster->SetStyleTreePropertyValue("web_panel", eyegui::property::Color::Color, "0x607d8bFF");
 		_pMaster->SetStyleTreePropertyValue("web_panel", eyegui::property::Color::BackgroundColor, "0x1e2021FF");
-		eyegui::setContentOfTextBlock(_pWebLayout, "no_data_transfer_info", std::string());
+		// eyegui::setContentOfTextBlock(_pWebLayout, "no_data_transfer_info", std::string());
 		break;
 	case WebPanelMode::NO_DATA_TRANSFER:
 		_pMaster->SetStyleTreePropertyValue("web_panel", eyegui::property::Color::Color, "0x8d20aeFF");
 		_pMaster->SetStyleTreePropertyValue("web_panel", eyegui::property::Color::BackgroundColor, "0x1c023cFF");
-		eyegui::setContentOfTextBlock(_pWebLayout, "no_data_transfer_info", _pMaster->FetchLocalization("web:no_data_transfer_info"));
+		// eyegui::setContentOfTextBlock(_pWebLayout, "no_data_transfer_info", _pMaster->FetchLocalization("web:no_data_transfer_info"));
 		break;
 	}
 }

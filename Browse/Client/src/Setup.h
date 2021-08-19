@@ -65,19 +65,19 @@ namespace setup
 	static const float	EYEINPUT_DISTORT_GAZE_BIAS_Y = 32.f; // pixels
 
 															 // Experiments
-	static const bool			ENABLE_EYEGUI_DRIFT_MAP_ACTIVATION = !DEMO_MODE;
+	static const bool			ENABLE_EYEGUI_DRIFT_MAP_ACTIVATION = false; // !DEMO_MODE;
 	static const std::string	LAB_STREAM_OUTPUT_NAME = "GazeTheWebOutput";
 	static const std::string	LAB_STREAM_OUTPUT_SOURCE_ID = CLIENT_VERSION; // use client version as source id
 	static const std::string	LAB_STREAM_INPUT_NAME = "GazeTheWebInput"; // may be set to same value as LAB_STREAM_OUTPUT_NAME to receive own events for debugging purposes
 	static const bool			LOG_INTERACTIONS = false; // on eyeGUI level, deprecated
 	static const bool			TAB_TRIGGER_SHOW_BADGE = false;
-	static const std::string	DASHBOARD_URL = "gtw.mamem.eu/home"; // without slash at the end
+	static const std::string	DASHBOARD_URL = ""; // without slash at the end
 	static const double			INACTIVITY_SHUTDOWN_TIME = 60.0*60.0*3.0; // shutting down after three hours of inactivity (determined by the time the super calibration layout is visible, in seconds)
 
 	// Firebase
 	static const bool			FIREBASE_MAILING = false; // on/off switch for sending data to Firebase
-	static const std::string	FIREBASE_API_KEY = "AIzaSyBMa9gSXsoDo27S7P959QZYf3rJBGDGEIA"; // API key for our Firebase
-	static const std::string	FIREBASE_PROJECT_ID = "mamem-phase2-fall17"; // Project Id of our Firebase
+	static const std::string	FIREBASE_API_KEY = ""; // API key for our Firebase
+	static const std::string	FIREBASE_PROJECT_ID = ""; // Project Id of our Firebase
 	static const int			SOCIAL_RECORD_DIGIT_COUNT = 6;
 	static const bool			SOCIAL_RECORD_PERSIST_UNKNOWN = true;
 	static const std::string	DATE_FORMAT = "%d-%m-%Y %H-%M-%S";

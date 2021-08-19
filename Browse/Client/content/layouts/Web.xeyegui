@@ -21,8 +21,8 @@
 										</row>
 									</grid>
 									<circlebutton icon="icons/Settings.png" desckey="web:settings" id="settings" border="10%"/>
-									<boxbutton id="no_data_transfer" relativescale="75%" switch="true" desckey="web:no_data_transfer" icon="icons/NoDataTransfer.png" border="0%"/>
-									<textblock id="no_data_transfer_info" style="default_noback" relativescale="20%" alignment="center" verticalalignment="center" fontsize="small"/>
+                  <!-- <boxbutton id="no_data_transfer" relativescale="75%" switch="true" desckey="web:no_data_transfer" icon="icons/NoDataTransfer.png" border="0%"/> -->
+									<!-- <textblock id="no_data_transfer_info" style="default_noback" relativescale="20%" alignment="center" verticalalignment="center" fontsize="small"/> -->
                 </stack>
             </column>
             <column size="90.625%">
