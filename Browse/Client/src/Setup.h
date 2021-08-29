@@ -72,7 +72,7 @@ namespace setup
 	static const bool			LOG_INTERACTIONS = false; // on eyeGUI level, deprecated
 	static const bool			TAB_TRIGGER_SHOW_BADGE = false;
 	static const std::string	DASHBOARD_URL = ""; // without slash at the end
-	static const double			INACTIVITY_SHUTDOWN_TIME = 60.0*60.0*3.0; // shutting down after three hours of inactivity (determined by the time the super calibration layout is visible, in seconds)
+	// static const double			INACTIVITY_SHUTDOWN_TIME = 60.0*60.0*3.0; // shutting down after three hours of inactivity (determined by the time the super calibration layout is visible, in seconds)
 
 	// Firebase
 	static const bool			FIREBASE_MAILING = false; // on/off switch for sending data to Firebase

@@ -932,7 +932,7 @@ void Master::Loop()
 
 		// Call exit when the system has been in super calibration state for a long amount of time
 		if (eyegui::isLayoutVisible(_pSuperCalibrationLayout) // if super calibration layout visible
-			&& _recalibrationLayoutTime >= setup::INACTIVITY_SHUTDOWN_TIME // when layout visible longer than certain amount of time
+			// && _recalibrationLayoutTime >= setup::INACTIVITY_SHUTDOWN_TIME // when layout visible longer than certain amount of time
 			&& spInput->gazeAge > setup::DURATION_BEFORE_SUPER_CALIBRATION) // and right now no gaze is going on
 		{
 			// Do shutdown the system
