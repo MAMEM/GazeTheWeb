@@ -55,6 +55,7 @@ EyetrackerInfo Connect(EyetrackerGeometry geometry)
 {
 	// Variables
 	EyetrackerInfo info;
+	info.type = ET_TOBII_PRO;
 
 	// Find eyetracker
 	TobiiResearchEyeTrackers* eyetrackers = NULL;

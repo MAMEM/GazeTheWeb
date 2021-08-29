@@ -1201,11 +1201,14 @@ void Master::UpdateAsyncJobs(bool wait)
 
 void Master::ShowSuperCalibrationLayout()
 {
-	// Display layout to recalibrate
-	eyegui::setVisibilityOfLayout(_pSuperCalibrationLayout, true, true, true);
+	if (this->_upEyeInput->GetEyetrackerInfo().type != ET_TOBII_EYEX)
+	{
+		// Display layout to recalibrate
+		eyegui::setVisibilityOfLayout(_pSuperCalibrationLayout, true, true, true);
 
-	// Notify user via sound
-	eyegui::playSound(_pGUI, "sounds/GameAudio/FlourishSpacey-1.ogg");
+		// Notify user via sound
+		eyegui::playSound(_pGUI, "sounds/GameAudio/FlourishSpacey-1.ogg");
+	}
 }
 
 void Master::PersistDriftGrid(PersistDriftGridReason reason)

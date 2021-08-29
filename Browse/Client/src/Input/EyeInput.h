@@ -73,6 +73,9 @@ public:
 	// Get pointer to interface for custom transformation of samples before filtering
 	std::weak_ptr<CustomTransformationInterface> GetCustomTransformationInterface();
 
+	// Get eyetracker info
+	EyetrackerInfo GetEyetrackerInfo() const { return _info; }
+
 private:
 
 	// Thread that connects to eye tracking device

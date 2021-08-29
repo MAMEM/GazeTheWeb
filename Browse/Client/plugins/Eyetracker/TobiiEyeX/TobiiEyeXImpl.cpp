@@ -146,6 +146,7 @@ bool InitializeGlobalInteractorSnapshot(TX_CONTEXTHANDLE hContext)
 EyetrackerInfo Connect(EyetrackerGeometry geometry)
 {
 	EyetrackerInfo info;
+	info.type = ET_TOBII_EYEX;
 
 	// Check for EyeX engine
 	TX_EYEXAVAILABILITY availability;

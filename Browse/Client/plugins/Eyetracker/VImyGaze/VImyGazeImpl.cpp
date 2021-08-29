@@ -42,6 +42,7 @@ EyetrackerInfo Connect(EyetrackerGeometry geometry)
 {
 	// Variables
 	EyetrackerInfo info;
+	info.type = ET_VI_MYGAZE;
 	int ret_connect = 0;
 
 	// Connect to running myGaze server

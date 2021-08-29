@@ -43,6 +43,7 @@ EyetrackerInfo Connect(EyetrackerGeometry geometry)
 
 	// Variables
 	EyetrackerInfo info;
+	info.type = ET_SMI_IVIEWX;
 	int ret_connect = 0;
 
 	// Connect to iViewX server

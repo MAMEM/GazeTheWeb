@@ -8,6 +8,10 @@
 
 #include <vector>
 
+enum EyetrackerType {
+	ET_UNDEFINED, ET_SMI_IVIEWX, ET_TOBII_EYEX, ET_TOBII_PRO, ET_VI_MYGAZE
+};
+
 // Struct of info
 struct EyetrackerInfo
 {
@@ -15,6 +19,7 @@ struct EyetrackerInfo
 	bool connected = false;
 	int samplerate = -1;
 	bool geometrySetupSuccessful = false;
+	EyetrackerType type = ET_UNDEFINED;
 };
 
 // Struct about position of eyes in track box
