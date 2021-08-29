@@ -502,6 +502,9 @@ DOMSelectField.prototype.setSelectionIdx = function(idx){
     if(typeof(this.node.focus) === "function")
         this.node.focus();
     this.node.selectedIndex = idx;
+    var evt = document.createEvent("HTMLEvents");
+    evt.initEvent("change", false, true);
+    this.node.dispatchEvent(evt);
 }
 DOMSelectField.prototype.getSelectionIdx = function(){
     return this.node.selectedIndex;
