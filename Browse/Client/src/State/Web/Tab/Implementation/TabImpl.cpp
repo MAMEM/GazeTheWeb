@@ -82,7 +82,7 @@ Tab::Tab(
 	eyegui::registerButtonListener(_pPanelLayout, "auto_scrolling", _spTabButtonListener);
     eyegui::registerButtonListener(_pPanelLayout, "scroll_to_top", _spTabButtonListener);
     // eyegui::registerButtonListener(_pPanelLayout, "pivot", _spTabButtonListener);
-    // eyegui::registerButtonListener(_pPanelLayout, "gaze_mouse", _spTabButtonListener);
+    eyegui::registerButtonListener(_pPanelLayout, "gaze_mouse", _spTabButtonListener);
     eyegui::registerButtonListener(_pPanelLayout, "selection", _spTabButtonListener);
 	eyegui::registerButtonListener(_pPanelLayout, "zoom", _spTabButtonListener);
 	// eyegui::registerButtonListener(_pPanelLayout, "test_button", _spTabButtonListener); // TODO: only for testing new features
@@ -98,6 +98,9 @@ Tab::Tab(
 	eyegui::registerButtonListener(_pPipelineAbortLayout, "abort", _spTabButtonListener);
 	eyegui::registerSensorListener(_pScrollingOverlayLayout, "scroll_up_sensor", _spTabSensorListener);
 	eyegui::registerSensorListener(_pScrollingOverlayLayout, "scroll_down_sensor", _spTabSensorListener);
+
+	// Press gaze mouse
+	eyegui::buttonDown(_pPanelLayout, "gaze_mouse", true);
 
 	// Create listener for overlay
 	_spTabOverlayButtonListener = std::shared_ptr<TabOverlayButtonListener>(new TabOverlayButtonListener(this));

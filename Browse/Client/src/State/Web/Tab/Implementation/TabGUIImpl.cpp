@@ -46,12 +46,10 @@ void Tab::TabButtonListener::down(eyegui::Layout* pLayout, std::string id)
 			URL += "project_id=" + parameters.projectId;
 			_pTab->OpenURL(URL);
 		}
-		/*
         else if (id == "gaze_mouse")
         {
             _pTab->_gazeMouse = true;
         }
-		*/
         else if (id == "selection")
         {
             _pTab->PushBackPipeline(std::make_unique<TextSelectionPipeline>(_pTab));
