@@ -44,7 +44,7 @@ protected:
 	const float DIMMING_VALUE = 0.3f;
 
 	// Level of magnification
-	const float MAGNIFICATION = 0.2f;
+	const float MAGNIFICATION = 0.15f;
 
 	// Fixation duration taken as "perceived" fixation to trigger something
 	const float FIXATION_DURATION = 0.75f;
